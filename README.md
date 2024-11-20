@@ -1,5 +1,9 @@
-# Vue 3 + Vite
+# Chess Board
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+This project will form the basis of a couple of Chess based ideas I have.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+- A general intelligent chess board
+- An engine to play against
+  - Maybe that should be a seperate project and this one could have a plugin architecture
+    for different engines
+- Log my chess games interface / database (http://logmychessgames.com)
