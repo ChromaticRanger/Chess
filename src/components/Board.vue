@@ -10,13 +10,37 @@ const selectedIndex = ref(0);
 
 const pieces = ref([
   { id: 0, name: 'Black Rook', image: 'src/assets/R_B.svg', left: 0, top: 0 },
-  { id: 1, name: 'Black Knight', image: 'src/assets/Kn_B.svg', left: 0, top: 0 },
-  { id: 2, name: 'Black Bishop', image: 'src/assets/B_B.svg', left: 0, top: 0 },
-  { id: 3, name: 'Black Queen', image: 'src/assets/Q_B.svg', left: 0, top: 0 },
-  { id: 4, name: 'Black King', image: 'src/assets/K_B.svg', left: 0, top: 0 },
-  { id: 5, name: 'Black Bishop', image: 'src/assets/B_B.svg', left: 0, top: 0 },
-  { id: 7, name: 'Black Knight', image: 'src/assets/Kn_B.svg', left: 0, top: 0 },
-  { id: 8, name: 'Black Rook', image: 'src/assets/R_B.svg', left: 0, top: 0 },
+  { id: 1, name: 'Black Knight', image: 'src/assets/Kn_B.svg', left: 100, top: 0 },
+  { id: 2, name: 'Black Bishop', image: 'src/assets/B_B.svg', left: 200, top: 0 },
+  { id: 3, name: 'Black Queen', image: 'src/assets/Q_B.svg', left: 300, top: 0 },
+  { id: 4, name: 'Black King', image: 'src/assets/K_B.svg', left: 400, top: 0 },
+  { id: 5, name: 'Black Bishop', image: 'src/assets/B_B.svg', left: 500, top: 0 },
+  { id: 7, name: 'Black Knight', image: 'src/assets/Kn_B.svg', left: 600, top: 0 },
+  { id: 8, name: 'Black Rook', image: 'src/assets/R_B.svg', left: 700, top: 0 },
+  { id: 9, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 0, top: 100 },
+  { id: 10, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 100, top: 100 },
+  { id: 11, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 200, top: 100 },
+  { id: 12, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 300, top: 100 },
+  { id: 13, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 400, top: 100 },
+  { id: 14, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 500, top: 100 },
+  { id: 15, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 600, top: 100 },
+  { id: 16, name: 'Black Pawn', image: 'src/assets/P_B.svg', left: 700, top: 100 },
+  { id: 17, name: 'White Rook', image: 'src/assets/R_W.svg', left: 0, top: 700 },
+  { id: 18, name: 'White Knight', image: 'src/assets/Kn_W.svg', left: 100, top: 700 },
+  { id: 19, name: 'White Bishop', image: 'src/assets/B_W.svg', left: 200, top: 700 },
+  { id: 20, name: 'White Queen', image: 'src/assets/Q_W.svg', left: 300, top: 700 },
+  { id: 21, name: 'White King', image: 'src/assets/K_W.svg', left: 400, top: 700 },
+  { id: 22, name: 'White Bishop', image: 'src/assets/B_W.svg', left: 500, top: 700 },
+  { id: 23, name: 'White Knight', image: 'src/assets/Kn_W.svg', left: 600, top: 700 },
+  { id: 24, name: 'White Rook', image: 'src/assets/R_W.svg', left: 700, top: 700 },
+  { id: 25, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 0, top: 600 },
+  { id: 26, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 100, top: 600 },
+  { id: 27, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 200, top: 600 },
+  { id: 28, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 300, top: 600 },
+  { id: 29, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 400, top: 600 },
+  { id: 30, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 500, top: 600 },
+  { id: 31, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 600, top: 600 },
+  { id: 32, name: 'White Pawn', image: 'src/assets/P_W.svg', left: 700, top: 600 },
 ]);
 
 const handleMouseMove = throttle((e) => {
@@ -64,7 +88,7 @@ const squares = computed(() => {
             :class="['square', square.color]">
         </div>
     </div>
-    <div class="flex w-max drag-container ml-2 mt-2">
+    <div class="drag-container">
         <Piece
             v-for="(p, index) in pieces" :key="p.id"
             :class="{ 'z-40': dragging && p.id === selectedIndex }"
@@ -94,12 +118,11 @@ const squares = computed(() => {
   grid-template-rows: repeat(8, 1fr);
   width: 800px; /* Adjust size as needed */
   height: 800px; /* Adjust size as needed */
-  border: 2px solid black;
 }
 
 .square {
-  width: 99px;
-  height: 99px;
+  width: 100px;
+  height: 100px;
 }
 
 .black {
