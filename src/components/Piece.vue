@@ -25,7 +25,7 @@ const props = defineProps({
 <style lang="css" scoped>
 img {
   cursor: grab;
-  position: absolute;
+  position: relative;
   width: 100px;
   height: 100px;
 }
