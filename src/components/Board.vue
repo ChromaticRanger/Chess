@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import Piece from './Piece.vue';
+import Square from './Square.vue';
 import throttle from "lodash/throttle"
 
 const dragging = ref(false);
@@ -72,25 +73,41 @@ onBeforeUnmount(() => {
 // Generate the chessboard pattern
 const squares = computed(() => {
     const result = [];
+    const files = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const isBlack = (row + col) % 2 === 1;
-            result.push({ color: isBlack ? "black": "white" });
+            const topLeftLabel = col === 0 ? (8 - row).toString() : null; // Left column (1-8)
+            const bottomRightLabel = row === 7 ? files[col] : null; // Bottom row (a-h)
+            result.push({
+              color: isBlack ? "black": "white",
+              row, 
+              col,
+              topLeftLabel,
+              bottomRightLabel
+            });
         }
     }
     return result;
 });
 </script>
 
-<template>
+<template> 
     <div class="chessboard">
-        <div v-for="(square, index) in squares" :key="index" 
-            :class="['square', square.color]">
-        </div>
+      <Square
+        v-for="(square, index) in squares"
+        :key="index"
+        :color="square.color"
+        :row="square.row"
+        :col="square.col"
+        :topLeftLabel="square.topLeftLabel"
+        :bottomRightLabel="square.bottomRightLabel"
+      />
     </div>
     <div class="drag-container">
         <Piece
-            v-for="(p, index) in pieces" :key="p.id"
+            v-for="(p, index) in pieces"
+            :key="p.id"
             :class="{ 'z-40': dragging && p.id === selectedIndex }"
             :id="p.id"
             :name="p.name"
@@ -102,7 +119,6 @@ const squares = computed(() => {
                 cursor: dragging ? 'grabbing' : 'grab'
             }"      
         ></Piece>
-        <p class="text-black text-xl">{{ selectedIndex }}</p>
     </div>
 </template>
 
@@ -118,18 +134,5 @@ const squares = computed(() => {
   grid-template-rows: repeat(8, 1fr);
   width: 800px; /* Adjust size as needed */
   height: 800px; /* Adjust size as needed */
-}
-
-.square {
-  width: 100px;
-  height: 100px;
-}
-
-.black {
-  background-color: #769656;
-}
-
-.white {
-  background-color: #eeeed2;
 }
 </style>
