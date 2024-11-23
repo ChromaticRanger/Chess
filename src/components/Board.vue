@@ -72,6 +72,8 @@ const handleMouseDown = (piece, event) => {
   draggingPiece.value = piece;
   const pieceElement = event.target;
   pieceElement.style.zIndex = 1000;
+  // Calculate and highlight valid moves
+  validMoves.value = calculateValidMoves(piece);
 };
 
 const handleMouseMove = throttle((e) => {
@@ -116,10 +118,17 @@ const handleMouseUp = (event) => {
   }
 };
 
+/**
+ * Calculates the valid moves for a given chess piece.
+ *
+ * @param {Object} piece - The chess piece for which to calculate valid moves.
+ * @returns {Array} An array of valid moves for the given piece.
+ */
 const calculateValidMoves = (piece) => {
   const moves = [];
   const { row, col, name } = piece;
 
+  // PAWN MOVES
   if (name.includes("Pawn")) {
     const direction = name.includes("White") ? -1 : 1;
     const startRow = name.includes("White") ? 6 : 1;
@@ -160,7 +169,355 @@ const calculateValidMoves = (piece) => {
     }
   }
 
-  // Add more rules for other pieces (Rook, Knight, Bishop, Queen, King)
+  // ROOK MOVES
+  if (name.includes("Rook")) {
+    // Move vertically up
+    for (let i = row - 1; i >= 0; i--) {
+      if (pieces.value.some((p) => p.row === i && p.col === col)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === i &&
+              p.col === col &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: i, col });
+        }
+        break;
+      }
+      moves.push({ row: i, col });
+    }
+    // Move vertically down
+    for (let i = row + 1; i < 8; i++) {
+      if (pieces.value.some((p) => p.row === i && p.col === col)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === i &&
+              p.col === col &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: i, col });
+        }
+        break;
+      }
+      moves.push({ row: i, col });
+    }
+    // Move horizontally left
+    for (let i = col - 1; i >= 0; i--) {
+      if (pieces.value.some((p) => p.row === row && p.col === i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row &&
+              p.col === i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row, col: i });
+        }
+        break;
+      }
+      moves.push({ row, col: i });
+    }
+    // Move horizontally right
+    for (let i = col + 1; i < 8; i++) {
+      if (pieces.value.some((p) => p.row === row && p.col === i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row &&
+              p.col === i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row, col: i });
+        }
+        break;
+      }
+      moves.push({ row, col: i });
+    }
+  }
+
+  // BISHOP MOVES
+  if (name.includes("Bishop")) {
+    // Move diagonally up-left
+    for (let i = 1; row - i >= 0 && col - i >= 0; i++) {
+      if (pieces.value.some((p) => p.row === row - i && p.col === col - i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row - i &&
+              p.col === col - i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row - i, col: col - i });
+        }
+        break;
+      }
+      moves.push({ row: row - i, col: col - i });
+    }
+    // Move diagonally up-right
+    for (let i = 1; row - i >= 0 && col + i < 8; i++) {
+      if (pieces.value.some((p) => p.row === row - i && p.col === col + i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row - i &&
+              p.col === col + i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row - i, col: col + i });
+        }
+        break;
+      }
+      moves.push({ row: row - i, col: col + i });
+    }
+    // Move diagonally down-left
+    for (let i = 1; row + i < 8 && col - i >= 0; i++) {
+      if (pieces.value.some((p) => p.row === row + i && p.col === col - i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row + i &&
+              p.col === col - i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row + i, col: col - i });
+        }
+        break;
+      }
+      moves.push({ row: row + i, col: col - i });
+    }
+    // Move diagonally down-right
+    for (let i = 1; row + i < 8 && col + i < 8; i++) {
+      if (pieces.value.some((p) => p.row === row + i && p.col === col + i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row + i &&
+              p.col === col + i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row + i, col: col + i });
+        }
+        break;
+      }
+      moves.push({ row: row + i, col: col + i });
+    }
+  }
+
+  // QUEEN MOVES
+  if (name.includes("Queen")) {
+    // Combine Rook and Bishop moves
+
+    // Rook-like moves
+    // Move vertically up
+    for (let i = row - 1; i >= 0; i--) {
+      if (pieces.value.some((p) => p.row === i && p.col === col)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === i &&
+              p.col === col &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: i, col });
+        }
+        break;
+      }
+      moves.push({ row: i, col });
+    }
+    // Move vertically down
+    for (let i = row + 1; i < 8; i++) {
+      if (pieces.value.some((p) => p.row === i && p.col === col)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === i &&
+              p.col === col &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: i, col });
+        }
+        break;
+      }
+      moves.push({ row: i, col });
+    }
+    // Move horizontally left
+    for (let i = col - 1; i >= 0; i--) {
+      if (pieces.value.some((p) => p.row === row && p.col === i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row &&
+              p.col === i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row, col: i });
+        }
+        break;
+      }
+      moves.push({ row, col: i });
+    }
+    // Move horizontally right
+    for (let i = col + 1; i < 8; i++) {
+      if (pieces.value.some((p) => p.row === row && p.col === i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row &&
+              p.col === i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row, col: i });
+        }
+        break;
+      }
+      moves.push({ row, col: i });
+    }
+
+    // Bishop-like moves
+    // Move diagonally up-left
+    for (let i = 1; row - i >= 0 && col - i >= 0; i++) {
+      if (pieces.value.some((p) => p.row === row - i && p.col === col - i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row - i &&
+              p.col === col - i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row - i, col: col - i });
+        }
+        break;
+      }
+      moves.push({ row: row - i, col: col - i });
+    }
+    // Move diagonally up-right
+    for (let i = 1; row - i >= 0 && col + i < 8; i++) {
+      if (pieces.value.some((p) => p.row === row - i && p.col === col + i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row - i &&
+              p.col === col + i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row - i, col: col + i });
+        }
+        break;
+      }
+      moves.push({ row: row - i, col: col + i });
+    }
+    // Move diagonally down-left
+    for (let i = 1; row + i < 8 && col - i >= 0; i++) {
+      if (pieces.value.some((p) => p.row === row + i && p.col === col - i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row + i &&
+              p.col === col - i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row + i, col: col - i });
+        }
+        break;
+      }
+      moves.push({ row: row + i, col: col - i });
+    }
+    // Move diagonally down-right
+    for (let i = 1; row + i < 8 && col + i < 8; i++) {
+      if (pieces.value.some((p) => p.row === row + i && p.col === col + i)) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === row + i &&
+              p.col === col + i &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: row + i, col: col + i });
+        }
+        break;
+      }
+      moves.push({ row: row + i, col: col + i });
+    }
+  }
+
+  // KING MOVES
+  if (name.includes("King")) {
+    const directions = [
+      { row: -1, col: 0 }, // Up
+      { row: 1, col: 0 }, // Down
+      { row: 0, col: -1 }, // Left
+      { row: 0, col: 1 }, // Right
+      { row: -1, col: -1 }, // Up-left
+      { row: -1, col: 1 }, // Up-right
+      { row: 1, col: -1 }, // Down-left
+      { row: 1, col: 1 }, // Down-right
+    ];
+
+    directions.forEach((direction) => {
+      const newRow = row + direction.row;
+      const newCol = col + direction.col;
+      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === newRow &&
+              p.col === newCol &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: newRow, col: newCol });
+        }
+      }
+    });
+  }
+  // KNIGHT MOVES
+  if (name.includes("Knight")) {
+    const knightMoves = [
+      { row: -2, col: -1 },
+      { row: -2, col: 1 },
+      { row: -1, col: -2 },
+      { row: -1, col: 2 },
+      { row: 1, col: -2 },
+      { row: 1, col: 2 },
+      { row: 2, col: -1 },
+      { row: 2, col: 1 },
+    ];
+
+    knightMoves.forEach((move) => {
+      const newRow = row + move.row;
+      const newCol = col + move.col;
+      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+        if (
+          !pieces.value.some(
+            (p) =>
+              p.row === newRow &&
+              p.col === newCol &&
+              p.name.includes(name.split(" ")[0])
+          )
+        ) {
+          moves.push({ row: newRow, col: newCol });
+        }
+      }
+    });
+  }
 
   return moves;
 };
