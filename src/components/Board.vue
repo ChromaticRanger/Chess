@@ -56,9 +56,16 @@ const mouseX = ref(0);
 const mouseY = ref(0);
 const offsetX = ref(0);
 const offsetY = ref(0);
+const validMoves = ref([]);
 
 const handleSquareClick = (row, col, e) => {
   selectedSquare.value = { row, col };
+  const piece = pieces.value.find((p) => p.row === row && p.col === col);
+  if (piece) {
+    validMoves.value = calculateValidMoves(piece);
+  } else {
+    validMoves.value = [];
+  }
 };
 
 const handleMouseDown = (piece, event) => {
@@ -105,7 +112,57 @@ const handleMouseUp = (event) => {
     draggingPiece.value = null;
     // Unselect any square that was selected after the drag
     selectedSquare.value = { row: null, col: null };
+    validMoves.value = [];
   }
+};
+
+const calculateValidMoves = (piece) => {
+  const moves = [];
+  const { row, col, name } = piece;
+
+  if (name.includes("Pawn")) {
+    const direction = name.includes("White") ? -1 : 1;
+    const startRow = name.includes("White") ? 6 : 1;
+
+    // Move forward
+    if (!pieces.value.some((p) => p.row === row + direction && p.col === col)) {
+      moves.push({ row: row + direction, col });
+      if (
+        row === startRow &&
+        !pieces.value.some(
+          (p) => p.row === row + 2 * direction && p.col === col
+        )
+      ) {
+        moves.push({ row: row + 2 * direction, col });
+      }
+    }
+
+    // Capture diagonally
+    if (
+      pieces.value.some(
+        (p) =>
+          p.row === row + direction &&
+          p.col === col - 1 &&
+          !p.name.includes(name.split(" ")[0])
+      )
+    ) {
+      moves.push({ row: row + direction, col: col - 1 });
+    }
+    if (
+      pieces.value.some(
+        (p) =>
+          p.row === row + direction &&
+          p.col === col + 1 &&
+          !p.name.includes(name.split(" ")[0])
+      )
+    ) {
+      moves.push({ row: row + direction, col: col + 1 });
+    }
+  }
+
+  // Add more rules for other pieces (Rook, Knight, Bishop, Queen, King)
+
+  return moves;
 };
 
 onMounted(() => {
@@ -131,6 +188,9 @@ const squares = computed(() => {
         pieces.value.find((p) => p.row === row && p.col === col) || null;
       const selected =
         selectedSquare.value.row === row && selectedSquare.value.col === col;
+      const validMove = validMoves.value.some(
+        (move) => move.row === row && move.col === col
+      );
       result.push({
         color: isBlack ? "black" : "white",
         row,
@@ -139,6 +199,7 @@ const squares = computed(() => {
         bottomRightLabel,
         piece,
         selected,
+        validMove,
       });
     }
   }
@@ -158,6 +219,7 @@ const squares = computed(() => {
       :bottomRightLabel="square.bottomRightLabel"
       :piece="square.piece"
       :selected="square.selected"
+      :validMove="square.validMove"
       @click="handleSquareClick(square.row, square.col, $event)"
       @mousedown="square.piece && handleMouseDown(square.piece, $event)"
     />
