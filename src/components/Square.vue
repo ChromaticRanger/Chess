@@ -10,10 +10,18 @@ const props = defineProps({
   bottomRightLabel: String, // Optional label for bottom right corner of square
   piece: Object, // New prop to hold the piece on the square, if any
   selected: Boolean, // New prop to indicate if the square is selected
+  validMove: Boolean, // New prop to indicate if the square is a valid move
 });
 
 const squareClasses = computed(() => {
-  return ["square", props.color, { selected: props.selected }];
+  return [
+    "square",
+    props.color,
+    {
+      selected: props.selected,
+      validMove: props.validMove,
+    },
+  ];
 });
 </script>
 
@@ -39,6 +47,8 @@ const squareClasses = computed(() => {
       :name="piece.name"
       :image="piece.image"
     />
+    <!-- Green circle for valid moves -->
+    <div v-if="validMove" class="valid-move-circle"></div>
   </div>
 </template>
 
@@ -70,5 +80,16 @@ const squareClasses = computed(() => {
 }
 .selected {
   border: 4px solid yellow; /* Highlight the selected square */
+}
+.valid-move-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background-color: rgba(0, 255, 0, 0.8); /* Green color with transparency */
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none; /* Ensure the circle does not interfere with mouse events */
 }
 </style>
