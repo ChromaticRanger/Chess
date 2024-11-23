@@ -9,7 +9,13 @@ const props = defineProps({
 </script>
 
 <template>
-  <img :alt="props.name" :src="props.image" draggable="false" class="piece" />
+  <img
+    :id="`piece-${props.id}`"
+    :alt="props.name"
+    :src="props.image"
+    class="piece"
+    draggable="false"
+  />
 </template>
 
 <style lang="css" scoped>
