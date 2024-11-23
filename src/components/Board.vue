@@ -3,10 +3,6 @@ import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 
-const dragging = ref(false);
-const mouseX = ref(0);
-const mouseY = ref(0);
-
 const pieces = ref([
   { id: 0, name: "Black Rook", image: "src/assets/R_B.svg", row: 0, col: 0 },
   { id: 1, name: "Black Knight", image: "src/assets/Kn_B.svg", row: 0, col: 1 },
@@ -55,46 +51,71 @@ const pieces = ref([
 ]);
 
 const selectedSquare = ref({ row: null, col: null });
+const draggingPiece = ref(null);
+const mouseX = ref(0);
+const mouseY = ref(0);
+const offsetX = ref(0);
+const offsetY = ref(0);
 
-const handleSquareClick = (row, col) => {
+const handleSquareClick = (row, col, e) => {
   selectedSquare.value = { row, col };
 };
 
-//const handlePieceClick = ({ left, top }) => {
-//  const { row, col } = getSquareFromCoordinates(left, top);
-//  console.log(`Clicked on piece: Row ${row}, Col ${col}`);
-//};
+const handleMouseDown = (piece, event) => {
+  draggingPiece.value = piece;
+  const pieceElement = event.target;
+  pieceElement.style.zIndex = 1000;
+};
 
-//const getSquareFromCoordinates = (x, y) => {
-//  const squareSize = 100; // Assuming each square is 100x100 pixels
-//  const row = Math.floor(y / squareSize);
-//  const col = Math.floor(x / squareSize);
-//  return { row, col };
-//};
+const handleMouseMove = throttle((e) => {
+  if (draggingPiece.value) {
+    const diffX = e.clientX - mouseX.value;
+    const diffY = e.clientY - mouseY.value;
+    const pieceElement = document.getElementById(
+      `piece-${draggingPiece.value.id}`
+    );
+    pieceElement.style.position = "absolute";
+    const currentLeft = parseInt(pieceElement.style.left || 0, 10);
+    const currentTop = parseInt(pieceElement.style.top || 0, 10);
+    pieceElement.style.left = `${currentLeft + diffX}px`;
+    pieceElement.style.top = `${currentTop + diffY}px`;
+  }
+  mouseX.value = e.clientX;
+  mouseY.value = e.clientY;
+}, 16); // Throttle the function to run at most once every 16 milliseconds
 
-//const handleMouseMove = throttle((e) => {
-//  if (dragging.value) {
-//    const diffX = e.clientX - mouseX.value;
-//    const diffY = e.clientY - mouseY.value;
-//    pieces.value[selectedIndex.value].left += diffX;
-//    pieces.value[selectedIndex.value].top += diffY;
-//  }
-//  mouseX.value = e.clientX;
-//  mouseY.value = e.clientY;
-//}, 16);
+const handleMouseUp = (event) => {
+  if (draggingPiece.value) {
+    const pieceElement = document.getElementById(
+      `piece-${draggingPiece.value.id}`
+    );
+    pieceElement.style.zIndex = ""; // Reset the z-index after dragging
+    const newRow = Math.floor((event.clientY - offsetY.value) / 100);
+    const newCol = Math.floor((event.clientX - offsetX.value) / 100);
 
-//const handleMouseUp = () => {
-//  dragging.value = false;
-//};
+    // Update the piece's position in the pieces array
+    const pieceIndex = pieces.value.findIndex(
+      (p) => p.id === draggingPiece.value.id
+    );
+    if (pieceIndex !== -1) {
+      pieces.value[pieceIndex].row = newRow;
+      pieces.value[pieceIndex].col = newCol;
+    }
+
+    draggingPiece.value = null;
+    // Unselect any square that was selected after the drag
+    selectedSquare.value = { row: null, col: null };
+  }
+};
 
 onMounted(() => {
-  //window.addEventListener("mousemove", handleMouseMove);
-  //window.addEventListener("mouseup", handleMouseUp);
+  window.addEventListener("mousemove", handleMouseMove);
+  window.addEventListener("mouseup", handleMouseUp);
 });
 
 onBeforeUnmount(() => {
-  //window.removeEventListener("mousemove", handleMouseMove);
-  //window.removeEventListener("mouseup", handleMouseUp);
+  window.removeEventListener("mousemove", handleMouseMove);
+  window.removeEventListener("mouseup", handleMouseUp);
 });
 
 // Generate the chessboard pattern
@@ -137,7 +158,8 @@ const squares = computed(() => {
       :bottomRightLabel="square.bottomRightLabel"
       :piece="square.piece"
       :selected="square.selected"
-      @click="handleSquareClick(square.row, square.col)"
+      @click="handleSquareClick(square.row, square.col, $event)"
+      @mousedown="square.piece && handleMouseDown(square.piece, $event)"
     />
   </div>
 </template>
