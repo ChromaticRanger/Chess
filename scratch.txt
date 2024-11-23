@@ -1,10 +1,16 @@
-const pieces = ref([
-  { id: 0, name: 'Black Rook', image: 'src/assets/R_B.svg', left: 0, top: 0 },
-  { id: 1, name: 'Black Knight', image: 'src/assets/Kn_B.svg', left: 0, top: 0 },
-  { id: 2, name: 'Black Bishop', image: 'src/assets/B_B.svg', left: 0, top: 0 },
-  { id: 3, name: 'Black Queen', image: 'src/assets/Q_B.svg', left: 0, top: 0 },
-  { id: 4, name: 'Black King', image: 'src/assets/K_B.svg', left: 0, top: 0 },
-  { id: 5, name: 'Black Bishop', image: 'src/assets/B_B.svg', left: 0, top: 0 },
-  { id: 7, name: 'Black Knight', image: 'src/assets/Kn_B.svg', left: 0, top: 0 },
-  { id: 8, name: 'Black Rook', image: 'src/assets/R_B.svg', left: 0, top: 0 },
-]);
+<div class="drag-container">
+    <Piece
+      v-for="(p, index) in pieces"
+      :key="p.id"
+      :class="{ 'z-40': dragging && p.id === selectedIndex }"
+      :id="p.id"
+      :name="p.name"
+      :image="p.image"
+      :left="p.left"
+      :top="p.top"
+      @mousedown="dragging = true"
+      :style="{
+        cursor: dragging ? 'grabbing' : 'grab',
+      }"
+    ></Piece>
+  </div>

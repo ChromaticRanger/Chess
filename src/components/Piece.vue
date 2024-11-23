@@ -2,31 +2,20 @@
 import { ref } from "vue";
 
 const props = defineProps({
-    id: Number,
-    name: String,
-    image: String,
-    left: Number,
-    top: Number
+  id: Number,
+  name: String,
+  image: String,
 });
 </script>
 
 <template>
-    <img
-        :alt="props.name"
-        :src="props.image"    
-        :style="{
-          left: `${props.left}px`,
-          top: `${props.top}px`
-        }"
-        draggable="false"
-    />
+  <img :alt="props.name" :src="props.image" draggable="false" class="piece" />
 </template>
 
 <style lang="css" scoped>
-img {
-  cursor: grab;
-  position: relative;
-  width: 100px;
-  height: 100px;
+.piece {
+  width: 100%;
+  height: 100%;
+  position: absolute;
 }
 </style>
