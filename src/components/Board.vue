@@ -6,8 +6,6 @@ import throttle from "lodash/throttle";
 const dragging = ref(false);
 const mouseX = ref(0);
 const mouseY = ref(0);
-// const selectedIndex = ref(0);
-// const selectedSquare = ref({ row: null, col: null });
 
 const pieces = ref([
   { id: 0, name: "Black Rook", image: "src/assets/R_B.svg", row: 0, col: 0 },
@@ -56,10 +54,11 @@ const pieces = ref([
   { id: 31, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 7 },
 ]);
 
-//const handleSquareClick = ({ row, col }) => {
-//  selectedSquare.value = { row, col };
-//  console.log(`Clicked on square: Row ${row}, Col ${col}`);
-//};
+const selectedSquare = ref({ row: null, col: null });
+
+const handleSquareClick = (row, col) => {
+  selectedSquare.value = { row, col };
+};
 
 //const handlePieceClick = ({ left, top }) => {
 //  const { row, col } = getSquareFromCoordinates(left, top);
@@ -109,6 +108,8 @@ const squares = computed(() => {
       const bottomRightLabel = row === 7 ? files[col] : null; // Bottom row (a-h)
       const piece =
         pieces.value.find((p) => p.row === row && p.col === col) || null;
+      const selected =
+        selectedSquare.value.row === row && selectedSquare.value.col === col;
       result.push({
         color: isBlack ? "black" : "white",
         row,
@@ -116,6 +117,7 @@ const squares = computed(() => {
         topLeftLabel,
         bottomRightLabel,
         piece,
+        selected,
       });
     }
   }
@@ -134,11 +136,19 @@ const squares = computed(() => {
       :topLeftLabel="square.topLeftLabel"
       :bottomRightLabel="square.bottomRightLabel"
       :piece="square.piece"
+      :selected="square.selected"
+      @click="handleSquareClick(square.row, square.col)"
     />
   </div>
 </template>
 
 <style lang="css" scoped>
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .chessboard {
   display: grid;
   grid-template-columns: repeat(8, 1fr);

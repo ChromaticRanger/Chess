@@ -9,10 +9,11 @@ const props = defineProps({
   topLeftLabel: String, // Optional label for top left corner of square
   bottomRightLabel: String, // Optional label for bottom right corner of square
   piece: Object, // New prop to hold the piece on the square, if any
+  selected: Boolean, // New prop to indicate if the square is selected
 });
 
 const squareClasses = computed(() => {
-  return ["square", props.color];
+  return ["square", props.color, { selected: props.selected }];
 });
 </script>
 
@@ -66,5 +67,8 @@ const squareClasses = computed(() => {
 }
 .white {
   background-color: #eeeed2;
+}
+.selected {
+  border: 4px solid yellow; /* Highlight the selected square */
 }
 </style>
