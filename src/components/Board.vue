@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 
@@ -51,6 +51,7 @@ const pieces = ref([
 ]);
 
 const selectedSquare = ref({ row: null, col: null });
+const originalPosition = ref({ row: null, col: null });
 const draggingPiece = ref(null);
 const mouseX = ref(0);
 const mouseY = ref(0);
@@ -70,6 +71,7 @@ const handleSquareClick = (row, col, e) => {
 
 const handleMouseDown = (piece, event) => {
   draggingPiece.value = piece;
+  originalPosition.value = { row: piece.row, col: piece.col }; // Store the original position
   const pieceElement = event.target;
   pieceElement.style.zIndex = 1000;
   // Calculate and highlight valid moves
@@ -93,7 +95,7 @@ const handleMouseMove = throttle((e) => {
   mouseY.value = e.clientY;
 }, 16); // Throttle the function to run at most once every 16 milliseconds
 
-const handleMouseUp = (event) => {
+const handleMouseUp = async (event) => {
   if (draggingPiece.value) {
     const pieceElement = document.getElementById(
       `piece-${draggingPiece.value.id}`
@@ -102,13 +104,32 @@ const handleMouseUp = (event) => {
     const newRow = Math.floor((event.clientY - offsetY.value) / 100);
     const newCol = Math.floor((event.clientX - offsetX.value) / 100);
 
-    // Update the piece's position in the pieces array
-    const pieceIndex = pieces.value.findIndex(
-      (p) => p.id === draggingPiece.value.id
+    // Check if the new position is a valid move
+    const isValidMove = validMoves.value.some(
+      (move) => move.row === newRow && move.col === newCol
     );
-    if (pieceIndex !== -1) {
-      pieces.value[pieceIndex].row = newRow;
-      pieces.value[pieceIndex].col = newCol;
+
+    if (isValidMove) {
+      // Update the piece's position in the pieces array
+      const pieceIndex = pieces.value.findIndex(
+        (p) => p.id === draggingPiece.value.id
+      );
+      if (pieceIndex !== -1) {
+        pieces.value[pieceIndex].row = newRow;
+        pieces.value[pieceIndex].col = newCol;
+      }
+    } else {
+      // Reset the piece to its original position
+      const pieceIndex = pieces.value.findIndex(
+        (p) => p.id === draggingPiece.value.id
+      );
+      if (pieceIndex !== -1) {
+        pieces.value[pieceIndex].row = originalPosition.value.row - 1;
+        pieces.value[pieceIndex].col = originalPosition.value.col - 1;
+        await nextTick(); // Wait for the DOM to update
+        pieces.value[pieceIndex].row = originalPosition.value.row;
+        pieces.value[pieceIndex].col = originalPosition.value.col;
+      }
     }
 
     draggingPiece.value = null;
