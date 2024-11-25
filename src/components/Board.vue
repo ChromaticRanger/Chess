@@ -58,6 +58,8 @@ const mouseY = ref(0);
 const offsetX = ref(0);
 const offsetY = ref(0);
 const validMoves = ref([]);
+const whiteInCheck = ref(false);
+const blackInCheck = ref(false);
 
 const handleSquareClick = (row, col, e) => {
   selectedSquare.value = { row, col };
@@ -143,10 +145,11 @@ const handleMouseUp = async (event) => {
  * @param movingPiece - The piece that has just been moved
  */
 const checkForCheck = (movingPiece) => {
+  whiteInCheck.value = false;
+  blackInCheck.value = false;
+  const color = movingPiece.name.split(" ")[0];
   // Get all of the same colors pieces
-  const ourPieces = pieces.value.filter((p) =>
-    p.name.includes(movingPiece.name.split(" ")[0])
-  );
+  const ourPieces = pieces.value.filter((p) => p.name.includes(color));
   // loop through each of these pieces and see if it can attack the opponents king
   // or expose a discovered attack on the king.
   let checkFound = false;
@@ -159,9 +162,15 @@ const checkForCheck = (movingPiece) => {
       if (attackedPiece)
         if (attackedPiece.name.includes("King")) {
           checkFound = true;
+          if (color === "Black") {
+            whiteInCheck.value = true;
+          } else {
+            blackInCheck.value = true;
+          }
         }
     });
   });
+
   return checkFound;
 };
 
@@ -649,6 +658,13 @@ const squares = computed(() => {
       const validMove = validMoves.value.some(
         (move) => move.row === row && move.col === col
       );
+      const inCheck =
+        (whiteInCheck.value &&
+          piece?.name.includes("White") &&
+          piece?.name.includes("King")) ||
+        (blackInCheck.value &&
+          piece?.name.includes("Black") &&
+          piece?.name.includes("King"));
       result.push({
         color: isBlack ? "black" : "white",
         row,
@@ -658,6 +674,7 @@ const squares = computed(() => {
         piece,
         selected,
         validMove,
+        inCheck,
       });
     }
   }
@@ -678,6 +695,7 @@ const squares = computed(() => {
       :piece="square.piece"
       :selected="square.selected"
       :validMove="square.validMove"
+      :inCheck="square.inCheck"
       @click="handleSquareClick(square.row, square.col, $event)"
       @mousedown="square.piece && handleMouseDown(square.piece, $event)"
     />
