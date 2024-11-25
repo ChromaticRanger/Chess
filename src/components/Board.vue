@@ -117,7 +117,6 @@ const handleMouseUp = async (event) => {
       // TODO: If the existing piece is the King we do not actually take it.
 
       // Check to see if there is a piece already on the new square
-      // and take it if there is.
       const existingPiece = checkForExistingPiece(newRow, newCol);
       if (existingPiece) {
         takePiece(existingPiece);
@@ -130,9 +129,40 @@ const handleMouseUp = async (event) => {
 
     draggingPiece.value = null;
     // Unselect any square that was selected after the drag
-    selectedSquare.value = { row: null, col: null };
+    // selectedSquare.value = { row: null, col: null };
     validMoves.value = [];
+
+    // Check if the move has put the opponents King in check
+    const createsCheck = checkForCheck(movingPiece);
   }
+};
+
+/**
+ * Check to see if the move has put the opponents King in check
+ *
+ * @param movingPiece - The piece that has just been moved
+ */
+const checkForCheck = (movingPiece) => {
+  // Get all of the same colors pieces
+  const ourPieces = pieces.value.filter((p) =>
+    p.name.includes(movingPiece.name.split(" ")[0])
+  );
+  // loop through each of these pieces and see if it can attack the opponents king
+  // or expose a discovered attack on the king.
+  let checkFound = false;
+  ourPieces.forEach((piece) => {
+    if (checkFound) return true;
+    const checkingMoves = calculateValidMoves(piece);
+    checkingMoves.forEach((move) => {
+      if (checkFound) return true;
+      let attackedPiece = checkForExistingPiece(move.row, move.col);
+      if (attackedPiece)
+        if (attackedPiece.name.includes("King")) {
+          checkFound = true;
+        }
+    });
+  });
+  return checkFound;
 };
 
 /**
