@@ -11,6 +11,7 @@ const props = defineProps({
   piece: Object, // New prop to hold the piece on the square, if any
   selected: Boolean, // New prop to indicate if the square is selected
   validMove: Boolean, // New prop to indicate if the square is a valid move
+  inCheck: Boolean, // New prop to indicate if the square is in check
 });
 
 const squareClasses = computed(() => {
@@ -20,6 +21,7 @@ const squareClasses = computed(() => {
     {
       selected: props.selected,
       validMove: props.validMove,
+      inCheck: props.inCheck,
     },
   ];
 });
@@ -91,5 +93,8 @@ const squareClasses = computed(() => {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none; /* Ensure the circle does not interfere with mouse events */
+}
+.inCheck {
+  border: 4px solid red; /* Highlight the square if it is in check */
 }
 </style>
