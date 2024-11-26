@@ -62,16 +62,6 @@ const attackedSquares = ref([]);
 const whiteInCheck = ref(false);
 const blackInCheck = ref(false);
 
-const handleSquareClick = (row, col, e) => {
-  selectedSquare.value = { row, col };
-  const piece = pieces.value.find((p) => p.row === row && p.col === col);
-  if (piece) {
-    validMoves.value = calculateValidMoves(piece);
-  } else {
-    validMoves.value = [];
-  }
-};
-
 const handleMouseDown = (piece, event) => {
   draggingPiece.value = piece;
   originalPosition.value = { row: piece.row, col: piece.col }; // Store the original position
@@ -514,7 +504,7 @@ const calculatedAttackedSquares = (color) => {
  * @param {Object} piece - The chess piece for which to calculate valid moves.
  * @returns {Array} An array of valid moves for the given piece.
  */
-const calculateValidMoves = (piece, isCheckChecking = false) => {
+const calculateValidMoves = (piece) => {
   const moves = [];
   const { row, col, name } = piece;
 
@@ -984,7 +974,6 @@ const squares = computed(() => {
       :selected="square.selected"
       :validMove="square.validMove"
       :inCheck="square.inCheck"
-      @click="handleSquareClick(square.row, square.col, $event)"
       @mousedown="square.piece && handleMouseDown(square.piece, $event)"
     />
   </div>
