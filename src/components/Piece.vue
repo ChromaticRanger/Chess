@@ -3,7 +3,8 @@ import { ref } from "vue";
 
 const props = defineProps({
   id: Number,
-  name: String,
+  type: String,
+  color: String,
   image: String,
 });
 </script>
@@ -11,7 +12,7 @@ const props = defineProps({
 <template>
   <img
     :id="`piece-${props.id}`"
-    :alt="props.name"
+    :alt="`${props.color} ${props.type}`"
     :src="props.image"
     class="piece"
     draggable="false"

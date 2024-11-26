@@ -4,50 +4,262 @@ import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 
 const pieces = ref([
-  { id: 0, name: "Black Rook", image: "src/assets/R_B.svg", row: 0, col: 0 },
-  { id: 1, name: "Black Knight", image: "src/assets/Kn_B.svg", row: 0, col: 1 },
-  { id: 2, name: "Black Bishop", image: "src/assets/B_B.svg", row: 0, col: 2 },
-  { id: 3, name: "Black Queen", image: "src/assets/Q_B.svg", row: 0, col: 3 },
-  { id: 4, name: "Black King", image: "src/assets/K_B.svg", row: 0, col: 4 },
-  { id: 5, name: "Black Bishop", image: "src/assets/B_B.svg", row: 0, col: 5 },
-  { id: 6, name: "Black Knight", image: "src/assets/Kn_B.svg", row: 0, col: 6 },
-  { id: 7, name: "Black Rook", image: "src/assets/R_B.svg", row: 0, col: 7 },
-  { id: 8, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 0 },
-  { id: 9, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 1 },
-  { id: 10, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 2 },
-  { id: 11, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 3 },
-  { id: 12, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 4 },
-  { id: 13, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 5 },
-  { id: 14, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 6 },
-  { id: 15, name: "Black Pawn", image: "src/assets/P_B.svg", row: 1, col: 7 },
-  { id: 16, name: "White Rook", image: "src/assets/R_W.svg", row: 7, col: 0 },
+  {
+    id: 0,
+    type: "Rook",
+    color: "Black",
+    image: "src/assets/R_B.svg",
+    row: 0,
+    col: 0,
+  },
+  {
+    id: 1,
+    type: "Knight",
+    color: "Black",
+    image: "src/assets/Kn_B.svg",
+    row: 0,
+    col: 1,
+  },
+  {
+    id: 2,
+    type: "Bishop",
+    color: "Black",
+    image: "src/assets/B_B.svg",
+    row: 0,
+    col: 2,
+  },
+  {
+    id: 3,
+    type: "Queen",
+    color: "Black",
+    image: "src/assets/Q_B.svg",
+    row: 0,
+    col: 3,
+  },
+  {
+    id: 4,
+    type: "King",
+    color: "Black",
+    image: "src/assets/K_B.svg",
+    row: 0,
+    col: 4,
+  },
+  {
+    id: 5,
+    type: "Bishop",
+    color: "Black",
+    image: "src/assets/B_B.svg",
+    row: 0,
+    col: 5,
+  },
+  {
+    id: 6,
+    type: "Knight",
+    color: "Black",
+    image: "src/assets/Kn_B.svg",
+    row: 0,
+    col: 6,
+  },
+  {
+    id: 7,
+    type: "Rook",
+    color: "Black",
+    image: "src/assets/R_B.svg",
+    row: 0,
+    col: 7,
+  },
+  {
+    id: 8,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 0,
+  },
+  {
+    id: 9,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 1,
+  },
+  {
+    id: 10,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 2,
+  },
+  {
+    id: 11,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 3,
+  },
+  {
+    id: 12,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 4,
+  },
+  {
+    id: 13,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 5,
+  },
+  {
+    id: 14,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 6,
+  },
+  {
+    id: 15,
+    type: "Pawn",
+    color: "Black",
+    image: "src/assets/P_B.svg",
+    row: 1,
+    col: 7,
+  },
+  {
+    id: 16,
+    type: "Rook",
+    color: "White",
+    image: "src/assets/R_W.svg",
+    row: 7,
+    col: 0,
+  },
   {
     id: 17,
-    name: "White Knight",
+    type: "Knight",
+    color: "White",
     image: "src/assets/Kn_W.svg",
     row: 7,
     col: 1,
   },
-  { id: 18, name: "White Bishop", image: "src/assets/B_W.svg", row: 7, col: 2 },
-  { id: 19, name: "White Queen", image: "src/assets/Q_W.svg", row: 7, col: 3 },
-  { id: 20, name: "White King", image: "src/assets/K_W.svg", row: 7, col: 4 },
-  { id: 21, name: "White Bishop", image: "src/assets/B_W.svg", row: 7, col: 5 },
+  {
+    id: 18,
+    type: "Bishop",
+    color: "White",
+    image: "src/assets/B_W.svg",
+    row: 7,
+    col: 2,
+  },
+  {
+    id: 19,
+    type: "Queen",
+    color: "White",
+    image: "src/assets/Q_W.svg",
+    row: 7,
+    col: 3,
+  },
+  {
+    id: 20,
+    type: "King",
+    color: "White",
+    image: "src/assets/K_W.svg",
+    row: 7,
+    col: 4,
+  },
+  {
+    id: 21,
+    type: "Bishop",
+    color: "White",
+    image: "src/assets/B_W.svg",
+    row: 7,
+    col: 5,
+  },
   {
     id: 22,
-    name: "White Knight",
+    type: "Knight",
+    color: "White",
     image: "src/assets/Kn_W.svg",
     row: 7,
     col: 6,
   },
-  { id: 23, name: "White Rook", image: "src/assets/R_W.svg", row: 7, col: 7 },
-  { id: 24, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 0 },
-  { id: 25, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 1 },
-  { id: 26, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 2 },
-  { id: 27, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 3 },
-  { id: 28, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 4 },
-  { id: 29, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 5 },
-  { id: 30, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 6 },
-  { id: 31, name: "White Pawn", image: "src/assets/P_W.svg", row: 6, col: 7 },
+  {
+    id: 23,
+    type: "Rook",
+    color: "White",
+    image: "src/assets/R_W.svg",
+    row: 7,
+    col: 7,
+  },
+  {
+    id: 24,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 0,
+  },
+  {
+    id: 25,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 1,
+  },
+  {
+    id: 26,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 2,
+  },
+  {
+    id: 27,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 3,
+  },
+  {
+    id: 28,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 4,
+  },
+  {
+    id: 29,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 5,
+  },
+  {
+    id: 30,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 6,
+  },
+  {
+    id: 31,
+    type: "Pawn",
+    color: "White",
+    image: "src/assets/P_W.svg",
+    row: 6,
+    col: 7,
+  },
 ]);
 
 const selectedSquare = ref({ row: null, col: null });
@@ -62,6 +274,13 @@ const attackedSquares = ref([]);
 const whiteInCheck = ref(false);
 const blackInCheck = ref(false);
 
+/**
+ * Handle the MouseDown event
+ *
+ * @param piece - The piece that is being dragged
+ * @param event - The mouse down event
+ * @returns {void}
+ */
 const handleMouseDown = (piece, event) => {
   draggingPiece.value = piece;
   originalPosition.value = { row: piece.row, col: piece.col }; // Store the original position
@@ -71,6 +290,12 @@ const handleMouseDown = (piece, event) => {
   validMoves.value = calculateValidMoves(piece);
 };
 
+/**
+ * Handle the MouseMove event
+ *
+ * @param event - The mouse move event
+ * @returns {void}
+ */
 const handleMouseMove = throttle((e) => {
   if (draggingPiece.value) {
     const diffX = e.clientX - mouseX.value;
@@ -88,6 +313,12 @@ const handleMouseMove = throttle((e) => {
   mouseY.value = e.clientY;
 }, 16); // Throttle the function to run at most once every 16 milliseconds
 
+/**
+ * Handle the MouseUp event
+ *
+ * @param event - The mouse up event
+ * @returns {void}
+ */
 const handleMouseUp = async (event) => {
   if (draggingPiece.value) {
     const movingPiece = checkForExistingPiece(
@@ -131,9 +362,7 @@ const handleMouseUp = async (event) => {
     // Build a list of attacked squares so we can check king
     // when he tries to get out of check
     if (createsCheck) {
-      attackedSquares.value = calculatedAttackedSquares(
-        movingPiece.name.split(" ")[0]
-      );
+      attackedSquares.value = calculatedAttackedSquares(movingPiece.color);
     }
   }
 };
@@ -146,9 +375,10 @@ const handleMouseUp = async (event) => {
 const checkForCheck = (movingPiece) => {
   whiteInCheck.value = false;
   blackInCheck.value = false;
-  const color = movingPiece.name.split(" ")[0];
+
   // Get all of the same colors pieces
-  const ourPieces = pieces.value.filter((p) => p.name.includes(color));
+  const ourPieces = pieces.value.filter((p) => p.color === movingPiece.color);
+
   // loop through each of these pieces and see if it can attack the opponents king
   // or expose a discovered attack on the king.
   let checkFound = false;
@@ -159,9 +389,9 @@ const checkForCheck = (movingPiece) => {
       if (checkFound) return true;
       let attackedPiece = checkForExistingPiece(move.row, move.col);
       if (attackedPiece)
-        if (attackedPiece.name.includes("King")) {
+        if (attackedPiece.type === "King") {
           checkFound = true;
-          if (color === "Black") {
+          if (piece.color === "Black") {
             whiteInCheck.value = true;
           } else {
             blackInCheck.value = true;
@@ -233,15 +463,15 @@ const returnPiece = async (piece) => {
  * @param color - The color of the pieces to check
  */
 const calculatedAttackedSquares = (color) => {
-  const ourPieces = pieces.value.filter((p) => p.name.includes(color));
+  const ourPieces = pieces.value.filter((p) => p.color === color);
   const attackedSquares = [];
 
   // Build a list of empty squares that are attacked by our pieces
 
   // PAWNS
-  const ourPawns = ourPieces.filter((p) => p.name.includes("Pawn"));
+  const ourPawns = ourPieces.filter((p) => p.type === "Pawn");
   ourPawns.forEach((pawn) => {
-    const direction = pawn.name.includes("White") ? -1 : 1;
+    const direction = pawn.color === "White" ? -1 : 1;
 
     // Check left diagonal attack if not on left edge
     if (pawn.col > 0) {
@@ -251,7 +481,6 @@ const calculatedAttackedSquares = (color) => {
       );
       if (!leftAttack) {
         attackedSquares.push({
-          piece: "PAWN",
           row: pawn.row + direction,
           col: pawn.col - 1,
         });
@@ -266,7 +495,6 @@ const calculatedAttackedSquares = (color) => {
       );
       if (!rightAttack) {
         attackedSquares.push({
-          piece: "PAWN",
           row: pawn.row + direction,
           col: pawn.col + 1,
         });
@@ -275,7 +503,7 @@ const calculatedAttackedSquares = (color) => {
   });
 
   // KNIGHTS
-  const ourKnights = ourPieces.filter((p) => p.name.includes("Knight"));
+  const ourKnights = ourPieces.filter((p) => p.type === "Knight");
   ourKnights.forEach((knight) => {
     const knightMoves = [
       { row: -2, col: -1 },
@@ -292,20 +520,22 @@ const calculatedAttackedSquares = (color) => {
       const newCol = knight.col + move.col;
       if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
         if (!checkForExistingPiece(newRow, newCol)) {
-          attackedSquares.push({ piece: "KNIGHT", row: newRow, col: newCol });
+          attackedSquares.push({
+            row: newRow,
+            col: newCol,
+          });
         }
       }
     });
   });
 
   // BISHOPS
-  const ourBishops = ourPieces.filter((p) => p.name.includes("Bishop"));
+  const ourBishops = ourPieces.filter((p) => p.type === "Bishop");
   ourBishops.forEach((bishop) => {
     // Move diagonally up-left
     for (let i = 1; bishop.row - i >= 0 && bishop.col - i >= 0; i++) {
       if (!checkForExistingPiece(bishop.row - i, bishop.col - i)) {
         attackedSquares.push({
-          piece: "BISHOP",
           row: bishop.row - i,
           col: bishop.col - i,
         });
@@ -317,7 +547,6 @@ const calculatedAttackedSquares = (color) => {
     for (let i = 1; bishop.row - i >= 0 && bishop.col + i < 8; i++) {
       if (!checkForExistingPiece(bishop.row - i, bishop.col + i)) {
         attackedSquares.push({
-          piece: "BISHOP",
           row: bishop.row - i,
           col: bishop.col + i,
         });
@@ -329,7 +558,6 @@ const calculatedAttackedSquares = (color) => {
     for (let i = 1; bishop.row + i < 8 && bishop.col - i >= 0; i++) {
       if (!checkForExistingPiece(bishop.row + i, bishop.col - i)) {
         attackedSquares.push({
-          piece: "BISHOP",
           row: bishop.row + i,
           col: bishop.col - i,
         });
@@ -341,7 +569,6 @@ const calculatedAttackedSquares = (color) => {
     for (let i = 1; bishop.row + i < 8 && bishop.col + i < 8; i++) {
       if (!checkForExistingPiece(bishop.row + i, bishop.col + i)) {
         attackedSquares.push({
-          piece: "BISHOP",
           row: bishop.row + i,
           col: bishop.col + i,
         });
@@ -352,12 +579,15 @@ const calculatedAttackedSquares = (color) => {
   });
 
   // ROOKS
-  const ourRooks = ourPieces.filter((p) => p.name.includes("Rook"));
+  const ourRooks = ourPieces.filter((p) => p.type === "Rook");
   ourRooks.forEach((rook) => {
     // Move vertically up
     for (let i = rook.row - 1; i >= 0; i--) {
       if (!checkForExistingPiece(i, rook.col)) {
-        attackedSquares.push({ piece: "ROOK", row: i, col: rook.col });
+        attackedSquares.push({
+          row: i,
+          col: rook.col,
+        });
       } else {
         break;
       }
@@ -365,7 +595,10 @@ const calculatedAttackedSquares = (color) => {
     // Move vertically down
     for (let i = rook.row + 1; i < 8; i++) {
       if (!checkForExistingPiece(i, rook.col)) {
-        attackedSquares.push({ piece: "ROOK", row: i, col: rook.col });
+        attackedSquares.push({
+          row: i,
+          col: rook.col,
+        });
       } else {
         break;
       }
@@ -373,7 +606,10 @@ const calculatedAttackedSquares = (color) => {
     // Move horizontally left
     for (let i = rook.col - 1; i >= 0; i--) {
       if (!checkForExistingPiece(rook.row, i)) {
-        attackedSquares.push({ piece: "ROOK", row: rook.row, col: i });
+        attackedSquares.push({
+          row: rook.row,
+          col: i,
+        });
       } else {
         break;
       }
@@ -381,7 +617,10 @@ const calculatedAttackedSquares = (color) => {
     // Move horizontally right
     for (let i = rook.col + 1; i < 8; i++) {
       if (!checkForExistingPiece(rook.row, i)) {
-        attackedSquares.push({ piece: "ROOK", row: rook.row, col: i });
+        attackedSquares.push({
+          row: rook.row,
+          col: i,
+        });
       } else {
         break;
       }
@@ -389,12 +628,15 @@ const calculatedAttackedSquares = (color) => {
   });
 
   // QUEENS
-  const ourQueens = ourPieces.filter((p) => p.name.includes("Queen"));
+  const ourQueens = ourPieces.filter((p) => p.type === "Queen");
   ourQueens.forEach((queen) => {
     // Move vertically up
     for (let i = queen.row - 1; i >= 0; i--) {
       if (!checkForExistingPiece(i, queen.col)) {
-        attackedSquares.push({ piece: "QUEEN", row: i, col: queen.col });
+        attackedSquares.push({
+          row: i,
+          col: queen.col,
+        });
       } else {
         break;
       }
@@ -402,7 +644,10 @@ const calculatedAttackedSquares = (color) => {
     // Move vertically down
     for (let i = queen.row + 1; i < 8; i++) {
       if (!checkForExistingPiece(i, queen.col)) {
-        attackedSquares.push({ piece: "QUEEN", row: i, col: queen.col });
+        attackedSquares.push({
+          row: i,
+          col: queen.col,
+        });
       } else {
         break;
       }
@@ -410,7 +655,10 @@ const calculatedAttackedSquares = (color) => {
     // Move horizontally left
     for (let i = queen.col - 1; i >= 0; i--) {
       if (!checkForExistingPiece(queen.row, i)) {
-        attackedSquares.push({ piece: "QUEEN", row: queen.row, col: i });
+        attackedSquares.push({
+          row: queen.row,
+          col: i,
+        });
       } else {
         break;
       }
@@ -418,7 +666,10 @@ const calculatedAttackedSquares = (color) => {
     // Move horizontally right
     for (let i = queen.col + 1; i < 8; i++) {
       if (!checkForExistingPiece(queen.row, i)) {
-        attackedSquares.push({ piece: "QUEEN", row: queen.row, col: i });
+        attackedSquares.push({
+          row: queen.row,
+          col: i,
+        });
       } else {
         break;
       }
@@ -427,7 +678,6 @@ const calculatedAttackedSquares = (color) => {
     for (let i = 1; queen.row - i >= 0 && queen.col - i >= 0; i++) {
       if (!checkForExistingPiece(queen.row - i, queen.col - i)) {
         attackedSquares.push({
-          piece: "QUEEN",
           row: queen.row - i,
           col: queen.col - i,
         });
@@ -439,7 +689,6 @@ const calculatedAttackedSquares = (color) => {
     for (let i = 1; queen.row - i >= 0 && queen.col + i < 8; i++) {
       if (!checkForExistingPiece(queen.row - i, queen.col + i)) {
         attackedSquares.push({
-          piece: "QUEEN",
           row: queen.row - i,
           col: queen.col + i,
         });
@@ -451,7 +700,6 @@ const calculatedAttackedSquares = (color) => {
     for (let i = 1; queen.row + i < 8 && queen.col - i >= 0; i++) {
       if (!checkForExistingPiece(queen.row + i, queen.col - i)) {
         attackedSquares.push({
-          piece: "QUEEN",
           row: queen.row + i,
           col: queen.col - i,
         });
@@ -463,7 +711,6 @@ const calculatedAttackedSquares = (color) => {
     for (let i = 1; queen.row + i < 8 && queen.col + i < 8; i++) {
       if (!checkForExistingPiece(queen.row + i, queen.col + i)) {
         attackedSquares.push({
-          piece: "QUEEN",
           row: queen.row + i,
           col: queen.col + i,
         });
@@ -474,7 +721,7 @@ const calculatedAttackedSquares = (color) => {
   });
 
   // KINGS
-  const ourKing = ourPieces.filter((p) => p.name.includes("King"));
+  const ourKing = ourPieces.filter((p) => p.type === "King");
   const directions = [
     { row: -1, col: 0 }, // Up
     { row: 1, col: 0 }, // Down
@@ -490,12 +737,50 @@ const calculatedAttackedSquares = (color) => {
     const newCol = ourKing.col + direction.col;
     if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
       if (!checkForExistingPiece(newRow, newCol)) {
-        attackedSquares.push({ piece: "KING", row: newRow, col: newCol });
+        attackedSquares.push({
+          row: newRow,
+          col: newCol,
+        });
       }
     }
   });
 
   return attackedSquares;
+};
+
+/**
+ * Calculate the valid moves for a piece
+ *
+ * @param startRow - The starting row
+ * @param startCol - The starting column
+ * @param rowIncrement - The row increment
+ * @param colIncrement - The column increment
+ * @param moves - The array of moves
+ * @param color - The color of the piece
+ */
+const addMovesInDirection = (
+  startRow,
+  startCol,
+  rowIncrement,
+  colIncrement,
+  moves,
+  color
+) => {
+  let row = startRow + rowIncrement;
+  let col = startCol + colIncrement;
+
+  while (row >= 0 && row < 8 && col >= 0 && col < 8) {
+    const piece = checkForExistingPiece(row, col);
+    if (piece) {
+      if (piece.color !== color) {
+        moves.push({ row, col });
+      }
+      break;
+    }
+    moves.push({ row, col });
+    row += rowIncrement;
+    col += colIncrement;
+  }
 };
 
 /**
@@ -506,415 +791,138 @@ const calculatedAttackedSquares = (color) => {
  */
 const calculateValidMoves = (piece) => {
   const moves = [];
-  const { row, col, name } = piece;
+  const { row, col, type, color } = piece;
 
-  // PAWN MOVES
-  if (name.includes("Pawn")) {
-    const direction = name.includes("White") ? -1 : 1;
-    const startRow = name.includes("White") ? 6 : 1;
+  switch (type) {
+    case "Pawn": {
+      const direction = color === "White" ? -1 : 1;
+      const startRow = color === "White" ? 6 : 1;
 
-    // Move forward
-    if (!pieces.value.some((p) => p.row === row + direction && p.col === col)) {
-      moves.push({ row: row + direction, col });
       if (
-        row === startRow &&
-        !pieces.value.some(
-          (p) => p.row === row + 2 * direction && p.col === col
+        !pieces.value.some((p) => p.row === row + direction && p.col === col)
+      ) {
+        moves.push({ row: row + direction, col });
+        if (
+          row === startRow &&
+          !pieces.value.some(
+            (p) => p.row === row + 2 * direction && p.col === col
+          )
+        ) {
+          moves.push({ row: row + 2 * direction, col });
+        }
+      }
+
+      if (
+        pieces.value.some(
+          (p) =>
+            p.row === row + direction && p.col === col - 1 && p.color !== color
         )
       ) {
-        moves.push({ row: row + 2 * direction, col });
+        moves.push({ row: row + direction, col: col - 1 });
       }
-    }
-
-    // Capture diagonally
-    if (
-      pieces.value.some(
-        (p) =>
-          p.row === row + direction &&
-          p.col === col - 1 &&
-          !p.name.includes(name.split(" ")[0])
-      )
-    ) {
-      moves.push({ row: row + direction, col: col - 1 });
-    }
-    if (
-      pieces.value.some(
-        (p) =>
-          p.row === row + direction &&
-          p.col === col + 1 &&
-          !p.name.includes(name.split(" ")[0])
-      )
-    ) {
-      moves.push({ row: row + direction, col: col + 1 });
-    }
-  }
-
-  // ROOK MOVES
-  if (name.includes("Rook")) {
-    // Move vertically up
-    for (let i = row - 1; i >= 0; i--) {
-      if (pieces.value.some((p) => p.row === i && p.col === col)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === i &&
-              p.col === col &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: i, col });
-        }
-        break;
+      if (
+        pieces.value.some(
+          (p) =>
+            p.row === row + direction && p.col === col + 1 && p.color !== color
+        )
+      ) {
+        moves.push({ row: row + direction, col: col + 1 });
       }
-      moves.push({ row: i, col });
+      break;
     }
-    // Move vertically down
-    for (let i = row + 1; i < 8; i++) {
-      if (pieces.value.some((p) => p.row === i && p.col === col)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === i &&
-              p.col === col &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: i, col });
-        }
-        break;
-      }
-      moves.push({ row: i, col });
+    case "Rook": {
+      addMovesInDirection(row, col, -1, 0, moves, color); // Move vertically up
+      addMovesInDirection(row, col, 1, 0, moves, color); // Move vertically down
+      addMovesInDirection(row, col, 0, -1, moves, color); // Move horizontally left
+      addMovesInDirection(row, col, 0, 1, moves, color); // Move horizontally right
+      break;
     }
-    // Move horizontally left
-    for (let i = col - 1; i >= 0; i--) {
-      if (pieces.value.some((p) => p.row === row && p.col === i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row &&
-              p.col === i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row, col: i });
-        }
-        break;
-      }
-      moves.push({ row, col: i });
+    case "Bishop": {
+      addMovesInDirection(row, col, -1, -1, moves, color); // Move diagonally up-left
+      addMovesInDirection(row, col, -1, 1, moves, color); // Move diagonally up-right
+      addMovesInDirection(row, col, 1, -1, moves, color); // Move diagonally down-left
+      addMovesInDirection(row, col, 1, 1, moves, color); // Move diagonally down-right
+      break;
     }
-    // Move horizontally right
-    for (let i = col + 1; i < 8; i++) {
-      if (pieces.value.some((p) => p.row === row && p.col === i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row &&
-              p.col === i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row, col: i });
-        }
-        break;
-      }
-      moves.push({ row, col: i });
+    case "Queen": {
+      addMovesInDirection(row, col, -1, 0, moves, color); // Move vertically up
+      addMovesInDirection(row, col, 1, 0, moves, color); // Move vertically down
+      addMovesInDirection(row, col, 0, -1, moves, color); // Move horizontally left
+      addMovesInDirection(row, col, 0, 1, moves, color); // Move horizontally right
+      addMovesInDirection(row, col, -1, -1, moves, color); // Move diagonally up-left
+      addMovesInDirection(row, col, -1, 1, moves, color); // Move diagonally up-right
+      addMovesInDirection(row, col, 1, -1, moves, color); // Move diagonally down-left
+      addMovesInDirection(row, col, 1, 1, moves, color); // Move diagonally down-right
+      break;
     }
-  }
-
-  // BISHOP MOVES
-  if (name.includes("Bishop")) {
-    // Move diagonally up-left
-    for (let i = 1; row - i >= 0 && col - i >= 0; i++) {
-      if (pieces.value.some((p) => p.row === row - i && p.col === col - i)) {
+    case "Knight": {
+      const knightMoves = [
+        { row: -2, col: -1 },
+        { row: -2, col: 1 },
+        { row: -1, col: -2 },
+        { row: -1, col: 2 },
+        { row: 1, col: -2 },
+        { row: 1, col: 2 },
+        { row: 2, col: -1 },
+        { row: 2, col: 1 },
+      ];
+      knightMoves.forEach(({ row: r, col: c }) => {
+        const newRow = row + r;
+        const newCol = col + c;
         if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row - i &&
-              p.col === col - i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row - i, col: col - i });
-        }
-        break;
-      }
-      moves.push({ row: row - i, col: col - i });
-    }
-    // Move diagonally up-right
-    for (let i = 1; row - i >= 0 && col + i < 8; i++) {
-      if (pieces.value.some((p) => p.row === row - i && p.col === col + i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row - i &&
-              p.col === col + i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row - i, col: col + i });
-        }
-        break;
-      }
-      moves.push({ row: row - i, col: col + i });
-    }
-    // Move diagonally down-left
-    for (let i = 1; row + i < 8 && col - i >= 0; i++) {
-      if (pieces.value.some((p) => p.row === row + i && p.col === col - i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row + i &&
-              p.col === col - i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row + i, col: col - i });
-        }
-        break;
-      }
-      moves.push({ row: row + i, col: col - i });
-    }
-    // Move diagonally down-right
-    for (let i = 1; row + i < 8 && col + i < 8; i++) {
-      if (pieces.value.some((p) => p.row === row + i && p.col === col + i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row + i &&
-              p.col === col + i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row + i, col: col + i });
-        }
-        break;
-      }
-      moves.push({ row: row + i, col: col + i });
-    }
-  }
-
-  // QUEEN MOVES
-  if (name.includes("Queen")) {
-    // Combine Rook and Bishop moves
-
-    // Rook-like moves
-    // Move vertically up
-    for (let i = row - 1; i >= 0; i--) {
-      if (pieces.value.some((p) => p.row === i && p.col === col)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === i &&
-              p.col === col &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: i, col });
-        }
-        break;
-      }
-      moves.push({ row: i, col });
-    }
-    // Move vertically down
-    for (let i = row + 1; i < 8; i++) {
-      if (pieces.value.some((p) => p.row === i && p.col === col)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === i &&
-              p.col === col &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: i, col });
-        }
-        break;
-      }
-      moves.push({ row: i, col });
-    }
-    // Move horizontally left
-    for (let i = col - 1; i >= 0; i--) {
-      if (pieces.value.some((p) => p.row === row && p.col === i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row &&
-              p.col === i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row, col: i });
-        }
-        break;
-      }
-      moves.push({ row, col: i });
-    }
-    // Move horizontally right
-    for (let i = col + 1; i < 8; i++) {
-      if (pieces.value.some((p) => p.row === row && p.col === i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row &&
-              p.col === i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row, col: i });
-        }
-        break;
-      }
-      moves.push({ row, col: i });
-    }
-
-    // Bishop-like moves
-    // Move diagonally up-left
-    for (let i = 1; row - i >= 0 && col - i >= 0; i++) {
-      if (pieces.value.some((p) => p.row === row - i && p.col === col - i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row - i &&
-              p.col === col - i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row - i, col: col - i });
-        }
-        break;
-      }
-      moves.push({ row: row - i, col: col - i });
-    }
-    // Move diagonally up-right
-    for (let i = 1; row - i >= 0 && col + i < 8; i++) {
-      if (pieces.value.some((p) => p.row === row - i && p.col === col + i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row - i &&
-              p.col === col + i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row - i, col: col + i });
-        }
-        break;
-      }
-      moves.push({ row: row - i, col: col + i });
-    }
-    // Move diagonally down-left
-    for (let i = 1; row + i < 8 && col - i >= 0; i++) {
-      if (pieces.value.some((p) => p.row === row + i && p.col === col - i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row + i &&
-              p.col === col - i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row + i, col: col - i });
-        }
-        break;
-      }
-      moves.push({ row: row + i, col: col - i });
-    }
-    // Move diagonally down-right
-    for (let i = 1; row + i < 8 && col + i < 8; i++) {
-      if (pieces.value.some((p) => p.row === row + i && p.col === col + i)) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === row + i &&
-              p.col === col + i &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          moves.push({ row: row + i, col: col + i });
-        }
-        break;
-      }
-      moves.push({ row: row + i, col: col + i });
-    }
-  }
-
-  // KING MOVES
-  if (name.includes("King")) {
-    const directions = [
-      { row: -1, col: 0 }, // Up
-      { row: 1, col: 0 }, // Down
-      { row: 0, col: -1 }, // Left
-      { row: 0, col: 1 }, // Right
-      { row: -1, col: -1 }, // Up-left
-      { row: -1, col: 1 }, // Up-right
-      { row: 1, col: -1 }, // Down-left
-      { row: 1, col: 1 }, // Down-right
-    ];
-
-    directions.forEach((direction) => {
-      const newRow = row + direction.row;
-      const newCol = col + direction.col;
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === newRow &&
-              p.col === newCol &&
-              p.name.includes(name.split(" ")[0])
-          )
-        ) {
-          // only add the move if it is not in the current array of attackedSquares
-          if (
-            !attackedSquares.value.some(
-              (p) => p.row === newRow && p.col === newCol
-            )
-          ) {
-            moves.push({ row: newRow, col: newCol });
-          }
-        }
-      }
-    });
-  }
-
-  // KNIGHT MOVES
-  if (name.includes("Knight")) {
-    const knightMoves = [
-      { row: -2, col: -1 },
-      { row: -2, col: 1 },
-      { row: -1, col: -2 },
-      { row: -1, col: 2 },
-      { row: 1, col: -2 },
-      { row: 1, col: 2 },
-      { row: 2, col: -1 },
-      { row: 2, col: 1 },
-    ];
-
-    knightMoves.forEach((move) => {
-      const newRow = row + move.row;
-      const newCol = col + move.col;
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        if (
-          !pieces.value.some(
-            (p) =>
-              p.row === newRow &&
-              p.col === newCol &&
-              p.name.includes(name.split(" ")[0])
-          )
+          newRow >= 0 &&
+          newRow < 8 &&
+          newCol >= 0 &&
+          newCol < 8 &&
+          !checkForExistingPiece(newRow, newCol)
         ) {
           moves.push({ row: newRow, col: newCol });
         }
-      }
-    });
+      });
+      break;
+    }
+    case "King": {
+      const kingMoves = [
+        { row: -1, col: 0 },
+        { row: 1, col: 0 },
+        { row: 0, col: -1 },
+        { row: 0, col: 1 },
+        { row: -1, col: -1 },
+        { row: -1, col: 1 },
+        { row: 1, col: -1 },
+        { row: 1, col: 1 },
+      ];
+      kingMoves.forEach(({ row: r, col: c }) => {
+        const newRow = row + r;
+        const newCol = col + c;
+        if (
+          newRow >= 0 &&
+          newRow < 8 &&
+          newCol >= 0 &&
+          newCol < 8 &&
+          !checkForExistingPiece(newRow, newCol)
+        ) {
+          moves.push({ row: newRow, col: newCol });
+        }
+      });
+      break;
+    }
   }
 
   return moves;
 };
 
+/**
+ * Set up mouse events on component mount
+ */
 onMounted(() => {
   window.addEventListener("mousemove", handleMouseMove);
   window.addEventListener("mouseup", handleMouseUp);
 });
 
+/**
+ * Remove mouse events on component unmount
+ */
 onBeforeUnmount(() => {
   window.removeEventListener("mousemove", handleMouseMove);
   window.removeEventListener("mouseup", handleMouseUp);
@@ -938,11 +946,11 @@ const squares = computed(() => {
       );
       const inCheck =
         (whiteInCheck.value &&
-          piece?.name.includes("White") &&
-          piece?.name.includes("King")) ||
+          piece?.color === "White" &&
+          piece?.type === "King") ||
         (blackInCheck.value &&
-          piece?.name.includes("Black") &&
-          piece?.name.includes("King"));
+          piece?.color === "Black" &&
+          piece?.type === "King");
       result.push({
         color: isBlack ? "black" : "white",
         row,

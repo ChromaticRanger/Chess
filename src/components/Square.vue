@@ -46,7 +46,8 @@ const squareClasses = computed(() => {
     <Piece
       v-if="piece"
       :id="piece.id"
-      :name="piece.name"
+      :type="piece.type"
+      :color="piece.color"
       :image="piece.image"
     />
     <!-- Green circle for valid moves -->
