@@ -504,7 +504,7 @@ const calculatedAttackedSquares = (color) => {
  * @param {Object} piece - The chess piece for which to calculate valid moves.
  * @returns {Array} An array of valid moves for the given piece.
  */
-const calculateValidMoves = (piece, isCheckChecking = false) => {
+const calculateValidMoves = (piece) => {
   const moves = [];
   const { row, col, name } = piece;
 
