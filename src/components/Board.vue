@@ -869,14 +869,11 @@ const calculateValidMoves = (piece) => {
       knightMoves.forEach(({ row: r, col: c }) => {
         const newRow = row + r;
         const newCol = col + c;
-        if (
-          newRow >= 0 &&
-          newRow < 8 &&
-          newCol >= 0 &&
-          newCol < 8 &&
-          !checkForExistingPiece(newRow, newCol)
-        ) {
-          moves.push({ row: newRow, col: newCol });
+        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+          const piece = checkForExistingPiece(newRow, newCol);
+          if (!piece || piece.color !== color) {
+            moves.push({ row: newRow, col: newCol });
+          }
         }
       });
       break;
