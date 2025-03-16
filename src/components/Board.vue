@@ -888,9 +888,13 @@ const calculateValidMoves = (piece) => {
       const direction = color === "White" ? -1 : 1;
       const startRow = color === "White" ? 6 : 1;
 
-      if (
-        !pieces.value.some((p) => p.row === row + direction && p.col === col)
-      ) {
+      /**
+       * Check if the square directly in front of the piece is empty
+       * If it is, add that square to the list of possible moves
+       * Additionally, if the piece is in its starting row and the square two steps ahead is also empty,
+       * add that square to the list of possible moves
+       */ 
+      if ( !pieces.value.some((p) => p.row === row + direction && p.col === col)) {
         moves.push({ row: row + direction, col });
         if (
           row === startRow &&
@@ -902,6 +906,10 @@ const calculateValidMoves = (piece) => {
         }
       }
 
+      /**
+       * Checks if there is an opponent's piece diagonally to the left of the current piece.
+       * If such a piece exists, adds the move to the list of possible moves.
+       */
       if (
         pieces.value.some(
           (p) =>
@@ -910,14 +918,27 @@ const calculateValidMoves = (piece) => {
       ) {
         moves.push({ row: row + direction, col: col - 1 });
       }
+
+      /**
+       * Checks if there is an opponent's piece diagonally to the right of the current piece.
+       * If such a piece exists, adds the move to the list of possible moves.
+       */
       if (
         pieces.value.some(
           (p) =>
-            p.row === row + direction && p.col === col + 1 && p.color !== color
+        p.row === row + direction && p.col === col + 1 && p.color !== color
         )
       ) {
         moves.push({ row: row + direction, col: col + 1 });
       }
+
+      /**
+       * Check for en-passant moves
+       * If the last move was a double-step pawn move, and the current pawn is in the correct position,
+       * add the en-passant move to the list of possible moves
+       */
+      // const lastMove = movesHistory.value[movesHistory.value.length - 1];
+
       break;
     }
     case "Rook": {
