@@ -372,12 +372,24 @@ const handleMouseUp = async (event) => {
     const newRow = Math.floor((event.clientY - offsetY.value) / 100);
     const newCol = Math.floor((event.clientX - offsetX.value) / 100);
 
+    // Check if the piece is dropped in its original position
+    if (newRow === originalPosition.value.row && newCol === originalPosition.value.col) {
+      console.log('Piece returned to original position:', { 
+        notation: toChessNotation(newRow, newCol) 
+      });
+      
+      // Reset the dragging state without further processing
+      draggingPiece.value = null;
+      validMoves.value = [];
+      return;
+    }
+
     console.log('Drop position:', { 
       row: newRow, 
       col: newCol, 
       notation: toChessNotation(newRow, newCol) 
     });
-    
+
     // Log valid moves with chess notation
     console.log('Valid moves:', validMoves.value.map(move => ({
       ...move,
