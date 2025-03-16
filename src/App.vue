@@ -14,10 +14,20 @@ const handleTurnChange = (newTurn) => {
   console.log("Turn changed to:", newTurn);
 };
 
+// Reference to the move history panel
+const moveHistoryPanel = ref(null);
+
 // Handler for move history updates
 const handleMoveHistoryUpdate = (newHistory) => {
   moveHistory.value = newHistory;
   console.log("Move history updated in App.vue:", moveHistory.value.length, "moves");
+  
+  // Scroll to the bottom after the DOM updates
+  setTimeout(() => {
+    if (moveHistoryPanel.value) {
+      moveHistoryPanel.value.scrollTop = moveHistoryPanel.value.scrollHeight;
+    }
+  }, 50);
 };
 
 // Get piece image path based on piece type and color
@@ -102,7 +112,7 @@ const formattedMoveHistoryByNumber = computed(() => {
     </div>
     
     <!-- Move History Panel -->
-    <div class="w-120 h-96 border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
+    <div ref="moveHistoryPanel" class="w-120 h-96 border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
       <div class="p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
         Move History
       </div>
