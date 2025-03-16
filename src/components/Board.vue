@@ -3,7 +3,8 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 
-const pieces = ref([
+const initialPieces = [
+  // Black pieces
   {
     id: 0,
     type: "Rook",
@@ -132,6 +133,7 @@ const pieces = ref([
     row: 1,
     col: 7,
   },
+  // White pieces
   {
     id: 16,
     type: "Rook",
@@ -260,7 +262,26 @@ const pieces = ref([
     row: 6,
     col: 7,
   },
-]);
+];
+
+// Add a reset function
+const resetBoard = () => {
+  // Reset the pieces to their initial positions
+  pieces.value = JSON.parse(JSON.stringify(initialPieces));
+  
+  // Reset all game state variables
+  selectedSquare.value = { row: null, col: null };
+  originalPosition.value = { row: null, col: null };
+  draggingPiece.value = null;
+  validMoves.value = [];
+  attackedSquares.value = [];
+  whiteInCheck.value = false;
+  blackInCheck.value = false;
+};
+
+// Initialize the pieces with a deep copy of initialPieces
+// Replace your current pieces declaration with this
+const pieces = ref(JSON.parse(JSON.stringify(initialPieces)));
 
 const selectedSquare = ref({ row: null, col: null });
 const originalPosition = ref({ row: null, col: null });
@@ -985,24 +1006,30 @@ const squares = computed(() => {
   }
   return result;
 });
+
+// Expose the resetBoard method to the parent component
+defineExpose({ resetBoard });
 </script>
 
 <template>
-  <div class="chessboard">
-    <Square
-      v-for="(square, index) in squares"
-      :key="index"
-      :color="square.color"
-      :row="square.row"
-      :col="square.col"
-      :topLeftLabel="square.topLeftLabel"
-      :bottomRightLabel="square.bottomRightLabel"
-      :piece="square.piece"
-      :selected="square.selected"
-      :validMove="square.validMove"
-      :inCheck="square.inCheck"
-      @mousedown="square.piece && handleMouseDown(square.piece, $event)"
-    />
+  <div>
+    <div class="chessboard">
+      <Square
+        v-for="(square, index) in squares"
+        :key="index"
+        :color="square.color"
+        :row="square.row"
+        :col="square.col"
+        :topLeftLabel="square.topLeftLabel"
+        :bottomRightLabel="square.bottomRightLabel"
+        :piece="square.piece"
+        :selected="square.selected"
+        :validMove="square.validMove"
+        :inCheck="square.inCheck"
+        @mousedown="square.piece && handleMouseDown(square.piece, $event)"
+      />
+    </div>
+    <!-- Button has been moved to App.vue -->
   </div>
 </template>
 
