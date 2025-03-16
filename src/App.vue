@@ -103,12 +103,12 @@ const formattedMoveHistoryByNumber = computed(() => {
     
     <!-- Move History Panel -->
     <div class="w-120 h-96 border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
-      <div class="p-3 bg-amber-800 text-white font-semibold sticky top-0">
+      <div class="p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
         Move History
       </div>
       <div>
-        <!-- Column Headers -->
-        <div class="grid grid-cols-2 text-sm font-bold border-b border-gray-300 divide-x divide-gray-300">
+        <!-- Column Headers - Sticky -->
+        <div class="grid grid-cols-2 text-sm font-bold border-b border-gray-300 divide-x divide-gray-300 sticky top-12 z-10">
           <div class="p-2 text-center bg-gray-100">White</div>
           <div class="p-2 text-center bg-gray-100">Black</div>
         </div>
