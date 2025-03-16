@@ -1,7 +1,18 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, defineExpose } from "vue";
 import Square from "./Square.vue";
 import throttle from "lodash/throttle";
+
+// Add event emitter
+const emit = defineEmits(['turn-changed']);
+
+// Add a turn tracker
+const currentTurn = ref("White"); // White always moves first in chess
+
+// Watch for changes to currentTurn and emit events when it changes
+watch(currentTurn, (newTurn) => {
+  emit('turn-changed', newTurn);
+});
 
 const initialPieces = [
   // Black pieces
@@ -264,8 +275,7 @@ const initialPieces = [
   },
 ];
 
-// Add a turn tracker
-const currentTurn = ref("White"); // White always moves first in chess
+// Turn tracker is defined at the top of the file
 
 // Add a reset function
 const resetBoard = () => {
@@ -281,6 +291,7 @@ const resetBoard = () => {
   whiteInCheck.value = false;
   blackInCheck.value = false;
   currentTurn.value = "White"; // Reset to White's turn
+  emit('turn-changed', currentTurn.value);
 };
 
 // Initialize the pieces with a deep copy of initialPieces
@@ -994,6 +1005,9 @@ const calculateValidMoves = (piece) => {
 onMounted(() => {
   window.addEventListener("mousemove", handleMouseMove);
   window.addEventListener("mouseup", handleMouseUp);
+
+  // Emit initial turn
+  emit('turn-changed', currentTurn.value);
 
   // Initialize board position
   nextTick(() => {

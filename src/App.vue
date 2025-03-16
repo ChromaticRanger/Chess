@@ -1,21 +1,28 @@
 <script setup>
+import { ref, onMounted } from 'vue';
 import Board from "./components/Board.vue";
 
-// Add reset function here to pass to the Board component
-const resetBoard = () => {
-  // Call the reset method on the Board component
-  document.querySelector('board-component').resetBoard();
+// Track the current turn
+const currentTurn = ref("White");
+
+// Handler for turn changes
+const handleTurnChange = (newTurn) => {
+  currentTurn.value = newTurn;
+  console.log("Turn changed to:", newTurn);
 };
 </script>
 
-<<template>
+<template>
   <div class="flex flex-col items-center justify-center min-h-screen">
     <div class="border-brown border-10 rounded mb-4">
-      <Board ref="boardComponent" />
+      <Board 
+        ref="boardComponent" 
+        @turn-changed="handleTurnChange"
+      />
     </div>
     
     <div class="mb-4 text-lg font-semibold">
-      Current turn: {{ $refs.boardComponent?.currentTurn }}
+      Current turn: {{ currentTurn }}
     </div>
     
     <button 
