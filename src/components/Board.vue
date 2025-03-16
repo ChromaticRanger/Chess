@@ -335,6 +335,18 @@ const handleMouseMove = throttle((e) => {
 }, 16); // Throttle the function to run at most once every 16 milliseconds
 
 /**
+ * Convert row and column indices to chess notation (e.g., 0,0 -> A8)
+ * @param {Number} row - Row index (0-7)
+ * @param {Number} col - Column index (0-7)
+ * @returns {String} Chess notation
+ */
+ const toChessNotation = (row, col) => {
+  const files = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  // Chess notation has row 0 as 8, row 7 as 1
+  return `${files[col]}${8 - row}`;
+};
+
+/**
  * Handle the MouseUp event
  *
  * @param event - The mouse up event
@@ -360,8 +372,17 @@ const handleMouseUp = async (event) => {
     const newRow = Math.floor((event.clientY - offsetY.value) / 100);
     const newCol = Math.floor((event.clientX - offsetX.value) / 100);
 
-    console.log('Drop position:', { newRow, newCol });
-    console.log('Valid moves:', validMoves.value);
+    console.log('Drop position:', { 
+      row: newRow, 
+      col: newCol, 
+      notation: toChessNotation(newRow, newCol) 
+    });
+    
+    // Log valid moves with chess notation
+    console.log('Valid moves:', validMoves.value.map(move => ({
+      ...move,
+      notation: toChessNotation(move.row, move.col)
+    })));
 
     // Check if the new position is a valid move
     const isValidMove = validMoves.value.some(
