@@ -8,10 +8,14 @@ const resetBoard = () => {
 };
 </script>
 
-<template>
+<<template>
   <div class="flex flex-col items-center justify-center min-h-screen">
     <div class="border-brown border-10 rounded mb-4">
       <Board ref="boardComponent" />
+    </div>
+    
+    <div class="mb-4 text-lg font-semibold">
+      Current turn: {{ $refs.boardComponent?.currentTurn }}
     </div>
     
     <button 

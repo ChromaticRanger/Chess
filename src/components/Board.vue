@@ -264,6 +264,9 @@ const initialPieces = [
   },
 ];
 
+// Add a turn tracker
+const currentTurn = ref("White"); // White always moves first in chess
+
 // Add a reset function
 const resetBoard = () => {
   // Reset the pieces to their initial positions
@@ -277,6 +280,7 @@ const resetBoard = () => {
   attackedSquares.value = [];
   whiteInCheck.value = false;
   blackInCheck.value = false;
+  currentTurn.value = "White"; // Reset to White's turn
 };
 
 // Initialize the pieces with a deep copy of initialPieces
@@ -303,6 +307,11 @@ const blackInCheck = ref(false);
  * @returns {void}
  */
 const handleMouseDown = (piece, event) => {
+  // Only allow pieces of the current turn's color to be moved
+  if (piece.color !== currentTurn.value) {
+    console.log(`It's ${currentTurn.value}'s turn to move`);
+    return; // Don't allow the piece to be dragged
+  }
   draggingPiece.value = piece;
   originalPosition.value = { row: piece.row, col: piece.col }; // Store the original position
   const pieceElement = event.target;
@@ -413,6 +422,10 @@ const handleMouseUp = async (event) => {
       }
       // Update the moving piece's position in the pieces array
       movePiece(movingPiece, newRow, newCol);
+
+      // Switch turns after a valid move
+      currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
+      console.log(`It's now ${currentTurn.value}'s turn`);
     } else {
       returnPiece(movingPiece);
     }
@@ -1041,7 +1054,7 @@ const squares = computed(() => {
 });
 
 // Expose the resetBoard method to the parent component
-defineExpose({ resetBoard });
+defineExpose({ resetBoard, currentTurn });
 </script>
 
 <template>
@@ -1062,7 +1075,6 @@ defineExpose({ resetBoard });
         @mousedown="square.piece && handleMouseDown(square.piece, $event)"
       />
     </div>
-    <!-- Button has been moved to App.vue -->
   </div>
 </template>
 
