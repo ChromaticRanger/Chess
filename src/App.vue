@@ -20,19 +20,61 @@ const handleMoveHistoryUpdate = (newHistory) => {
   console.log("Move history updated in App.vue:", moveHistory.value.length, "moves");
 };
 
-// Create a formatted move history for display
-const formattedMoveHistory = computed(() => {
-  return moveHistory.value.map((move, index) => {
+// Get piece image path based on piece type and color
+const getPieceImagePath = (piece, color) => {
+  const pieceTypeMap = {
+    'Pawn': 'P',
+    'Rook': 'R',
+    'Knight': 'Kn',
+    'Bishop': 'B',
+    'Queen': 'Q',
+    'King': 'K'
+  };
+  
+  const pieceCode = pieceTypeMap[piece];
+  const colorCode = color.charAt(0).toUpperCase();
+  
+  return `src/assets/${pieceCode}_${colorCode}.svg`;
+};
+
+// Create a formatted move history grouped by move number
+const formattedMoveHistoryByNumber = computed(() => {
+  const result = {};
+  
+  moveHistory.value.forEach((move, index) => {
     const moveNumber = Math.floor(index / 2) + 1;
     const isWhiteMove = move.color === "White";
-    const captureText = move.capturedPiece ? ` takes ${move.capturedPiece.color} ${move.capturedPiece.type}` : "";
     
-    return {
-      moveNumber,
+    if (!result[moveNumber]) {
+      result[moveNumber] = { white: null, black: null };
+    }
+    
+    const moveData = {
+      piece: move.piece,
       color: move.color,
-      text: `${moveNumber}${isWhiteMove ? "." : "..."} ${move.color} ${move.piece} ${move.from.notation} → ${move.to.notation}${captureText}`
+      from: move.from.notation,
+      to: move.to.notation,
+      pieceImage: getPieceImagePath(move.piece, move.color),
+      capturedPiece: null
     };
+    
+    // Add captured piece data if applicable
+    if (move.capturedPiece) {
+      moveData.capturedPiece = {
+        piece: move.capturedPiece.type,
+        color: move.capturedPiece.color,
+        image: getPieceImagePath(move.capturedPiece.type, move.capturedPiece.color)
+      };
+    }
+    
+    if (isWhiteMove) {
+      result[moveNumber].white = moveData;
+    } else {
+      result[moveNumber].black = moveData;
+    }
   });
+  
+  return result;
 });
 </script>
 
@@ -60,21 +102,80 @@ const formattedMoveHistory = computed(() => {
     </div>
     
     <!-- Move History Panel -->
-    <div class="w-64 h-96 border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
+    <div class="w-120 h-96 border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
       <div class="p-3 bg-amber-800 text-white font-semibold sticky top-0">
         Move History
       </div>
-      <div class="p-2">
-        <div v-if="formattedMoveHistory.length === 0" class="text-gray-500 text-center py-4">
+      <div>
+        <!-- Column Headers -->
+        <div class="grid grid-cols-2 text-sm font-bold border-b border-gray-300 divide-x divide-gray-300">
+          <div class="p-2 text-center bg-gray-100">White</div>
+          <div class="p-2 text-center bg-gray-100">Black</div>
+        </div>
+
+        <div v-if="Object.keys(formattedMoveHistoryByNumber).length === 0" class="text-gray-500 text-center py-4">
           No moves yet
         </div>
-        <div 
-          v-for="(move, index) in formattedMoveHistory" 
-          :key="index"
-          class="p-2 border-b border-gray-200 last:border-b-0 text-sm"
-          :class="{'bg-gray-100': index % 2 === 0}"
-        >
-          <span :class="{'font-semibold': move.color === 'White'}">{{ move.text }}</span>
+        <div class="divide-y divide-gray-200">
+          <div 
+            v-for="(moves, moveNumber) in formattedMoveHistoryByNumber" 
+            :key="moveNumber"
+            class="grid grid-cols-2 text-sm divide-x divide-gray-300"
+            :class="{'bg-gray-50': parseInt(moveNumber) % 2 === 1}"
+          >
+            <!-- White's move (left column) -->
+            <div v-if="moves.white" class="p-3 flex items-center">
+              <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
+              <img 
+                :src="moves.white.pieceImage" 
+                :alt="`${moves.white.color} ${moves.white.piece}`" 
+                class="w-5 h-5 mr-1" 
+              />
+              
+              <!-- Regular move -->
+              <template v-if="!moves.white.capturedPiece">
+                <span class="font-semibold">{{ moves.white.from }} → {{ moves.white.to }}</span>
+              </template>
+              
+              <!-- Capture move -->
+              <template v-else>
+                <span class="font-semibold">{{ moves.white.from }} × </span>
+                <img 
+                  :src="moves.white.capturedPiece.image" 
+                  :alt="`${moves.white.capturedPiece.color} ${moves.white.capturedPiece.piece}`" 
+                  class="w-5 h-5 mx-1" 
+                />
+                <span class="font-semibold">{{ moves.white.to }}</span>
+              </template>
+            </div>
+            <div v-else class="p-3"></div>
+            
+            <!-- Black's move (right column) -->
+            <div v-if="moves.black" class="p-3 flex items-center">
+              <img 
+                :src="moves.black.pieceImage" 
+                :alt="`${moves.black.color} ${moves.black.piece}`" 
+                class="w-5 h-5 mr-1" 
+              />
+              
+              <!-- Regular move -->
+              <template v-if="!moves.black.capturedPiece">
+                <span>{{ moves.black.from }} → {{ moves.black.to }}</span>
+              </template>
+              
+              <!-- Capture move -->
+              <template v-else>
+                <span>{{ moves.black.from }} × </span>
+                <img 
+                  :src="moves.black.capturedPiece.image" 
+                  :alt="`${moves.black.capturedPiece.color} ${moves.black.capturedPiece.piece}`" 
+                  class="w-5 h-5 mx-1" 
+                />
+                <span>{{ moves.black.to }}</span>
+              </template>
+            </div>
+            <div v-else class="p-3"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -87,5 +188,8 @@ const formattedMoveHistory = computed(() => {
 }
 .border-10 {
   border-width: 10px;
+}
+.w-120 {
+  width: 30rem; /* 480px */
 }
 </style>
