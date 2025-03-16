@@ -4,15 +4,25 @@ import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 
 // Add event emitter
-const emit = defineEmits(['turn-changed']);
+const emit = defineEmits(['turn-changed', 'move-history-updated']);
 
 // Add a turn tracker
 const currentTurn = ref("White"); // White always moves first in chess
+
+// Add move history to track all moves made in the game
+// Each entry contains: piece moved, color, origin, destination, captured piece (if any)
+const moveHistory = ref([]);
 
 // Watch for changes to currentTurn and emit events when it changes
 watch(currentTurn, (newTurn) => {
   emit('turn-changed', newTurn);
 });
+
+// Watch for changes to moveHistory and emit events when moves are added
+watch(moveHistory, (newHistory) => {
+  console.log("Move history updated:", newHistory.length, "moves recorded");
+  emit('move-history-updated', newHistory);
+}, { deep: true });
 
 const initialPieces = [
   // Black pieces
@@ -291,6 +301,7 @@ const resetBoard = () => {
   whiteInCheck.value = false;
   blackInCheck.value = false;
   currentTurn.value = "White"; // Reset to White's turn
+  moveHistory.value = []; // Clear move history
   emit('turn-changed', currentTurn.value);
 };
 
@@ -428,11 +439,15 @@ const handleMouseUp = async (event) => {
 
       // Check to see if there is a piece already on the new square
       const existingPiece = checkForExistingPiece(newRow, newCol);
+      let capturedPiece = null;
+      
       if (existingPiece) {
+        capturedPiece = {...existingPiece}; // Save a copy before taking it
         takePiece(existingPiece);
       }
-      // Update the moving piece's position in the pieces array
-      movePiece(movingPiece, newRow, newCol);
+      
+      // Update the moving piece's position in the pieces array and record the move
+      movePiece(movingPiece, newRow, newCol, capturedPiece);
 
       // Switch turns after a valid move
       currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
@@ -521,11 +536,40 @@ const takePiece = (piece) => {
  * @param row - The row to move the piece to
  * @param col - The column to move the piece to
  */
-const movePiece = (piece, row, col) => {
+const movePiece = (piece, row, col, capturedPiece = null) => {
   const index = pieces.value.findIndex((p) => p.id === piece.id);
   if (index !== -1) {
+    // Store original position before updating
+    const fromRow = piece.row;
+    const fromCol = piece.col;
+    
+    // Update piece position
     pieces.value[index].row = row;
     pieces.value[index].col = col;
+    
+    // Add move to history
+    moveHistory.value.push({
+      piece: piece.type,
+      color: piece.color,
+      from: {
+        row: fromRow,
+        col: fromCol,
+        notation: toChessNotation(fromRow, fromCol)
+      },
+      to: {
+        row: row,
+        col: col,
+        notation: toChessNotation(row, col)
+      },
+      capturedPiece: capturedPiece ? {
+        type: capturedPiece.type,
+        color: capturedPiece.color,
+        position: toChessNotation(capturedPiece.row, capturedPiece.col)
+      } : null,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log("Move recorded:", moveHistory.value[moveHistory.value.length - 1]);
   }
 };
 
@@ -1088,8 +1132,8 @@ const squares = computed(() => {
   return result;
 });
 
-// Expose the resetBoard method to the parent component
-defineExpose({ resetBoard, currentTurn });
+// Expose the resetBoard method, currentTurn, and moveHistory to the parent component
+defineExpose({ resetBoard, currentTurn, moveHistory });
 </script>
 
 <template>
