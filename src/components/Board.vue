@@ -329,13 +329,25 @@ const handleMouseUp = async (event) => {
       `piece-${draggingPiece.value.id}`
     );
     pieceElement.style.zIndex = ""; // Reset the z-index after dragging
+
+    // Get board element's position for offset calculation
+    const boardElement = document.querySelector('.chessboard');
+    const boardRect = boardElement.getBoundingClientRect();
+    offsetX.value = boardRect.left;
+    offsetY.value = boardRect.top;
+
     const newRow = Math.floor((event.clientY - offsetY.value) / 100);
     const newCol = Math.floor((event.clientX - offsetX.value) / 100);
+
+    console.log('Drop position:', { newRow, newCol });
+    console.log('Valid moves:', validMoves.value);
 
     // Check if the new position is a valid move
     const isValidMove = validMoves.value.some(
       (move) => move.row === newRow && move.col === newCol
     );
+
+    console.log('Is valid move:', isValidMove);
 
     if (isValidMove) {
       // TODO: If the existing piece is the King we do not actually take it.
@@ -915,6 +927,16 @@ const calculateValidMoves = (piece) => {
 onMounted(() => {
   window.addEventListener("mousemove", handleMouseMove);
   window.addEventListener("mouseup", handleMouseUp);
+
+  // Initialize board position
+  nextTick(() => {
+    const boardElement = document.querySelector('.chessboard');
+    if (boardElement) {
+      const boardRect = boardElement.getBoundingClientRect();
+      offsetX.value = boardRect.left;
+      offsetY.value = boardRect.top;
+    }
+  });
 });
 
 /**
