@@ -446,12 +446,38 @@ const handleMouseUp = async (event) => {
         takePiece(existingPiece);
       }
       
+      // Check if the move will put the opponents King in check (do this BEFORE switching turns)
+      // Store the original piece position temporarily
+      const origRow = movingPiece.row;
+      const origCol = movingPiece.col;
+      
+      // Temporarily update position to check if it creates check
+      const index = pieces.value.findIndex((p) => p.id === movingPiece.id);
+      if (index !== -1) {
+        pieces.value[index].row = newRow;
+        pieces.value[index].col = newCol;
+      }
+      
+      // Check if this move creates check
+      const createsCheck = checkForCheck(movingPiece);
+      
+      // Reset position back until we properly move it
+      if (index !== -1) {
+        pieces.value[index].row = origRow;
+        pieces.value[index].col = origCol;
+      }
+      
       // Update the moving piece's position in the pieces array and record the move
-      movePiece(movingPiece, newRow, newCol, capturedPiece);
+      movePiece(movingPiece, newRow, newCol, capturedPiece, createsCheck);
 
       // Switch turns after a valid move
       currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
       console.log(`It's now ${currentTurn.value}'s turn`);
+      
+      // Build a list of attacked squares if check is created
+      if (createsCheck) {
+        attackedSquares.value = calculatedAttackedSquares(movingPiece.color);
+      }
     } else {
       returnPiece(movingPiece);
     }
@@ -460,15 +486,6 @@ const handleMouseUp = async (event) => {
     // Unselect any square that was selected after the drag
     // selectedSquare.value = { row: null, col: null };
     validMoves.value = [];
-
-    // Check if the move has put the opponents King in check
-    const createsCheck = checkForCheck(movingPiece);
-
-    // Build a list of attacked squares so we can check king
-    // when he tries to get out of check
-    if (createsCheck) {
-      attackedSquares.value = calculatedAttackedSquares(movingPiece.color);
-    }
   }
 };
 
@@ -536,7 +553,7 @@ const takePiece = (piece) => {
  * @param row - The row to move the piece to
  * @param col - The column to move the piece to
  */
-const movePiece = (piece, row, col, capturedPiece = null) => {
+const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false) => {
   const index = pieces.value.findIndex((p) => p.id === piece.id);
   if (index !== -1) {
     // Store original position before updating
@@ -566,6 +583,7 @@ const movePiece = (piece, row, col, capturedPiece = null) => {
         color: capturedPiece.color,
         position: toChessNotation(capturedPiece.row, capturedPiece.col)
       } : null,
+      createsCheck: createsCheck, // Add check status
       timestamp: new Date().toISOString()
     });
     

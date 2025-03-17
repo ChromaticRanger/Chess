@@ -65,6 +65,7 @@ const formattedMoveHistoryByNumber = computed(() => {
       from: move.from.notation,
       to: move.to.notation,
       pieceImage: getPieceImagePath(move.piece, move.color),
+      createsCheck: move.createsCheck, // Add check status
       capturedPiece: null
     };
     
@@ -152,7 +153,7 @@ const formattedMoveHistoryByNumber = computed(() => {
                 
                 <!-- Regular move -->
                 <template v-if="!moves.white.capturedPiece">
-                  <span class="font-semibold">{{ moves.white.from }} → {{ moves.white.to }}</span>
+                  <span class="font-semibold">{{ moves.white.from }} → {{ moves.white.to }}{{ moves.white.createsCheck ? '+' : '' }}</span>
                 </template>
                 
                 <!-- Capture move -->
@@ -163,7 +164,7 @@ const formattedMoveHistoryByNumber = computed(() => {
                     :alt="`${moves.white.capturedPiece.color} ${moves.white.capturedPiece.piece}`" 
                     class="w-5 h-5 mx-1" 
                   />
-                  <span class="font-semibold">{{ moves.white.to }}</span>
+                  <span class="font-semibold">{{ moves.white.to }}{{ moves.white.createsCheck ? '+' : '' }}</span>
                 </template>
               </div>
               <div v-else class="p-3"></div>
@@ -178,7 +179,7 @@ const formattedMoveHistoryByNumber = computed(() => {
                 
                 <!-- Regular move -->
                 <template v-if="!moves.black.capturedPiece">
-                  <span>{{ moves.black.from }} → {{ moves.black.to }}</span>
+                  <span>{{ moves.black.from }} → {{ moves.black.to }}{{ moves.black.createsCheck ? '+' : '' }}</span>
                 </template>
                 
                 <!-- Capture move -->
@@ -189,7 +190,7 @@ const formattedMoveHistoryByNumber = computed(() => {
                     :alt="`${moves.black.capturedPiece.color} ${moves.black.capturedPiece.piece}`" 
                     class="w-5 h-5 mx-1" 
                   />
-                  <span>{{ moves.black.to }}</span>
+                  <span>{{ moves.black.to }}{{ moves.black.createsCheck ? '+' : '' }}</span>
                 </template>
               </div>
               <div v-else class="p-3"></div>
