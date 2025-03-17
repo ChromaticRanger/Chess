@@ -118,7 +118,7 @@ const formattedMoveHistoryByNumber = computed(() => {
         </div>
         
         <!-- Move History Panel -->
-        <div ref="moveHistoryPanel" class="w-120 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
+        <div ref="moveHistoryPanel" class="w-72 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
           <div class="p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
             Move History
           </div>
