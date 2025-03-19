@@ -936,12 +936,86 @@ const addMovesInDirection = (
 };
 
 /**
- * Calculates the valid moves for a given chess piece.
- *
- * @param {Object} piece - The chess piece for which to calculate valid moves.
- * @returns {Array} An array of valid moves for the given piece.
+ * Checks if a move would leave the player in check
+ * 
+ * @param {Object} piece - The piece being moved
+ * @param {Object} destination - The destination square {row, col}
+ * @returns {Boolean} - True if the move is safe, false if it would leave the king in check
  */
-const calculateValidMoves = (piece) => {
+const moveWouldLeaveInCheck = (piece, destination) => {
+  // Store original position
+  const origRow = piece.row;
+  const origCol = piece.col;
+  
+  // Remember any piece at the destination to restore it later
+  const capturedPiece = checkForExistingPiece(destination.row, destination.col);
+  let capturedPieceIndex = -1;
+  
+  if (capturedPiece) {
+    capturedPieceIndex = pieces.value.findIndex(p => p.id === capturedPiece.id);
+    // Temporarily remove the captured piece
+    if (capturedPieceIndex !== -1) {
+      pieces.value.splice(capturedPieceIndex, 1);
+    }
+  }
+  
+  // Temporarily move the piece
+  const pieceIndex = pieces.value.findIndex(p => p.id === piece.id);
+  if (pieceIndex !== -1) {
+    pieces.value[pieceIndex].row = destination.row;
+    pieces.value[pieceIndex].col = destination.col;
+  }
+  
+  // Check if our king is in check after this move
+  const kingInCheck = isKingInCheck(piece.color);
+  
+  // Restore the original board state
+  if (pieceIndex !== -1) {
+    pieces.value[pieceIndex].row = origRow;
+    pieces.value[pieceIndex].col = origCol;
+  }
+  
+  // Restore captured piece if there was one
+  if (capturedPiece && capturedPieceIndex !== -1) {
+    pieces.value.splice(capturedPieceIndex, 0, capturedPiece);
+  }
+  
+  return kingInCheck;
+};
+
+/**
+ * Check if the king of a specific color is in check
+ * 
+ * @param {String} kingColor - The color of the king to check
+ * @returns {Boolean} - True if the king is in check, false otherwise
+ */
+const isKingInCheck = (kingColor) => {
+  // Find our king
+  const king = pieces.value.find(p => p.type === "King" && p.color === kingColor);
+  if (!king) return false;
+  
+  // Get opponent's color
+  const opponentColor = kingColor === "White" ? "Black" : "White";
+  
+  // Get all opponent pieces
+  const opponentPieces = pieces.value.filter(p => p.color === opponentColor);
+  
+  // Check if any opponent piece can attack our king
+  for (const piece of opponentPieces) {
+    const attackMoves = calculateRawMoves(piece);
+    if (attackMoves.some(move => move.row === king.row && move.col === king.col)) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+/**
+ * Calculate raw moves without check validation
+ * This is used internally by isKingInCheck to avoid infinite recursion
+ */
+const calculateRawMoves = (piece) => {
   const moves = [];
   const { row, col, type, color } = piece;
 
@@ -950,13 +1024,8 @@ const calculateValidMoves = (piece) => {
       const direction = color === "White" ? -1 : 1;
       const startRow = color === "White" ? 6 : 1;
 
-      /**
-       * Check if the square directly in front of the piece is empty
-       * If it is, add that square to the list of possible moves
-       * Additionally, if the piece is in its starting row and the square two steps ahead is also empty,
-       * add that square to the list of possible moves
-       */ 
-      if ( !pieces.value.some((p) => p.row === row + direction && p.col === col)) {
+      // Forward moves
+      if (!pieces.value.some((p) => p.row === row + direction && p.col === col)) {
         moves.push({ row: row + direction, col });
         if (
           row === startRow &&
@@ -968,10 +1037,7 @@ const calculateValidMoves = (piece) => {
         }
       }
 
-      /**
-       * Checks if there is an opponent's piece diagonally to the left of the current piece.
-       * If such a piece exists, adds the move to the list of possible moves.
-       */
+      // Diagonal captures
       if (
         pieces.value.some(
           (p) =>
@@ -980,11 +1046,6 @@ const calculateValidMoves = (piece) => {
       ) {
         moves.push({ row: row + direction, col: col - 1 });
       }
-
-      /**
-       * Checks if there is an opponent's piece diagonally to the right of the current piece.
-       * If such a piece exists, adds the move to the list of possible moves.
-       */
       if (
         pieces.value.some(
           (p) =>
@@ -993,39 +1054,31 @@ const calculateValidMoves = (piece) => {
       ) {
         moves.push({ row: row + direction, col: col + 1 });
       }
-
-      /**
-       * Check for en-passant moves
-       * If the last move was a double-step pawn move, and the current pawn is in the correct position,
-       * add the en-passant move to the list of possible moves
-       */
-      // const lastMove = movesHistory.value[movesHistory.value.length - 1];
-
       break;
     }
     case "Rook": {
-      addMovesInDirection(row, col, -1, 0, moves, color); // Move vertically up
-      addMovesInDirection(row, col, 1, 0, moves, color); // Move vertically down
-      addMovesInDirection(row, col, 0, -1, moves, color); // Move horizontally left
-      addMovesInDirection(row, col, 0, 1, moves, color); // Move horizontally right
+      addMovesInDirection(row, col, -1, 0, moves, color);
+      addMovesInDirection(row, col, 1, 0, moves, color);
+      addMovesInDirection(row, col, 0, -1, moves, color);
+      addMovesInDirection(row, col, 0, 1, moves, color);
       break;
     }
     case "Bishop": {
-      addMovesInDirection(row, col, -1, -1, moves, color); // Move diagonally up-left
-      addMovesInDirection(row, col, -1, 1, moves, color); // Move diagonally up-right
-      addMovesInDirection(row, col, 1, -1, moves, color); // Move diagonally down-left
-      addMovesInDirection(row, col, 1, 1, moves, color); // Move diagonally down-right
+      addMovesInDirection(row, col, -1, -1, moves, color);
+      addMovesInDirection(row, col, -1, 1, moves, color);
+      addMovesInDirection(row, col, 1, -1, moves, color);
+      addMovesInDirection(row, col, 1, 1, moves, color);
       break;
     }
     case "Queen": {
-      addMovesInDirection(row, col, -1, 0, moves, color); // Move vertically up
-      addMovesInDirection(row, col, 1, 0, moves, color); // Move vertically down
-      addMovesInDirection(row, col, 0, -1, moves, color); // Move horizontally left
-      addMovesInDirection(row, col, 0, 1, moves, color); // Move horizontally right
-      addMovesInDirection(row, col, -1, -1, moves, color); // Move diagonally up-left
-      addMovesInDirection(row, col, -1, 1, moves, color); // Move diagonally up-right
-      addMovesInDirection(row, col, 1, -1, moves, color); // Move diagonally down-left
-      addMovesInDirection(row, col, 1, 1, moves, color); // Move diagonally down-right
+      addMovesInDirection(row, col, -1, 0, moves, color);
+      addMovesInDirection(row, col, 1, 0, moves, color);
+      addMovesInDirection(row, col, 0, -1, moves, color);
+      addMovesInDirection(row, col, 0, 1, moves, color);
+      addMovesInDirection(row, col, -1, -1, moves, color);
+      addMovesInDirection(row, col, -1, 1, moves, color);
+      addMovesInDirection(row, col, 1, -1, moves, color);
+      addMovesInDirection(row, col, 1, 1, moves, color);
       break;
     }
     case "Knight": {
@@ -1069,10 +1122,12 @@ const calculateValidMoves = (piece) => {
           newRow >= 0 &&
           newRow < 8 &&
           newCol >= 0 &&
-          newCol < 8 &&
-          !checkForExistingPiece(newRow, newCol)
+          newCol < 8 
         ) {
-          moves.push({ row: newRow, col: newCol });
+          const existingPiece = checkForExistingPiece(newRow, newCol);
+          if (!existingPiece || existingPiece.color !== color) {
+            moves.push({ row: newRow, col: newCol });
+          }
         }
       });
       break;
@@ -1080,6 +1135,27 @@ const calculateValidMoves = (piece) => {
   }
 
   return moves;
+};
+
+/**
+ * Calculates the valid moves for a given chess piece.
+ *
+ * @param {Object} piece - The chess piece for which to calculate valid moves.
+ * @param {Boolean} ignoreCheck - If true, don't filter out moves that would leave the king in check
+ * @returns {Array} An array of valid moves for the given piece.
+ */
+const calculateValidMoves = (piece, ignoreCheck = false) => {
+  // Get all possible moves without check validation
+  const allMoves = calculateRawMoves(piece);
+  
+  // If we're ignoring check (e.g., when determining if a king is in check),
+  // return all possible moves
+  if (ignoreCheck) {
+    return allMoves;
+  }
+  
+  // Filter out moves that would leave the king in check
+  return allMoves.filter(move => !moveWouldLeaveInCheck(piece, move));
 };
 
 /**
