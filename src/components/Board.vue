@@ -409,6 +409,9 @@ const handleMouseUp = async (event) => {
         notation: toChessNotation(newRow, newCol) 
       });
       
+      // Return the piece to the center of its square
+      returnPiece(movingPiece);
+      
       // Reset the dragging state without further processing
       draggingPiece.value = null;
       validMoves.value = [];
