@@ -4,7 +4,7 @@ import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 
 // Add event emitter
-const emit = defineEmits(['turn-changed', 'move-history-updated']);
+const emit = defineEmits(['turn-changed', 'move-history-updated', 'checkmate']);
 
 // Add a turn tracker
 const currentTurn = ref("White"); // White always moves first in chess
@@ -473,6 +473,13 @@ const handleMouseUp = async (event) => {
       // Switch turns after a valid move
       currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
       console.log(`It's now ${currentTurn.value}'s turn`);
+      
+      // Check for checkmate
+      if (isCheckmate(currentTurn.value)) {
+        const winner = currentTurn.value === "White" ? "Black" : "White";
+        console.log(`Checkmate! ${winner} has won the game`);
+        emit('checkmate', winner);
+      }
       
       // Build a list of attacked squares if check is created
       if (createsCheck) {
@@ -1009,6 +1016,33 @@ const isKingInCheck = (kingColor) => {
   }
   
   return false;
+};
+
+/**
+ * Check if the player of a specific color is in checkmate
+ * 
+ * @param {String} playerColor - The color of the player to check
+ * @returns {Boolean} - True if the player is in checkmate, false otherwise
+ */
+const isCheckmate = (playerColor) => {
+  // First check if the king is in check
+  if (!isKingInCheck(playerColor)) {
+    return false;
+  }
+  
+  // Get all of the player's pieces
+  const playerPieces = pieces.value.filter(p => p.color === playerColor);
+  
+  // Check if any piece has a valid move that would get out of check
+  for (const piece of playerPieces) {
+    const validMoves = calculateValidMoves(piece);
+    if (validMoves.length > 0) {
+      return false; // If any piece has a valid move, it's not checkmate
+    }
+  }
+  
+  // If no piece has a valid move and the king is in check, it's checkmate
+  return true;
 };
 
 /**

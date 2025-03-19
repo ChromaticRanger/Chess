@@ -1,9 +1,29 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import Board from "./components/Board.vue";
+import Modal from "./components/Modal.vue";
 
 // Track the current turn
 const currentTurn = ref("White");
+
+// Modal state
+const modalVisible = ref(false);
+const modalTitle = ref('Notification');
+const modalMessage = ref('');
+const modalIcon = ref('');
+
+// Function to show the modal
+const showModal = (title, message, icon = '') => {
+  modalTitle.value = title;
+  modalMessage.value = message;
+  modalIcon.value = icon;
+  modalVisible.value = true;
+};
+
+// Function to hide the modal
+const hideModal = () => {
+  modalVisible.value = false;
+};
 
 // Track the move history
 const moveHistory = ref([]);
@@ -15,6 +35,12 @@ const moveHistoryPanel = ref(null);
 const handleTurnChange = (newTurn) => {
   currentTurn.value = newTurn;
   console.log("Turn changed to:", newTurn);
+};
+
+// Handler for checkmate
+const handleCheckmate = (winner) => {
+  const winnerKingImage = winner === "White" ? "src/assets/K_W.svg" : "src/assets/K_B.svg";
+  showModal("Checkmate", `${winner} has won the game.`, winnerKingImage);
 };
 
 // Handler for move history updates
@@ -100,6 +126,7 @@ const formattedMoveHistoryByNumber = computed(() => {
               ref="boardComponent" 
               @turn-changed="handleTurnChange"
               @move-history-updated="handleMoveHistoryUpdate"
+              @checkmate="handleCheckmate"
             />
           </div>
           
@@ -199,6 +226,14 @@ const formattedMoveHistoryByNumber = computed(() => {
         </div>
       </div>
     </div>
+    <!-- Modal Component -->
+    <Modal 
+      :visible="modalVisible" 
+      :title="modalTitle" 
+      :message="modalMessage" 
+      :icon="modalIcon"
+      @close="hideModal"
+    />
   </div>
 </template>
 
