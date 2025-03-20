@@ -92,6 +92,8 @@ const formattedMoveHistoryByNumber = computed(() => {
       to: move.to.notation,
       pieceImage: getPieceImagePath(move.piece, move.color),
       createsCheck: move.createsCheck, // Add check status
+      isCastling: move.isCastling || false,
+      castlingSide: move.castlingSide || null,
       capturedPiece: null
     };
     
@@ -178,8 +180,13 @@ const formattedMoveHistoryByNumber = computed(() => {
                   class="w-5 h-5 mr-1" 
                 />
                 
-                <!-- Regular move -->
-                <template v-if="!moves.white.capturedPiece">
+                <!-- Castling move -->
+                <template v-if="moves.white.isCastling">
+                  <span class="font-semibold">{{ moves.white.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}{{ moves.white.createsCheck ? '+' : '' }}</span>
+                </template>
+                
+                <!-- Regular move (non-capture) -->
+                <template v-else-if="!moves.white.capturedPiece">
                   <span class="font-semibold">{{ moves.white.from }} → {{ moves.white.to }}{{ moves.white.createsCheck ? '+' : '' }}</span>
                 </template>
                 
@@ -204,8 +211,13 @@ const formattedMoveHistoryByNumber = computed(() => {
                   class="w-5 h-5 mr-1" 
                 />
                 
-                <!-- Regular move -->
-                <template v-if="!moves.black.capturedPiece">
+                <!-- Castling move -->
+                <template v-if="moves.black.isCastling">
+                  <span>{{ moves.black.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}{{ moves.black.createsCheck ? '+' : '' }}</span>
+                </template>
+                
+                <!-- Regular move (non-capture) -->
+                <template v-else-if="!moves.black.capturedPiece">
                   <span>{{ moves.black.from }} → {{ moves.black.to }}{{ moves.black.createsCheck ? '+' : '' }}</span>
                 </template>
                 
