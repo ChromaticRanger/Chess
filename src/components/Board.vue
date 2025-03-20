@@ -302,6 +302,17 @@ const resetBoard = () => {
   blackInCheck.value = false;
   currentTurn.value = "White"; // Reset to White's turn
   moveHistory.value = []; // Clear move history
+  
+  // Reset moved piece tracking for castling
+  movedPieces.value = {
+    whiteKing: false,
+    whiteRookA: false,
+    whiteRookH: false,
+    blackKing: false,
+    blackRookA: false,
+    blackRookH: false
+  };
+  
   emit('turn-changed', currentTurn.value);
 };
 
@@ -320,6 +331,16 @@ const validMoves = ref([]);
 const attackedSquares = ref([]);
 const whiteInCheck = ref(false);
 const blackInCheck = ref(false);
+
+// Track which kings and rooks have moved (to determine if castling is allowed)
+const movedPieces = ref({
+  whiteKing: false,
+  whiteRookA: false, // Queen-side rook (a1)
+  whiteRookH: false, // King-side rook (h1)
+  blackKing: false,
+  blackRookA: false, // Queen-side rook (a8)
+  blackRookH: false, // King-side rook (h8)
+});
 
 /**
  * Handle the MouseDown event
@@ -449,6 +470,13 @@ const handleMouseUp = async (event) => {
         takePiece(existingPiece);
       }
       
+      // Check if this is a castling move
+      const validMove = validMoves.value.find(
+        (move) => move.row === newRow && move.col === newCol
+      );
+      const isCastling = validMove && validMove.specialMove === 'castling';
+      let castlingSide = isCastling ? validMove.castlingSide : null;
+      
       // Check if the move will put the opponents King in check (do this BEFORE switching turns)
       // Store the original piece position temporarily
       const origRow = movingPiece.row;
@@ -471,7 +499,39 @@ const handleMouseUp = async (event) => {
       }
       
       // Update the moving piece's position in the pieces array and record the move
-      movePiece(movingPiece, newRow, newCol, capturedPiece, createsCheck);
+      movePiece(movingPiece, newRow, newCol, capturedPiece, createsCheck, isCastling, castlingSide);
+      
+      // If this was a castling move, also move the rook
+      if (isCastling) {
+        // Determine rook's position and destination based on castling type
+        const rookRow = movingPiece.color === "White" ? 7 : 0;
+        let rookCol, rookDestCol;
+        
+        if (castlingSide === 'kingside') {
+          rookCol = 7; // h-file
+          rookDestCol = 5; // f-file
+        } else {
+          rookCol = 0; // a-file
+          rookDestCol = 3; // d-file
+        }
+        
+        // Find the rook
+        const rook = pieces.value.find(p => 
+          p.type === "Rook" && 
+          p.color === movingPiece.color && 
+          p.row === rookRow && 
+          p.col === rookCol
+        );
+        
+        if (rook) {
+          // Move the rook (don't record this as a separate move in history)
+          const rookIndex = pieces.value.findIndex(p => p.id === rook.id);
+          if (rookIndex !== -1) {
+            pieces.value[rookIndex].row = rookRow;
+            pieces.value[rookIndex].col = rookDestCol;
+          }
+        }
+      }
 
       // Switch turns after a valid move
       currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
@@ -562,8 +622,12 @@ const takePiece = (piece) => {
  * @param piece - The piece to move
  * @param row - The row to move the piece to
  * @param col - The column to move the piece to
+ * @param capturedPiece - Any piece that was captured during the move
+ * @param createsCheck - Whether the move creates check
+ * @param isCastling - Whether this is a castling move
+ * @param castlingSide - Which side the castling is happening on ('kingside' or 'queenside')
  */
-const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false) => {
+const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false, isCastling = false, castlingSide = null) => {
   const index = pieces.value.findIndex((p) => p.id === piece.id);
   if (index !== -1) {
     // Store original position before updating
@@ -573,6 +637,29 @@ const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false) 
     // Update piece position
     pieces.value[index].row = row;
     pieces.value[index].col = col;
+    
+    // Track if this piece is a king or rook for castling purposes
+    if (piece.type === "King") {
+      if (piece.color === "White") {
+        movedPieces.value.whiteKing = true;
+      } else {
+        movedPieces.value.blackKing = true;
+      }
+    } else if (piece.type === "Rook") {
+      if (piece.color === "White") {
+        if (fromCol === 0) { // a1 rook
+          movedPieces.value.whiteRookA = true;
+        } else if (fromCol === 7) { // h1 rook
+          movedPieces.value.whiteRookH = true;
+        }
+      } else { // Black rook
+        if (fromCol === 0) { // a8 rook
+          movedPieces.value.blackRookA = true;
+        } else if (fromCol === 7) { // h8 rook
+          movedPieces.value.blackRookH = true;
+        }
+      }
+    }
     
     // Add move to history
     moveHistory.value.push({
@@ -594,6 +681,8 @@ const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false) 
         position: toChessNotation(capturedPiece.row, capturedPiece.col)
       } : null,
       createsCheck: createsCheck, // Add check status
+      isCastling: isCastling,
+      castlingSide: castlingSide,
       timestamp: new Date().toISOString()
     });
     
@@ -950,7 +1039,7 @@ const addMovesInDirection = (
  * 
  * @param {Object} piece - The piece being moved
  * @param {Object} destination - The destination square {row, col}
- * @returns {Boolean} - True if the move is safe, false if it would leave the king in check
+ * @returns {Boolean} - True if the move would leave the king in check, false if the move is safe
  */
 const moveWouldLeaveInCheck = (piece, destination) => {
   // Store original position
@@ -968,6 +1057,43 @@ const moveWouldLeaveInCheck = (piece, destination) => {
       pieces.value.splice(capturedPieceIndex, 1);
     }
   }
+
+  let kingInCheck = false;
+  let rookIndex = -1;
+  let rookOrigRow = -1;
+  let rookOrigCol = -1;
+  
+  // Handle special case for castling
+  if (piece.type === "King" && destination.specialMove === 'castling') {
+    let rookRow = piece.color === "White" ? 7 : 0;
+    let rookCol, rookDestCol;
+    
+    if (destination.castlingSide === 'kingside') {
+      rookCol = 7; // h-file
+      rookDestCol = 5; // f-file
+    } else {
+      rookCol = 0; // a-file
+      rookDestCol = 3; // d-file
+    }
+    
+    // Find the rook
+    const rook = pieces.value.find(p => 
+      p.type === "Rook" && 
+      p.color === piece.color && 
+      p.row === rookRow && 
+      p.col === rookCol
+    );
+    
+    if (rook) {
+      rookIndex = pieces.value.findIndex(p => p.id === rook.id);
+      rookOrigRow = rook.row;
+      rookOrigCol = rook.col;
+      
+      // Temporarily move the rook as well
+      pieces.value[rookIndex].row = rookRow;
+      pieces.value[rookIndex].col = rookDestCol;
+    }
+  }
   
   // Temporarily move the piece
   const pieceIndex = pieces.value.findIndex(p => p.id === piece.id);
@@ -977,12 +1103,35 @@ const moveWouldLeaveInCheck = (piece, destination) => {
   }
   
   // Check if our king is in check after this move
-  const kingInCheck = isKingInCheck(piece.color);
+  kingInCheck = isKingInCheck(piece.color);
+  
+  // For castling, also check if the king passes through check
+  if (piece.type === "King" && destination.specialMove === 'castling' && !kingInCheck) {
+    // Check if king would be in check while passing through intermediate square
+    const intermediateCol = destination.castlingSide === 'kingside' ? 
+      origCol + 1 : // king moves from e to f when castling kingside
+      origCol - 1;  // king moves from e to d when castling queenside
+    
+    // Move king to intermediate square
+    pieces.value[pieceIndex].col = intermediateCol;
+    
+    // Check if king would be in check at this intermediate position
+    kingInCheck = isKingInCheck(piece.color);
+    
+    // Move king back to destination for remaining checks and restoration
+    pieces.value[pieceIndex].col = destination.col;
+  }
   
   // Restore the original board state
   if (pieceIndex !== -1) {
     pieces.value[pieceIndex].row = origRow;
     pieces.value[pieceIndex].col = origCol;
+  }
+  
+  // Restore rook position if we moved it
+  if (rookIndex !== -1) {
+    pieces.value[rookIndex].row = rookOrigRow;
+    pieces.value[rookIndex].col = rookOrigCol;
   }
   
   // Restore captured piece if there was one
@@ -1167,6 +1316,59 @@ const calculateRawMoves = (piece) => {
           }
         }
       });
+      
+      // Castling moves
+      if (color === "White" && !movedPieces.value.whiteKing) {
+        // Check kingside castling (O-O)
+        if (!movedPieces.value.whiteRookH && 
+            !checkForExistingPiece(7, 5) && 
+            !checkForExistingPiece(7, 6)) {
+          moves.push({ 
+            row: 7, 
+            col: 6, 
+            specialMove: 'castling',
+            castlingSide: 'kingside' 
+          });
+        }
+        
+        // Check queenside castling (O-O-O)
+        if (!movedPieces.value.whiteRookA && 
+            !checkForExistingPiece(7, 1) && 
+            !checkForExistingPiece(7, 2) && 
+            !checkForExistingPiece(7, 3)) {
+          moves.push({ 
+            row: 7, 
+            col: 2, 
+            specialMove: 'castling',
+            castlingSide: 'queenside' 
+          });
+        }
+      } else if (color === "Black" && !movedPieces.value.blackKing) {
+        // Check kingside castling (O-O)
+        if (!movedPieces.value.blackRookH && 
+            !checkForExistingPiece(0, 5) && 
+            !checkForExistingPiece(0, 6)) {
+          moves.push({ 
+            row: 0, 
+            col: 6, 
+            specialMove: 'castling',
+            castlingSide: 'kingside' 
+          });
+        }
+        
+        // Check queenside castling (O-O-O)
+        if (!movedPieces.value.blackRookA && 
+            !checkForExistingPiece(0, 1) && 
+            !checkForExistingPiece(0, 2) && 
+            !checkForExistingPiece(0, 3)) {
+          moves.push({ 
+            row: 0, 
+            col: 2, 
+            specialMove: 'castling',
+            castlingSide: 'queenside' 
+          });
+        }
+      }
       break;
     }
   }
