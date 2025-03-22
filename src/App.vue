@@ -69,6 +69,14 @@ const formattedMoveHistoryByNumber = computed(() => {
       result[moveNumber] = { white: null, black: null };
     }
     
+    // Determine if the current move is a checkmate by checking if this is the last move
+    // and if it creates check
+    const isLastMove = index === moveHistory.value.length - 1;
+    const isCheckmate = move.createsCheck && isLastMove && 
+                        (moveHistory.value.length % 2 === 1 ? 
+                          currentTurn.value === "Black" : 
+                          currentTurn.value === "White");
+    
     const moveData = {
       piece: move.piece,
       color: move.color,
@@ -76,6 +84,7 @@ const formattedMoveHistoryByNumber = computed(() => {
       to: move.to.notation,
       pieceImage: getPieceImagePath(move.piece, move.color),
       createsCheck: move.createsCheck, // Add check status
+      isCheckmate: isCheckmate,
       isCastling: move.isCastling || false,
       castlingSide: move.castlingSide || null,
       capturedPiece: null
@@ -166,12 +175,18 @@ const formattedMoveHistoryByNumber = computed(() => {
                 
                 <!-- Castling move -->
                 <template v-if="moves.white.isCastling">
-                  <span class="font-semibold">{{ moves.white.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}{{ moves.white.createsCheck ? '++' : '' }}</span>
+                  <span class="font-semibold">
+                    {{ moves.white.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}
+                    <template v-if="moves.white.createsCheck">{{ moves.white.isCheckmate ? '++' : '+' }}</template>
+                  </span>
                 </template>
                 
                 <!-- Regular move (non-capture) -->
                 <template v-else-if="!moves.white.capturedPiece">
-                  <span class="font-semibold">{{ moves.white.from }} → {{ moves.white.to }}{{ moves.white.createsCheck ? '++' : '' }}</span>
+                  <span class="font-semibold">
+                    {{ moves.white.from }} → {{ moves.white.to }}
+                    <template v-if="moves.white.createsCheck">{{ moves.white.isCheckmate ? '++' : '+' }}</template>
+                  </span>
                 </template>
                 
                 <!-- Capture move -->
@@ -182,7 +197,10 @@ const formattedMoveHistoryByNumber = computed(() => {
                     :alt="`${moves.white.capturedPiece.color} ${moves.white.capturedPiece.piece}`" 
                     class="w-5 h-5 mx-1" 
                   />
-                  <span class="font-semibold">{{ moves.white.to }}{{ moves.white.createsCheck ? '++' : '' }}</span>
+                  <span class="font-semibold">
+                    {{ moves.white.to }}
+                    <template v-if="moves.white.createsCheck">{{ moves.white.isCheckmate ? '++' : '+' }}</template>
+                  </span>
                 </template>
               </div>
               <div v-else class="p-3"></div>
@@ -197,12 +215,18 @@ const formattedMoveHistoryByNumber = computed(() => {
                 
                 <!-- Castling move -->
                 <template v-if="moves.black.isCastling">
-                  <span>{{ moves.black.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}{{ moves.black.createsCheck ? '++' : '' }}</span>
+                  <span>
+                    {{ moves.black.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}
+                    <template v-if="moves.black.createsCheck">{{ moves.black.isCheckmate ? '++' : '+' }}</template>
+                  </span>
                 </template>
                 
                 <!-- Regular move (non-capture) -->
                 <template v-else-if="!moves.black.capturedPiece">
-                  <span>{{ moves.black.from }} → {{ moves.black.to }}{{ moves.black.createsCheck ? '++' : '' }}</span>
+                  <span>
+                    {{ moves.black.from }} → {{ moves.black.to }}
+                    <template v-if="moves.black.createsCheck">{{ moves.black.isCheckmate ? '++' : '+' }}</template>
+                  </span>
                 </template>
                 
                 <!-- Capture move -->
@@ -213,7 +237,10 @@ const formattedMoveHistoryByNumber = computed(() => {
                     :alt="`${moves.black.capturedPiece.color} ${moves.black.capturedPiece.piece}`" 
                     class="w-5 h-5 mx-1" 
                   />
-                  <span>{{ moves.black.to }}{{ moves.black.createsCheck ? '++' : '' }}</span>
+                  <span>
+                    {{ moves.black.to }}
+                    <template v-if="moves.black.createsCheck">{{ moves.black.isCheckmate ? '++' : '+' }}</template>
+                  </span>
                 </template>
               </div>
               <div v-else class="p-3"></div>
