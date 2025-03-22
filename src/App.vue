@@ -69,13 +69,8 @@ const formattedMoveHistoryByNumber = computed(() => {
       result[moveNumber] = { white: null, black: null };
     }
     
-    // Determine if the current move is a checkmate by checking if this is the last move
-    // and if it creates check
-    const isLastMove = index === moveHistory.value.length - 1;
-    const isCheckmate = move.createsCheck && isLastMove && 
-                        (moveHistory.value.length % 2 === 1 ? 
-                          currentTurn.value === "Black" : 
-                          currentTurn.value === "White");
+    // We need a more accurate way to determine if a move caused checkmate
+    // This will be set by Board.vue when it detects checkmate
     
     const moveData = {
       piece: move.piece,
@@ -84,7 +79,7 @@ const formattedMoveHistoryByNumber = computed(() => {
       to: move.to.notation,
       pieceImage: getPieceImagePath(move.piece, move.color),
       createsCheck: move.createsCheck, // Add check status
-      isCheckmate: isCheckmate,
+      isCheckmate: move.isCheckmate || false, // Use the property from the move history if available
       isCastling: move.isCastling || false,
       castlingSide: move.castlingSide || null,
       capturedPiece: null

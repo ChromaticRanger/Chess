@@ -1,324 +1,65 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, defineExpose } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, defineExpose } from "vue";
 import Square from "./Square.vue";
 import throttle from "lodash/throttle";
+import useGameState from "../composables/useGameState";
+import usePieceManagement from "../composables/usePieceManagement";
 
 // Add event emitter
 const emit = defineEmits(['turn-changed', 'move-history-updated', 'checkmate']);
 
-// Add a turn tracker
-const currentTurn = ref("White"); // White always moves first in chess
-
-// Add move history to track all moves made in the game
-// Each entry contains: piece moved, color, origin, destination, captured piece (if any)
-const moveHistory = ref([]);
-
-// Watch for changes to currentTurn and emit events when it changes
-watch(currentTurn, (newTurn) => {
-  emit('turn-changed', newTurn);
+// Initialize game state with callbacks
+const gameState = useGameState({
+  onTurnChanged: (newTurn) => emit('turn-changed', newTurn),
+  onMoveHistoryUpdated: (newHistory) => emit('move-history-updated', newHistory),
+  onCheckmate: (winner) => emit('checkmate', winner)
 });
 
-// Watch for changes to moveHistory and emit events when moves are added
-watch(moveHistory, (newHistory) => {
-  console.log("Move history updated:", newHistory.length, "moves recorded");
-  emit('move-history-updated', newHistory);
-}, { deep: true });
+// Initialize piece management
+const pieceManager = usePieceManagement();
 
-const initialPieces = [
-  // Black pieces
-  {
-    id: 0,
-    type: "Rook",
-    color: "Black",
-    image: "src/assets/R_B.svg",
-    row: 0,
-    col: 0,
-  },
-  {
-    id: 1,
-    type: "Knight",
-    color: "Black",
-    image: "src/assets/Kn_B.svg",
-    row: 0,
-    col: 1,
-  },
-  {
-    id: 2,
-    type: "Bishop",
-    color: "Black",
-    image: "src/assets/B_B.svg",
-    row: 0,
-    col: 2,
-  },
-  {
-    id: 3,
-    type: "Queen",
-    color: "Black",
-    image: "src/assets/Q_B.svg",
-    row: 0,
-    col: 3,
-  },
-  {
-    id: 4,
-    type: "King",
-    color: "Black",
-    image: "src/assets/K_B.svg",
-    row: 0,
-    col: 4,
-  },
-  {
-    id: 5,
-    type: "Bishop",
-    color: "Black",
-    image: "src/assets/B_B.svg",
-    row: 0,
-    col: 5,
-  },
-  {
-    id: 6,
-    type: "Knight",
-    color: "Black",
-    image: "src/assets/Kn_B.svg",
-    row: 0,
-    col: 6,
-  },
-  {
-    id: 7,
-    type: "Rook",
-    color: "Black",
-    image: "src/assets/R_B.svg",
-    row: 0,
-    col: 7,
-  },
-  {
-    id: 8,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 0,
-  },
-  {
-    id: 9,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 1,
-  },
-  {
-    id: 10,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 2,
-  },
-  {
-    id: 11,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 3,
-  },
-  {
-    id: 12,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 4,
-  },
-  {
-    id: 13,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 5,
-  },
-  {
-    id: 14,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 6,
-  },
-  {
-    id: 15,
-    type: "Pawn",
-    color: "Black",
-    image: "src/assets/P_B.svg",
-    row: 1,
-    col: 7,
-  },
-  // White pieces
-  {
-    id: 16,
-    type: "Rook",
-    color: "White",
-    image: "src/assets/R_W.svg",
-    row: 7,
-    col: 0,
-  },
-  {
-    id: 17,
-    type: "Knight",
-    color: "White",
-    image: "src/assets/Kn_W.svg",
-    row: 7,
-    col: 1,
-  },
-  {
-    id: 18,
-    type: "Bishop",
-    color: "White",
-    image: "src/assets/B_W.svg",
-    row: 7,
-    col: 2,
-  },
-  {
-    id: 19,
-    type: "Queen",
-    color: "White",
-    image: "src/assets/Q_W.svg",
-    row: 7,
-    col: 3,
-  },
-  {
-    id: 20,
-    type: "King",
-    color: "White",
-    image: "src/assets/K_W.svg",
-    row: 7,
-    col: 4,
-  },
-  {
-    id: 21,
-    type: "Bishop",
-    color: "White",
-    image: "src/assets/B_W.svg",
-    row: 7,
-    col: 5,
-  },
-  {
-    id: 22,
-    type: "Knight",
-    color: "White",
-    image: "src/assets/Kn_W.svg",
-    row: 7,
-    col: 6,
-  },
-  {
-    id: 23,
-    type: "Rook",
-    color: "White",
-    image: "src/assets/R_W.svg",
-    row: 7,
-    col: 7,
-  },
-  {
-    id: 24,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 0,
-  },
-  {
-    id: 25,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 1,
-  },
-  {
-    id: 26,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 2,
-  },
-  {
-    id: 27,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 3,
-  },
-  {
-    id: 28,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 4,
-  },
-  {
-    id: 29,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 5,
-  },
-  {
-    id: 30,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 6,
-  },
-  {
-    id: 31,
-    type: "Pawn",
-    color: "White",
-    image: "src/assets/P_W.svg",
-    row: 6,
-    col: 7,
-  },
-];
+// Extract reactive state from the composables
+const { 
+  currentTurn, 
+  moveHistory, 
+  whiteInCheck, 
+  blackInCheck, 
+  movedPieces,
+  recordMove,
+  switchTurn,
+  updateMovedPiecesTracking,
+  setCheckStatus
+} = gameState;
+
+const {
+  pieces,
+  initialPieces,
+  resetPieces,
+  getPieceAtPosition,
+  capturePiece,
+  movePiece: movePiecePosition,
+  getPiecesByColor
+} = pieceManager;
 
 // Turn tracker is defined at the top of the file
 
 // Add a reset function
 const resetBoard = () => {
-  // Reset the pieces to their initial positions
-  pieces.value = JSON.parse(JSON.stringify(initialPieces));
+  // Reset the pieces using the piece manager
+  resetPieces();
   
-  // Reset all game state variables
+  // Reset UI state variables
   selectedSquare.value = { row: null, col: null };
   originalPosition.value = { row: null, col: null };
   draggingPiece.value = null;
   validMoves.value = [];
   attackedSquares.value = [];
-  whiteInCheck.value = false;
-  blackInCheck.value = false;
-  currentTurn.value = "White"; // Reset to White's turn
-  moveHistory.value = []; // Clear move history
   
-  // Reset moved piece tracking for castling
-  movedPieces.value = {
-    whiteKing: false,
-    whiteRookA: false,
-    whiteRookH: false,
-    blackKing: false,
-    blackRookA: false,
-    blackRookH: false
-  };
-  
-  emit('turn-changed', currentTurn.value);
+  // Reset game state using the composable
+  gameState.resetGameState();
 };
 
-// Initialize the pieces with a deep copy of initialPieces
-// Replace your current pieces declaration with this
-const pieces = ref(JSON.parse(JSON.stringify(initialPieces)));
+// The pieces are now managed by usePieceManagement composable
 
 const selectedSquare = ref({ row: null, col: null });
 const originalPosition = ref({ row: null, col: null });
@@ -329,18 +70,6 @@ const offsetX = ref(0);
 const offsetY = ref(0);
 const validMoves = ref([]);
 const attackedSquares = ref([]);
-const whiteInCheck = ref(false);
-const blackInCheck = ref(false);
-
-// Track which kings and rooks have moved (to determine if castling is allowed)
-const movedPieces = ref({
-  whiteKing: false,
-  whiteRookA: false, // Queen-side rook (a1)
-  whiteRookH: false, // King-side rook (h1)
-  blackKing: false,
-  blackRookA: false, // Queen-side rook (a8)
-  blackRookH: false, // King-side rook (h8)
-});
 
 /**
  * Handle the MouseDown event
@@ -534,14 +263,18 @@ const handleMouseUp = async (event) => {
       }
 
       // Switch turns after a valid move
-      currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
-      console.log(`It's now ${currentTurn.value}'s turn`);
+      switchTurn();
       
-      // Check for checkmate
-      if (isCheckmate(currentTurn.value)) {
-        const winner = currentTurn.value === "White" ? "Black" : "White";
-        console.log(`Checkmate! ${winner} has won the game`);
-        emit('checkmate', winner);
+      // Check for checkmate and update the last move to indicate it caused checkmate
+      const isCheckmated = isCheckmate(currentTurn.value);
+      if (isCheckmated) {
+        // Update the last move in the move history to indicate it caused checkmate
+        const lastMoveIndex = moveHistory.value.length - 1;
+        if (lastMoveIndex >= 0) {
+          moveHistory.value[lastMoveIndex].isCheckmate = true;
+        }
+        
+        gameState.handleCheckmate(currentTurn.value);
       }
       
       // Build a list of attacked squares if check is created
@@ -565,8 +298,9 @@ const handleMouseUp = async (event) => {
  * @param movingPiece - The piece that has just been moved
  */
 const checkForCheck = (movingPiece) => {
-  whiteInCheck.value = false;
-  blackInCheck.value = false;
+  // Reset check state
+  setCheckStatus("White", false);
+  setCheckStatus("Black", false);
 
   // Get all of the same colors pieces
   const ourPieces = pieces.value.filter((p) => p.color === movingPiece.color);
@@ -584,9 +318,9 @@ const checkForCheck = (movingPiece) => {
         if (attackedPiece.type === "King") {
           checkFound = true;
           if (piece.color === "Black") {
-            whiteInCheck.value = true;
+            setCheckStatus("White", true);
           } else {
-            blackInCheck.value = true;
+            setCheckStatus("Black", true);
           }
         }
     });
@@ -639,30 +373,10 @@ const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false, 
     pieces.value[index].col = col;
     
     // Track if this piece is a king or rook for castling purposes
-    if (piece.type === "King") {
-      if (piece.color === "White") {
-        movedPieces.value.whiteKing = true;
-      } else {
-        movedPieces.value.blackKing = true;
-      }
-    } else if (piece.type === "Rook") {
-      if (piece.color === "White") {
-        if (fromCol === 0) { // a1 rook
-          movedPieces.value.whiteRookA = true;
-        } else if (fromCol === 7) { // h1 rook
-          movedPieces.value.whiteRookH = true;
-        }
-      } else { // Black rook
-        if (fromCol === 0) { // a8 rook
-          movedPieces.value.blackRookA = true;
-        } else if (fromCol === 7) { // h8 rook
-          movedPieces.value.blackRookH = true;
-        }
-      }
-    }
+    updateMovedPiecesTracking(piece, fromRow, fromCol);
     
-    // Add move to history
-    moveHistory.value.push({
+    // Record move in game state
+    recordMove({
       piece: piece.type,
       color: piece.color,
       from: {
@@ -680,13 +394,10 @@ const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false, 
         color: capturedPiece.color,
         position: toChessNotation(capturedPiece.row, capturedPiece.col)
       } : null,
-      createsCheck: createsCheck, // Add check status
+      createsCheck: createsCheck,
       isCastling: isCastling,
-      castlingSide: castlingSide,
-      timestamp: new Date().toISOString()
+      castlingSide: castlingSide
     });
-    
-    console.log("Move recorded:", moveHistory.value[moveHistory.value.length - 1]);
   }
 };
 
@@ -1465,7 +1176,7 @@ const squares = computed(() => {
   return result;
 });
 
-// Expose the resetBoard method, currentTurn, and moveHistory to the parent component
+// Expose the resetBoard method and game state to the parent component
 defineExpose({ resetBoard, currentTurn, moveHistory });
 </script>
 
