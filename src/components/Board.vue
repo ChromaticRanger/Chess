@@ -1,9 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, defineExpose } from "vue";
+// Create global access to board for debugging
+window.chessBoard = null;
 import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 import useGameState from "../composables/useGameState";
 import usePieceManagement from "../composables/usePieceManagement";
+import useMoveValidation from "../composables/useMoveValidation";
 
 // Add event emitter
 const emit = defineEmits(['turn-changed', 'move-history-updated', 'checkmate']);
@@ -40,6 +43,302 @@ const {
   movePiece: movePiecePosition,
   getPiecesByColor
 } = pieceManager;
+
+// Initialize move validation with the necessary methods from pieceManager
+const moveValidator = useMoveValidation({
+  getPieceAtPosition,
+  getPiecesByColor: () => pieces.value,
+  movedPieces
+});
+
+// Extract move validation methods
+const {
+  calculateRawMoves,
+  calculateValidMoves,
+  isKingInCheck,
+  isCheckmate,
+  moveWouldLeaveInCheck,
+  calculateAttackedSquares
+} = moveValidator;
+
+// Debug functions for board state and move validation
+const exportBoardState = () => {
+  // Create a copy of the current pieces array with relevant info
+  const boardState = pieces.value.map(p => ({
+    id: p.id,
+    type: p.type,
+    color: p.color,
+    row: p.row,
+    col: p.col
+  }));
+  
+  console.log('Current board state:');
+  console.log(JSON.stringify(boardState, null, 2));
+  return boardState;
+};
+
+// Debug function to test if a specific move would leave the king in check
+const debugMoveValidation = (pieceId, destRow, destCol) => {
+  // Find the piece by ID
+  const piece = pieces.value.find(p => p.id === pieceId);
+  if (!piece) {
+    console.error(`Piece with ID ${pieceId} not found`);
+    return null;
+  }
+  
+  const destination = { row: destRow, col: destCol };
+  
+  // Check if this is a raw valid move (ignoring check)
+  const rawMoves = calculateRawMoves(piece);
+  const isRawValid = rawMoves.some(move => move.row === destRow && move.col === destCol);
+  
+  // Check if the move would leave the king in check
+  const leavesInCheck = moveWouldLeaveInCheck(piece, destination);
+  
+  // Get all completely valid moves for this piece
+  const validMoves = calculateValidMoves(piece);
+  const isFullyValid = validMoves.some(move => move.row === destRow && move.col === destCol);
+  
+  const result = {
+    piece: {
+      id: piece.id,
+      type: piece.type,
+      color: piece.color,
+      position: { row: piece.row, col: piece.col }
+    },
+    destination: { row: destRow, col: destCol },
+    validation: {
+      isRawValidMove: isRawValid,
+      wouldLeaveInCheck: leavesInCheck,
+      isFullyValidMove: isFullyValid
+    },
+    debugInfo: {
+      allRawMoves: rawMoves,
+      allValidMoves: validMoves
+    }
+  };
+  
+  console.log('Move validation debug info:', JSON.stringify(result, null, 2));
+  return result;
+};
+
+// Helper function to specifically debug the check detection issue
+const debugCheckDetection = (pieceId, destRow, destCol) => {
+  // Find the piece by ID
+  const piece = pieces.value.find(p => p.id === pieceId);
+  if (!piece) {
+    console.error(`Piece with ID ${pieceId} not found`);
+    return null;
+  }
+  
+  const destination = { row: destRow, col: destCol };
+  
+  // Clone the current pieces for simulation
+  const simulatedPieces = JSON.parse(JSON.stringify(pieces.value));
+  
+  // Find and remove any captured piece at the destination
+  const capturedIndex = simulatedPieces.findIndex(
+    p => p.row === destRow && p.col === destCol && p.id !== piece.id
+  );
+  
+  if (capturedIndex !== -1) {
+    console.log(`Capture detected: removing ${simulatedPieces[capturedIndex].type} at (${destRow},${destCol})`);
+    simulatedPieces.splice(capturedIndex, 1);
+  }
+  
+  // Move the piece
+  const pieceIndex = simulatedPieces.findIndex(p => p.id === piece.id);
+  if (pieceIndex !== -1) {
+    const origRow = simulatedPieces[pieceIndex].row;
+    const origCol = simulatedPieces[pieceIndex].col;
+    
+    simulatedPieces[pieceIndex].row = destRow;
+    simulatedPieces[pieceIndex].col = destCol;
+    
+    console.log(`Moved ${piece.type} from (${origRow},${origCol}) to (${destRow},${destCol})`);
+  }
+  
+  // Find our king
+  const king = simulatedPieces.find(p => p.type === "King" && p.color === piece.color);
+  console.log(`Our ${piece.color} king is at (${king.row},${king.col})`);
+  
+  // Check if any opponent piece could attack our king
+  const opponentColor = piece.color === "White" ? "Black" : "White";
+  const opponentPieces = simulatedPieces.filter(p => p.color === opponentColor);
+  
+  console.log(`Checking ${opponentPieces.length} opponent pieces for potential check...`);
+  
+  let checksFound = 0;
+  let attackingPieces = [];
+  
+  for (const opponent of opponentPieces) {
+    // Custom function to check if this piece can attack our king
+    const couldAttack = couldPieceAttackKing(opponent, king, simulatedPieces);
+    
+    if (couldAttack) {
+      checksFound++;
+      attackingPieces.push({
+        type: opponent.type,
+        position: { row: opponent.row, col: opponent.col }
+      });
+      console.log(`Found check: ${opponent.type} at (${opponent.row},${opponent.col}) could attack king`);
+    }
+  }
+  
+  return {
+    result: checksFound > 0 ? "KING WOULD BE IN CHECK" : "MOVE IS SAFE",
+    attackingPieces,
+    kingPosition: { row: king.row, col: king.col },
+    simulatedBoardState: simulatedPieces
+  };
+};
+
+// Helper function to check if a piece could attack the king
+const couldPieceAttackKing = (piece, king, boardPieces) => {
+  const { row, col, type, color } = piece;
+  
+  // Check for direct line of sight and if pieces are in the way
+  const checkPosition = (r, c) => {
+    return boardPieces.find(p => p.row === r && p.col === c);
+  };
+  
+  // Different logic based on piece type
+  switch (type) {
+    case "Pawn": {
+      // Pawns attack diagonally
+      const direction = color === "White" ? -1 : 1;
+      return (
+        (king.row === row + direction && king.col === col - 1) ||
+        (king.row === row + direction && king.col === col + 1)
+      );
+    }
+    
+    case "Knight": {
+      // Knights move in L-shapes
+      const knightMoves = [
+        { row: -2, col: -1 }, { row: -2, col: 1 },
+        { row: -1, col: -2 }, { row: -1, col: 2 },
+        { row: 1, col: -2 }, { row: 1, col: 2 },
+        { row: 2, col: -1 }, { row: 2, col: 1 }
+      ];
+      
+      return knightMoves.some(move => 
+        king.row === row + move.row && king.col === col + move.col
+      );
+    }
+    
+    case "Bishop": {
+      // Bishops move diagonally
+      if (Math.abs(king.row - row) !== Math.abs(king.col - col)) {
+        return false; // Not on a diagonal
+      }
+      
+      // Check if path is clear
+      const rowStep = king.row > row ? 1 : -1;
+      const colStep = king.col > col ? 1 : -1;
+      
+      for (let r = row + rowStep, c = col + colStep; 
+           r !== king.row || c !== king.col; 
+           r += rowStep, c += colStep) {
+        if (checkPosition(r, c)) {
+          return false; // Piece in the way
+        }
+      }
+      
+      return true;
+    }
+    
+    case "Rook": {
+      // Rooks move horizontally or vertically
+      if (king.row !== row && king.col !== col) {
+        return false; // Not on same row or column
+      }
+      
+      if (king.row === row) {
+        // Check horizontally
+        const minCol = Math.min(col, king.col);
+        const maxCol = Math.max(col, king.col);
+        
+        for (let c = minCol + 1; c < maxCol; c++) {
+          if (checkPosition(row, c)) {
+            return false; // Piece in the way
+          }
+        }
+      } else {
+        // Check vertically
+        const minRow = Math.min(row, king.row);
+        const maxRow = Math.max(row, king.row);
+        
+        for (let r = minRow + 1; r < maxRow; r++) {
+          if (checkPosition(r, col)) {
+            return false; // Piece in the way
+          }
+        }
+      }
+      
+      return true;
+    }
+    
+    case "Queen": {
+      // Queens can move like bishops or rooks
+      const isDiagonal = Math.abs(king.row - row) === Math.abs(king.col - col);
+      const isStraight = king.row === row || king.col === col;
+      
+      if (!isDiagonal && !isStraight) {
+        return false;
+      }
+      
+      if (isDiagonal) {
+        // Check diagonally like bishop
+        const rowStep = king.row > row ? 1 : -1;
+        const colStep = king.col > col ? 1 : -1;
+        
+        for (let r = row + rowStep, c = col + colStep; 
+             r !== king.row || c !== king.col; 
+             r += rowStep, c += colStep) {
+          if (checkPosition(r, c)) {
+            return false; // Piece in the way
+          }
+        }
+      } else {
+        // Check straight like rook
+        if (king.row === row) {
+          // Check horizontally
+          const minCol = Math.min(col, king.col);
+          const maxCol = Math.max(col, king.col);
+          
+          for (let c = minCol + 1; c < maxCol; c++) {
+            if (checkPosition(row, c)) {
+              return false; // Piece in the way
+            }
+          }
+        } else {
+          // Check vertically
+          const minRow = Math.min(row, king.row);
+          const maxRow = Math.max(row, king.row);
+          
+          for (let r = minRow + 1; r < maxRow; r++) {
+            if (checkPosition(r, col)) {
+              return false; // Piece in the way
+            }
+          }
+        }
+      }
+      
+      return true;
+    }
+    
+    case "King": {
+      // Kings can attack adjacent squares
+      return Math.abs(king.row - row) <= 1 && Math.abs(king.col - col) <= 1;
+    }
+    
+    default:
+      return false;
+  }
+};
+
+// Debug functions will be exposed with other component APIs below
 
 // Turn tracker is defined at the top of the file
 
@@ -279,7 +578,7 @@ const handleMouseUp = async (event) => {
       
       // Build a list of attacked squares if check is created
       if (createsCheck) {
-        attackedSquares.value = calculatedAttackedSquares(movingPiece.color);
+        attackedSquares.value = calculateAttackedSquares(movingPiece.color);
       }
     } else {
       returnPiece(movingPiece);
@@ -419,699 +718,27 @@ const returnPiece = async (piece) => {
   }
 };
 
-/**
- * Create a list of all the squares that are attacked by our pieces
- *
- * @param color - The color of the pieces to check
- */
-const calculatedAttackedSquares = (color) => {
-  const ourPieces = pieces.value.filter((p) => p.color === color);
-  const attackedSquares = [];
 
-  // Build a list of empty squares that are attacked by our pieces
 
-  // PAWNS
-  const ourPawns = ourPieces.filter((p) => p.type === "Pawn");
-  ourPawns.forEach((pawn) => {
-    const direction = pawn.color === "White" ? -1 : 1;
 
-    // Check left diagonal attack if not on left edge
-    if (pawn.col > 0) {
-      const leftAttack = checkForExistingPiece(
-        pawn.row + direction,
-        pawn.col - 1
-      );
-      if (!leftAttack) {
-        attackedSquares.push({
-          row: pawn.row + direction,
-          col: pawn.col - 1,
-        });
-      }
-    }
 
-    // Check right diagonal attack if not on right edge
-    if (pawn.col < 7) {
-      const rightAttack = checkForExistingPiece(
-        pawn.row + direction,
-        pawn.col + 1
-      );
-      if (!rightAttack) {
-        attackedSquares.push({
-          row: pawn.row + direction,
-          col: pawn.col + 1,
-        });
-      }
-    }
-  });
 
-  // KNIGHTS
-  const ourKnights = ourPieces.filter((p) => p.type === "Knight");
-  ourKnights.forEach((knight) => {
-    const knightMoves = [
-      { row: -2, col: -1 },
-      { row: -2, col: 1 },
-      { row: -1, col: -2 },
-      { row: -1, col: 2 },
-      { row: 1, col: -2 },
-      { row: 1, col: 2 },
-      { row: 2, col: -1 },
-      { row: 2, col: 1 },
-    ];
-    knightMoves.forEach((move) => {
-      const newRow = knight.row + move.row;
-      const newCol = knight.col + move.col;
-      if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-        if (!checkForExistingPiece(newRow, newCol)) {
-          attackedSquares.push({
-            row: newRow,
-            col: newCol,
-          });
-        }
-      }
-    });
-  });
 
-  // BISHOPS
-  const ourBishops = ourPieces.filter((p) => p.type === "Bishop");
-  ourBishops.forEach((bishop) => {
-    // Move diagonally up-left
-    for (let i = 1; bishop.row - i >= 0 && bishop.col - i >= 0; i++) {
-      if (!checkForExistingPiece(bishop.row - i, bishop.col - i)) {
-        attackedSquares.push({
-          row: bishop.row - i,
-          col: bishop.col - i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move diagonally up-right
-    for (let i = 1; bishop.row - i >= 0 && bishop.col + i < 8; i++) {
-      if (!checkForExistingPiece(bishop.row - i, bishop.col + i)) {
-        attackedSquares.push({
-          row: bishop.row - i,
-          col: bishop.col + i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move diagonally down-left
-    for (let i = 1; bishop.row + i < 8 && bishop.col - i >= 0; i++) {
-      if (!checkForExistingPiece(bishop.row + i, bishop.col - i)) {
-        attackedSquares.push({
-          row: bishop.row + i,
-          col: bishop.col - i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move diagonally down-right
-    for (let i = 1; bishop.row + i < 8 && bishop.col + i < 8; i++) {
-      if (!checkForExistingPiece(bishop.row + i, bishop.col + i)) {
-        attackedSquares.push({
-          row: bishop.row + i,
-          col: bishop.col + i,
-        });
-      } else {
-        break;
-      }
-    }
-  });
-
-  // ROOKS
-  const ourRooks = ourPieces.filter((p) => p.type === "Rook");
-  ourRooks.forEach((rook) => {
-    // Move vertically up
-    for (let i = rook.row - 1; i >= 0; i--) {
-      if (!checkForExistingPiece(i, rook.col)) {
-        attackedSquares.push({
-          row: i,
-          col: rook.col,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move vertically down
-    for (let i = rook.row + 1; i < 8; i++) {
-      if (!checkForExistingPiece(i, rook.col)) {
-        attackedSquares.push({
-          row: i,
-          col: rook.col,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move horizontally left
-    for (let i = rook.col - 1; i >= 0; i--) {
-      if (!checkForExistingPiece(rook.row, i)) {
-        attackedSquares.push({
-          row: rook.row,
-          col: i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move horizontally right
-    for (let i = rook.col + 1; i < 8; i++) {
-      if (!checkForExistingPiece(rook.row, i)) {
-        attackedSquares.push({
-          row: rook.row,
-          col: i,
-        });
-      } else {
-        break;
-      }
-    }
-  });
-
-  // QUEENS
-  const ourQueens = ourPieces.filter((p) => p.type === "Queen");
-  ourQueens.forEach((queen) => {
-    // Move vertically up
-    for (let i = queen.row - 1; i >= 0; i--) {
-      if (!checkForExistingPiece(i, queen.col)) {
-        attackedSquares.push({
-          row: i,
-          col: queen.col,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move vertically down
-    for (let i = queen.row + 1; i < 8; i++) {
-      if (!checkForExistingPiece(i, queen.col)) {
-        attackedSquares.push({
-          row: i,
-          col: queen.col,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move horizontally left
-    for (let i = queen.col - 1; i >= 0; i--) {
-      if (!checkForExistingPiece(queen.row, i)) {
-        attackedSquares.push({
-          row: queen.row,
-          col: i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move horizontally right
-    for (let i = queen.col + 1; i < 8; i++) {
-      if (!checkForExistingPiece(queen.row, i)) {
-        attackedSquares.push({
-          row: queen.row,
-          col: i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move diagonally up-left
-    for (let i = 1; queen.row - i >= 0 && queen.col - i >= 0; i++) {
-      if (!checkForExistingPiece(queen.row - i, queen.col - i)) {
-        attackedSquares.push({
-          row: queen.row - i,
-          col: queen.col - i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move diagonally up-right
-    for (let i = 1; queen.row - i >= 0 && queen.col + i < 8; i++) {
-      if (!checkForExistingPiece(queen.row - i, queen.col + i)) {
-        attackedSquares.push({
-          row: queen.row - i,
-          col: queen.col + i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move diagonally down-left
-    for (let i = 1; queen.row + i < 8 && queen.col - i >= 0; i++) {
-      if (!checkForExistingPiece(queen.row + i, queen.col - i)) {
-        attackedSquares.push({
-          row: queen.row + i,
-          col: queen.col - i,
-        });
-      } else {
-        break;
-      }
-    }
-    // Move diagonally down-right
-    for (let i = 1; queen.row + i < 8 && queen.col + i < 8; i++) {
-      if (!checkForExistingPiece(queen.row + i, queen.col + i)) {
-        attackedSquares.push({
-          row: queen.row + i,
-          col: queen.col + i,
-        });
-      } else {
-        break;
-      }
-    }
-  });
-
-  // KINGS
-  const ourKing = ourPieces.filter((p) => p.type === "King");
-  const directions = [
-    { row: -1, col: 0 }, // Up
-    { row: 1, col: 0 }, // Down
-    { row: 0, col: -1 }, // Left
-    { row: 0, col: 1 }, // Right
-    { row: -1, col: -1 }, // Up-left
-    { row: -1, col: 1 }, // Up-right
-    { row: 1, col: -1 }, // Down-left
-    { row: 1, col: 1 }, // Down-right
-  ];
-  directions.forEach((direction) => {
-    const newRow = ourKing.row + direction.row;
-    const newCol = ourKing.col + direction.col;
-    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-      if (!checkForExistingPiece(newRow, newCol)) {
-        attackedSquares.push({
-          row: newRow,
-          col: newCol,
-        });
-      }
-    }
-  });
-
-  return attackedSquares;
-};
-
-/**
- * Calculate the valid moves for a piece
- *
- * @param startRow - The starting row
- * @param startCol - The starting column
- * @param rowIncrement - The row increment
- * @param colIncrement - The column increment
- * @param moves - The array of moves
- * @param color - The color of the piece
- */
-const addMovesInDirection = (
-  startRow,
-  startCol,
-  rowIncrement,
-  colIncrement,
-  moves,
-  color
-) => {
-  let row = startRow + rowIncrement;
-  let col = startCol + colIncrement;
-
-  while (row >= 0 && row < 8 && col >= 0 && col < 8) {
-    const piece = checkForExistingPiece(row, col);
-    if (piece) {
-      if (piece.color !== color) {
-        moves.push({ row, col });
-      }
-      break;
-    }
-    moves.push({ row, col });
-    row += rowIncrement;
-    col += colIncrement;
-  }
-};
-
-/**
- * Checks if a move would leave the player in check
- * 
- * @param {Object} piece - The piece being moved
- * @param {Object} destination - The destination square {row, col}
- * @returns {Boolean} - True if the move would leave the king in check, false if the move is safe
- */
-const moveWouldLeaveInCheck = (piece, destination) => {
-  // Store original position
-  const origRow = piece.row;
-  const origCol = piece.col;
-  
-  // Remember any piece at the destination to restore it later
-  const capturedPiece = checkForExistingPiece(destination.row, destination.col);
-  let capturedPieceIndex = -1;
-  
-  if (capturedPiece) {
-    capturedPieceIndex = pieces.value.findIndex(p => p.id === capturedPiece.id);
-    // Temporarily remove the captured piece
-    if (capturedPieceIndex !== -1) {
-      pieces.value.splice(capturedPieceIndex, 1);
-    }
-  }
-
-  let kingInCheck = false;
-  let rookIndex = -1;
-  let rookOrigRow = -1;
-  let rookOrigCol = -1;
-  
-  // Handle special case for castling
-  if (piece.type === "King" && destination.specialMove === 'castling') {
-    let rookRow = piece.color === "White" ? 7 : 0;
-    let rookCol, rookDestCol;
-    
-    if (destination.castlingSide === 'kingside') {
-      rookCol = 7; // h-file
-      rookDestCol = 5; // f-file
-    } else {
-      rookCol = 0; // a-file
-      rookDestCol = 3; // d-file
-    }
-    
-    // Find the rook
-    const rook = pieces.value.find(p => 
-      p.type === "Rook" && 
-      p.color === piece.color && 
-      p.row === rookRow && 
-      p.col === rookCol
-    );
-    
-    if (rook) {
-      rookIndex = pieces.value.findIndex(p => p.id === rook.id);
-      rookOrigRow = rook.row;
-      rookOrigCol = rook.col;
-      
-      // Temporarily move the rook as well
-      pieces.value[rookIndex].row = rookRow;
-      pieces.value[rookIndex].col = rookDestCol;
-    }
-  }
-  
-  // Temporarily move the piece
-  const pieceIndex = pieces.value.findIndex(p => p.id === piece.id);
-  if (pieceIndex !== -1) {
-    pieces.value[pieceIndex].row = destination.row;
-    pieces.value[pieceIndex].col = destination.col;
-  }
-  
-  // Check if our king is in check after this move
-  kingInCheck = isKingInCheck(piece.color);
-  
-  // For castling, also check if the king passes through check
-  if (piece.type === "King" && destination.specialMove === 'castling' && !kingInCheck) {
-    // Check if king would be in check while passing through intermediate square
-    const intermediateCol = destination.castlingSide === 'kingside' ? 
-      origCol + 1 : // king moves from e to f when castling kingside
-      origCol - 1;  // king moves from e to d when castling queenside
-    
-    // Move king to intermediate square
-    pieces.value[pieceIndex].col = intermediateCol;
-    
-    // Check if king would be in check at this intermediate position
-    kingInCheck = isKingInCheck(piece.color);
-    
-    // Move king back to destination for remaining checks and restoration
-    pieces.value[pieceIndex].col = destination.col;
-  }
-  
-  // Restore the original board state
-  if (pieceIndex !== -1) {
-    pieces.value[pieceIndex].row = origRow;
-    pieces.value[pieceIndex].col = origCol;
-  }
-  
-  // Restore rook position if we moved it
-  if (rookIndex !== -1) {
-    pieces.value[rookIndex].row = rookOrigRow;
-    pieces.value[rookIndex].col = rookOrigCol;
-  }
-  
-  // Restore captured piece if there was one
-  if (capturedPiece && capturedPieceIndex !== -1) {
-    pieces.value.splice(capturedPieceIndex, 0, capturedPiece);
-  }
-  
-  return kingInCheck;
-};
-
-/**
- * Check if the king of a specific color is in check
- * 
- * @param {String} kingColor - The color of the king to check
- * @returns {Boolean} - True if the king is in check, false otherwise
- */
-const isKingInCheck = (kingColor) => {
-  // Find our king
-  const king = pieces.value.find(p => p.type === "King" && p.color === kingColor);
-  if (!king) return false;
-  
-  // Get opponent's color
-  const opponentColor = kingColor === "White" ? "Black" : "White";
-  
-  // Get all opponent pieces
-  const opponentPieces = pieces.value.filter(p => p.color === opponentColor);
-  
-  // Check if any opponent piece can attack our king
-  for (const piece of opponentPieces) {
-    const attackMoves = calculateRawMoves(piece);
-    if (attackMoves.some(move => move.row === king.row && move.col === king.col)) {
-      return true;
-    }
-  }
-  
-  return false;
-};
-
-/**
- * Check if the player of a specific color is in checkmate
- * 
- * @param {String} playerColor - The color of the player to check
- * @returns {Boolean} - True if the player is in checkmate, false otherwise
- */
-const isCheckmate = (playerColor) => {
-  // First check if the king is in check
-  if (!isKingInCheck(playerColor)) {
-    return false;
-  }
-  
-  // Get all of the player's pieces
-  const playerPieces = pieces.value.filter(p => p.color === playerColor);
-  
-  // Check if any piece has a valid move that would get out of check
-  for (const piece of playerPieces) {
-    const validMoves = calculateValidMoves(piece);
-    if (validMoves.length > 0) {
-      return false; // If any piece has a valid move, it's not checkmate
-    }
-  }
-  
-  // If no piece has a valid move and the king is in check, it's checkmate
-  return true;
-};
-
-/**
- * Calculate raw moves without check validation
- * This is used internally by isKingInCheck to avoid infinite recursion
- */
-const calculateRawMoves = (piece) => {
-  const moves = [];
-  const { row, col, type, color } = piece;
-
-  switch (type) {
-    case "Pawn": {
-      const direction = color === "White" ? -1 : 1;
-      const startRow = color === "White" ? 6 : 1;
-
-      // Forward moves
-      if (!pieces.value.some((p) => p.row === row + direction && p.col === col)) {
-        moves.push({ row: row + direction, col });
-        if (
-          row === startRow &&
-          !pieces.value.some(
-            (p) => p.row === row + 2 * direction && p.col === col
-          )
-        ) {
-          moves.push({ row: row + 2 * direction, col });
-        }
-      }
-
-      // Diagonal captures
-      if (
-        pieces.value.some(
-          (p) =>
-            p.row === row + direction && p.col === col - 1 && p.color !== color
-        )
-      ) {
-        moves.push({ row: row + direction, col: col - 1 });
-      }
-      if (
-        pieces.value.some(
-          (p) =>
-        p.row === row + direction && p.col === col + 1 && p.color !== color
-        )
-      ) {
-        moves.push({ row: row + direction, col: col + 1 });
-      }
-      break;
-    }
-    case "Rook": {
-      addMovesInDirection(row, col, -1, 0, moves, color);
-      addMovesInDirection(row, col, 1, 0, moves, color);
-      addMovesInDirection(row, col, 0, -1, moves, color);
-      addMovesInDirection(row, col, 0, 1, moves, color);
-      break;
-    }
-    case "Bishop": {
-      addMovesInDirection(row, col, -1, -1, moves, color);
-      addMovesInDirection(row, col, -1, 1, moves, color);
-      addMovesInDirection(row, col, 1, -1, moves, color);
-      addMovesInDirection(row, col, 1, 1, moves, color);
-      break;
-    }
-    case "Queen": {
-      addMovesInDirection(row, col, -1, 0, moves, color);
-      addMovesInDirection(row, col, 1, 0, moves, color);
-      addMovesInDirection(row, col, 0, -1, moves, color);
-      addMovesInDirection(row, col, 0, 1, moves, color);
-      addMovesInDirection(row, col, -1, -1, moves, color);
-      addMovesInDirection(row, col, -1, 1, moves, color);
-      addMovesInDirection(row, col, 1, -1, moves, color);
-      addMovesInDirection(row, col, 1, 1, moves, color);
-      break;
-    }
-    case "Knight": {
-      const knightMoves = [
-        { row: -2, col: -1 },
-        { row: -2, col: 1 },
-        { row: -1, col: -2 },
-        { row: -1, col: 2 },
-        { row: 1, col: -2 },
-        { row: 1, col: 2 },
-        { row: 2, col: -1 },
-        { row: 2, col: 1 },
-      ];
-      knightMoves.forEach(({ row: r, col: c }) => {
-        const newRow = row + r;
-        const newCol = col + c;
-        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-          const piece = checkForExistingPiece(newRow, newCol);
-          if (!piece || piece.color !== color) {
-            moves.push({ row: newRow, col: newCol });
-          }
-        }
-      });
-      break;
-    }
-    case "King": {
-      const kingMoves = [
-        { row: -1, col: 0 },
-        { row: 1, col: 0 },
-        { row: 0, col: -1 },
-        { row: 0, col: 1 },
-        { row: -1, col: -1 },
-        { row: -1, col: 1 },
-        { row: 1, col: -1 },
-        { row: 1, col: 1 },
-      ];
-      kingMoves.forEach(({ row: r, col: c }) => {
-        const newRow = row + r;
-        const newCol = col + c;
-        if (
-          newRow >= 0 &&
-          newRow < 8 &&
-          newCol >= 0 &&
-          newCol < 8 
-        ) {
-          const existingPiece = checkForExistingPiece(newRow, newCol);
-          if (!existingPiece || existingPiece.color !== color) {
-            moves.push({ row: newRow, col: newCol });
-          }
-        }
-      });
-      
-      // Castling moves
-      if (color === "White" && !movedPieces.value.whiteKing) {
-        // Check kingside castling (O-O)
-        if (!movedPieces.value.whiteRookH && 
-            !checkForExistingPiece(7, 5) && 
-            !checkForExistingPiece(7, 6)) {
-          moves.push({ 
-            row: 7, 
-            col: 6, 
-            specialMove: 'castling',
-            castlingSide: 'kingside' 
-          });
-        }
-        
-        // Check queenside castling (O-O-O)
-        if (!movedPieces.value.whiteRookA && 
-            !checkForExistingPiece(7, 1) && 
-            !checkForExistingPiece(7, 2) && 
-            !checkForExistingPiece(7, 3)) {
-          moves.push({ 
-            row: 7, 
-            col: 2, 
-            specialMove: 'castling',
-            castlingSide: 'queenside' 
-          });
-        }
-      } else if (color === "Black" && !movedPieces.value.blackKing) {
-        // Check kingside castling (O-O)
-        if (!movedPieces.value.blackRookH && 
-            !checkForExistingPiece(0, 5) && 
-            !checkForExistingPiece(0, 6)) {
-          moves.push({ 
-            row: 0, 
-            col: 6, 
-            specialMove: 'castling',
-            castlingSide: 'kingside' 
-          });
-        }
-        
-        // Check queenside castling (O-O-O)
-        if (!movedPieces.value.blackRookA && 
-            !checkForExistingPiece(0, 1) && 
-            !checkForExistingPiece(0, 2) && 
-            !checkForExistingPiece(0, 3)) {
-          moves.push({ 
-            row: 0, 
-            col: 2, 
-            specialMove: 'castling',
-            castlingSide: 'queenside' 
-          });
-        }
-      }
-      break;
-    }
-  }
-
-  return moves;
-};
-
-/**
- * Calculates the valid moves for a given chess piece.
- *
- * @param {Object} piece - The chess piece for which to calculate valid moves.
- * @param {Boolean} ignoreCheck - If true, don't filter out moves that would leave the king in check
- * @returns {Array} An array of valid moves for the given piece.
- */
-const calculateValidMoves = (piece, ignoreCheck = false) => {
-  // Get all possible moves without check validation
-  const allMoves = calculateRawMoves(piece);
-  
-  // If we're ignoring check (e.g., when determining if a king is in check),
-  // return all possible moves
-  if (ignoreCheck) {
-    return allMoves;
-  }
-  
-  // Filter out moves that would leave the king in check
-  return allMoves.filter(move => !moveWouldLeaveInCheck(piece, move));
-};
 
 /**
  * Set up mouse events on component mount
  */
 onMounted(() => {
+  // Store reference to board for debugging
+  window.chessBoard = {
+    exportBoardState,
+    debugMoveValidation,
+    debugCheckDetection,
+    pieces,
+    currentTurn,
+    moveHistory
+  };
+  
   window.addEventListener("mousemove", handleMouseMove);
   window.addEventListener("mouseup", handleMouseUp);
 
@@ -1135,6 +762,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("mousemove", handleMouseMove);
   window.removeEventListener("mouseup", handleMouseUp);
+  
+  // Clean up global reference when component is unmounted
+  window.chessBoard = null;
 });
 
 // Generate the chessboard pattern
@@ -1176,8 +806,18 @@ const squares = computed(() => {
   return result;
 });
 
-// Expose the resetBoard method and game state to the parent component
-defineExpose({ resetBoard, currentTurn, moveHistory });
+// Expose methods and game state to the parent component
+defineExpose({
+  // Core game functionality
+  resetBoard, 
+  currentTurn, 
+  moveHistory,
+  
+  // Debug functions
+  exportBoardState,
+  debugMoveValidation,
+  debugCheckDetection
+});
 </script>
 
 <template>
