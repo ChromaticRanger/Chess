@@ -238,7 +238,7 @@ const couldPieceAttackKing = (piece, king, boardPieces) => {
       const colStep = king.col > col ? 1 : -1;
       
       for (let r = row + rowStep, c = col + colStep; 
-           r !== king.row && c !== king.col; 
+           r !== king.row || c !== king.col; 
            r += rowStep, c += colStep) {
         if (checkPosition(r, c)) {
           return false; // Piece in the way
@@ -294,7 +294,7 @@ const couldPieceAttackKing = (piece, king, boardPieces) => {
         const colStep = king.col > col ? 1 : -1;
         
         for (let r = row + rowStep, c = col + colStep; 
-             r !== king.row && c !== king.col; 
+             r !== king.row || c !== king.col; 
              r += rowStep, c += colStep) {
           if (checkPosition(r, c)) {
             return false; // Piece in the way
