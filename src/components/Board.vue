@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, defineExpose } from "vue";
+// Create global access to board for debugging
+window.chessBoard = null;
 import Square from "./Square.vue";
 import throttle from "lodash/throttle";
 import useGameState from "../composables/useGameState";
@@ -727,6 +729,16 @@ const returnPiece = async (piece) => {
  * Set up mouse events on component mount
  */
 onMounted(() => {
+  // Store reference to board for debugging
+  window.chessBoard = {
+    exportBoardState,
+    debugMoveValidation,
+    debugCheckDetection,
+    pieces,
+    currentTurn,
+    moveHistory
+  };
+  
   window.addEventListener("mousemove", handleMouseMove);
   window.addEventListener("mouseup", handleMouseUp);
 
@@ -750,6 +762,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("mousemove", handleMouseMove);
   window.removeEventListener("mouseup", handleMouseUp);
+  
+  // Clean up global reference when component is unmounted
+  window.chessBoard = null;
 });
 
 // Generate the chessboard pattern
