@@ -336,12 +336,7 @@ const couldPieceAttackKing = (piece, king, boardPieces) => {
   }
 };
 
-// Expose the debug functions
-defineExpose({
-  exportBoardState,
-  debugMoveValidation,
-  debugCheckDetection
-});
+// Debug functions will be exposed with other component APIs below
 
 // Turn tracker is defined at the top of the file
 
@@ -796,8 +791,18 @@ const squares = computed(() => {
   return result;
 });
 
-// Expose the resetBoard method and game state to the parent component
-defineExpose({ resetBoard, currentTurn, moveHistory });
+// Expose methods and game state to the parent component
+defineExpose({
+  // Core game functionality
+  resetBoard, 
+  currentTurn, 
+  moveHistory,
+  
+  // Debug functions
+  exportBoardState,
+  debugMoveValidation,
+  debugCheckDetection
+});
 </script>
 
 <template>
