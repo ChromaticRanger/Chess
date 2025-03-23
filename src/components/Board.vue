@@ -59,6 +59,290 @@ const {
   calculateAttackedSquares
 } = moveValidator;
 
+// Debug functions for board state and move validation
+const exportBoardState = () => {
+  // Create a copy of the current pieces array with relevant info
+  const boardState = pieces.value.map(p => ({
+    id: p.id,
+    type: p.type,
+    color: p.color,
+    row: p.row,
+    col: p.col
+  }));
+  
+  console.log('Current board state:');
+  console.log(JSON.stringify(boardState, null, 2));
+  return boardState;
+};
+
+// Debug function to test if a specific move would leave the king in check
+const debugMoveValidation = (pieceId, destRow, destCol) => {
+  // Find the piece by ID
+  const piece = pieces.value.find(p => p.id === pieceId);
+  if (!piece) {
+    console.error(`Piece with ID ${pieceId} not found`);
+    return null;
+  }
+  
+  const destination = { row: destRow, col: destCol };
+  
+  // Check if this is a raw valid move (ignoring check)
+  const rawMoves = calculateRawMoves(piece);
+  const isRawValid = rawMoves.some(move => move.row === destRow && move.col === destCol);
+  
+  // Check if the move would leave the king in check
+  const leavesInCheck = moveWouldLeaveInCheck(piece, destination);
+  
+  // Get all completely valid moves for this piece
+  const validMoves = calculateValidMoves(piece);
+  const isFullyValid = validMoves.some(move => move.row === destRow && move.col === destCol);
+  
+  const result = {
+    piece: {
+      id: piece.id,
+      type: piece.type,
+      color: piece.color,
+      position: { row: piece.row, col: piece.col }
+    },
+    destination: { row: destRow, col: destCol },
+    validation: {
+      isRawValidMove: isRawValid,
+      wouldLeaveInCheck: leavesInCheck,
+      isFullyValidMove: isFullyValid
+    },
+    debugInfo: {
+      allRawMoves: rawMoves,
+      allValidMoves: validMoves
+    }
+  };
+  
+  console.log('Move validation debug info:', JSON.stringify(result, null, 2));
+  return result;
+};
+
+// Helper function to specifically debug the check detection issue
+const debugCheckDetection = (pieceId, destRow, destCol) => {
+  // Find the piece by ID
+  const piece = pieces.value.find(p => p.id === pieceId);
+  if (!piece) {
+    console.error(`Piece with ID ${pieceId} not found`);
+    return null;
+  }
+  
+  const destination = { row: destRow, col: destCol };
+  
+  // Clone the current pieces for simulation
+  const simulatedPieces = JSON.parse(JSON.stringify(pieces.value));
+  
+  // Find and remove any captured piece at the destination
+  const capturedIndex = simulatedPieces.findIndex(
+    p => p.row === destRow && p.col === destCol && p.id !== piece.id
+  );
+  
+  if (capturedIndex !== -1) {
+    console.log(`Capture detected: removing ${simulatedPieces[capturedIndex].type} at (${destRow},${destCol})`);
+    simulatedPieces.splice(capturedIndex, 1);
+  }
+  
+  // Move the piece
+  const pieceIndex = simulatedPieces.findIndex(p => p.id === piece.id);
+  if (pieceIndex !== -1) {
+    const origRow = simulatedPieces[pieceIndex].row;
+    const origCol = simulatedPieces[pieceIndex].col;
+    
+    simulatedPieces[pieceIndex].row = destRow;
+    simulatedPieces[pieceIndex].col = destCol;
+    
+    console.log(`Moved ${piece.type} from (${origRow},${origCol}) to (${destRow},${destCol})`);
+  }
+  
+  // Find our king
+  const king = simulatedPieces.find(p => p.type === "King" && p.color === piece.color);
+  console.log(`Our ${piece.color} king is at (${king.row},${king.col})`);
+  
+  // Check if any opponent piece could attack our king
+  const opponentColor = piece.color === "White" ? "Black" : "White";
+  const opponentPieces = simulatedPieces.filter(p => p.color === opponentColor);
+  
+  console.log(`Checking ${opponentPieces.length} opponent pieces for potential check...`);
+  
+  let checksFound = 0;
+  let attackingPieces = [];
+  
+  for (const opponent of opponentPieces) {
+    // Custom function to check if this piece can attack our king
+    const couldAttack = couldPieceAttackKing(opponent, king, simulatedPieces);
+    
+    if (couldAttack) {
+      checksFound++;
+      attackingPieces.push({
+        type: opponent.type,
+        position: { row: opponent.row, col: opponent.col }
+      });
+      console.log(`Found check: ${opponent.type} at (${opponent.row},${opponent.col}) could attack king`);
+    }
+  }
+  
+  return {
+    result: checksFound > 0 ? "KING WOULD BE IN CHECK" : "MOVE IS SAFE",
+    attackingPieces,
+    kingPosition: { row: king.row, col: king.col },
+    simulatedBoardState: simulatedPieces
+  };
+};
+
+// Helper function to check if a piece could attack the king
+const couldPieceAttackKing = (piece, king, boardPieces) => {
+  const { row, col, type, color } = piece;
+  
+  // Check for direct line of sight and if pieces are in the way
+  const checkPosition = (r, c) => {
+    return boardPieces.find(p => p.row === r && p.col === c);
+  };
+  
+  // Different logic based on piece type
+  switch (type) {
+    case "Pawn": {
+      // Pawns attack diagonally
+      const direction = color === "White" ? -1 : 1;
+      return (
+        (king.row === row + direction && king.col === col - 1) ||
+        (king.row === row + direction && king.col === col + 1)
+      );
+    }
+    
+    case "Knight": {
+      // Knights move in L-shapes
+      const knightMoves = [
+        { row: -2, col: -1 }, { row: -2, col: 1 },
+        { row: -1, col: -2 }, { row: -1, col: 2 },
+        { row: 1, col: -2 }, { row: 1, col: 2 },
+        { row: 2, col: -1 }, { row: 2, col: 1 }
+      ];
+      
+      return knightMoves.some(move => 
+        king.row === row + move.row && king.col === col + move.col
+      );
+    }
+    
+    case "Bishop": {
+      // Bishops move diagonally
+      if (Math.abs(king.row - row) !== Math.abs(king.col - col)) {
+        return false; // Not on a diagonal
+      }
+      
+      // Check if path is clear
+      const rowStep = king.row > row ? 1 : -1;
+      const colStep = king.col > col ? 1 : -1;
+      
+      for (let r = row + rowStep, c = col + colStep; 
+           r !== king.row && c !== king.col; 
+           r += rowStep, c += colStep) {
+        if (checkPosition(r, c)) {
+          return false; // Piece in the way
+        }
+      }
+      
+      return true;
+    }
+    
+    case "Rook": {
+      // Rooks move horizontally or vertically
+      if (king.row !== row && king.col !== col) {
+        return false; // Not on same row or column
+      }
+      
+      if (king.row === row) {
+        // Check horizontally
+        const minCol = Math.min(col, king.col);
+        const maxCol = Math.max(col, king.col);
+        
+        for (let c = minCol + 1; c < maxCol; c++) {
+          if (checkPosition(row, c)) {
+            return false; // Piece in the way
+          }
+        }
+      } else {
+        // Check vertically
+        const minRow = Math.min(row, king.row);
+        const maxRow = Math.max(row, king.row);
+        
+        for (let r = minRow + 1; r < maxRow; r++) {
+          if (checkPosition(r, col)) {
+            return false; // Piece in the way
+          }
+        }
+      }
+      
+      return true;
+    }
+    
+    case "Queen": {
+      // Queens can move like bishops or rooks
+      const isDiagonal = Math.abs(king.row - row) === Math.abs(king.col - col);
+      const isStraight = king.row === row || king.col === col;
+      
+      if (!isDiagonal && !isStraight) {
+        return false;
+      }
+      
+      if (isDiagonal) {
+        // Check diagonally like bishop
+        const rowStep = king.row > row ? 1 : -1;
+        const colStep = king.col > col ? 1 : -1;
+        
+        for (let r = row + rowStep, c = col + colStep; 
+             r !== king.row && c !== king.col; 
+             r += rowStep, c += colStep) {
+          if (checkPosition(r, c)) {
+            return false; // Piece in the way
+          }
+        }
+      } else {
+        // Check straight like rook
+        if (king.row === row) {
+          // Check horizontally
+          const minCol = Math.min(col, king.col);
+          const maxCol = Math.max(col, king.col);
+          
+          for (let c = minCol + 1; c < maxCol; c++) {
+            if (checkPosition(row, c)) {
+              return false; // Piece in the way
+            }
+          }
+        } else {
+          // Check vertically
+          const minRow = Math.min(row, king.row);
+          const maxRow = Math.max(row, king.row);
+          
+          for (let r = minRow + 1; r < maxRow; r++) {
+            if (checkPosition(r, col)) {
+              return false; // Piece in the way
+            }
+          }
+        }
+      }
+      
+      return true;
+    }
+    
+    case "King": {
+      // Kings can attack adjacent squares
+      return Math.abs(king.row - row) <= 1 && Math.abs(king.col - col) <= 1;
+    }
+    
+    default:
+      return false;
+  }
+};
+
+// Expose the debug functions
+defineExpose({
+  exportBoardState,
+  debugMoveValidation,
+  debugCheckDetection
+});
+
 // Turn tracker is defined at the top of the file
 
 // Add a reset function
