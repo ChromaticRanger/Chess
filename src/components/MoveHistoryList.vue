@@ -129,16 +129,11 @@ onUpdated(() => {
           />
           
           <div>
-            <!-- Standard notation format only -->
+            <!-- Standard notation format only, which already includes e.p. notation -->
             <span class="font-semibold text-sm">
               {{ moves.white.notation }}
             </span>
-            <!-- Special move indicators -->
-            <span v-if="moves.white.isEnPassant" 
-                  class="ml-1 text-xs text-amber-700 font-light" 
-                  title="En passant capture">
-              e.p.
-            </span>
+            <!-- We removed the separate e.p. span since it's already in the notation -->
           </div>
         </div>
         <div v-else class="p-3"></div>
@@ -152,16 +147,11 @@ onUpdated(() => {
           />
           
           <div>
-            <!-- Standard notation format only -->
+            <!-- Standard notation format only, which already includes e.p. notation -->
             <span class="text-sm">
               {{ moves.black.notation }}
             </span>
-            <!-- Special move indicators -->
-            <span v-if="moves.black.isEnPassant" 
-                  class="ml-1 text-xs text-amber-700 font-light" 
-                  title="En passant capture">
-              e.p.
-            </span>
+            <!-- We removed the separate e.p. span since it's already in the notation -->
           </div>
         </div>
         <div v-else class="p-3"></div>
