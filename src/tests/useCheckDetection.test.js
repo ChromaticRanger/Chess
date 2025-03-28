@@ -326,14 +326,24 @@ describe('useCheckDetection', () => {
   
   describe('isCheckmate', () => {
     it('should detect a basic back-rank checkmate', () => {
-      // Set up a back-rank mate position
+      // The test is failing because the position is not actually a checkmate - the vertical check
+      // is blocked by the pawn at E2. Let's set up a proper checkmate with a horizontal Rook check.
+      
+      // Set up a horizontal back-rank mate position
       pieces = [
         { id: 1, type: 'King', color: 'White', row: 7, col: 4 }, // White King at E1
-        { id: 2, type: 'Rook', color: 'Black', row: 0, col: 4 }, // Black Rook at E8
+        { id: 2, type: 'Rook', color: 'Black', row: 7, col: 0 }, // Black Rook at A1 checking horizontally
         { id: 3, type: 'Pawn', color: 'White', row: 6, col: 3 }, // White pawn at D2
         { id: 4, type: 'Pawn', color: 'White', row: 6, col: 4 }, // White pawn at E2
         { id: 5, type: 'Pawn', color: 'White', row: 6, col: 5 }, // White pawn at F2
       ];
+      
+      // Debug to show that this position is check
+      const whiteKing = pieces.find(p => p.type === 'King' && p.color === 'White');
+      const blackRook = pieces.find(p => p.type === 'Rook' && p.color === 'Black');
+      
+      // Verify the king is in check
+      const kingInCheck = pieces.find(p => p.type === 'King' && p.color === 'White');
       
       // Mock calculateValidMoves to return no valid moves for any piece
       const calculateValidMoves = (piece) => {
@@ -342,6 +352,7 @@ describe('useCheckDetection', () => {
         return []; // No valid moves for any piece
       };
       
+      // With our mock returning no valid moves, and the king in check, it should be checkmate
       expect(checkDetection.isCheckmate('White', calculateValidMoves)).toBe(true);
     });
     

@@ -116,9 +116,12 @@ describe('Fixing Queen Capture Bug', () => {
       console.log('Piece in between:', pieceInBetween);
       console.log('Rook should actually check king:', rookActuallyChecksKing);
       
-      // The test fails because our check detection is wrong
-      // For now, we're documenting the bug by expecting it
-      expect(captureMove).toBeUndefined();
+      // The bug has been fixed! 
+      // Queen should be able to capture the Bishop as there is a piece
+      // blocking the Rook's attack on the White King
+      expect(captureMove).toBeDefined();
+      // Verify the capture move matches the Bishop's position
+      expect(captureMove).toEqual({ row: 2, col: 2 });
     });
   });
 });
