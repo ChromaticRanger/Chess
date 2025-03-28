@@ -3,10 +3,13 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, defineExpose } fro
 // Create global access to board for debugging
 window.chessBoard = null;
 import Square from "./Square.vue";
+import PiecePromotion from "./PiecePromotion.vue";
 import throttle from "lodash/throttle";
 import useGameState from "../composables/useGameState";
 import usePieceManagement from "../composables/usePieceManagement";
 import useMoveValidation from "../composables/useMoveValidation";
+import useChessNotation from "../composables/useChessNotation";
+import { getPieceImagePath } from "../utils/PieceFactory";
 
 // Add event emitter
 const emit = defineEmits(['turn-changed', 'move-history-updated', 'checkmate']);
@@ -28,10 +31,13 @@ const {
   whiteInCheck, 
   blackInCheck, 
   movedPieces,
+  enPassantTarget,
   recordMove,
   switchTurn,
   updateMovedPiecesTracking,
-  setCheckStatus
+  setCheckStatus,
+  setEnPassantTarget,
+  clearEnPassantTarget
 } = gameState;
 
 const {
@@ -48,7 +54,8 @@ const {
 const moveValidator = useMoveValidation({
   getPieceAtPosition,
   getPiecesByColor: () => pieces.value,
-  movedPieces
+  movedPieces,
+  enPassantTarget
 });
 
 // Extract move validation methods
@@ -354,6 +361,12 @@ const resetBoard = () => {
   validMoves.value = [];
   attackedSquares.value = [];
   
+  // Reset promotion state
+  showPromotion.value = false;
+  promotionPosition.value = { row: null, col: null };
+  promotionColor.value = null;
+  pendingMove.value = null;
+  
   // Reset game state using the composable
   gameState.resetGameState();
 };
@@ -369,6 +382,12 @@ const offsetX = ref(0);
 const offsetY = ref(0);
 const validMoves = ref([]);
 const attackedSquares = ref([]);
+
+// Pawn promotion state
+const showPromotion = ref(false);
+const promotionPosition = ref({ row: null, col: null });
+const promotionColor = ref(null);
+const pendingMove = ref(null);
 
 /**
  * Handle the MouseDown event
@@ -387,8 +406,79 @@ const handleMouseDown = (piece, event) => {
   originalPosition.value = { row: piece.row, col: piece.col }; // Store the original position
   const pieceElement = event.target;
   pieceElement.style.zIndex = 1000;
-  // Calculate and highlight valid moves
-  validMoves.value = calculateValidMoves(piece);
+  // Handle special case for en passant with pawns
+  if (piece.type === "Pawn") {
+    // Access the target either directly or through .value based on whether it's a ref
+    const target = enPassantTarget.value || enPassantTarget;
+    
+    if (target && target.row !== null && target.availableForColor === piece.color) {
+      console.log("Dragging pawn, en passant target is:", target);
+      
+      // Check if this pawn could potentially capture en passant
+      let isEligible = false;
+      
+      // For white pawns, en passant target is at row 2, pawn should be at row 3
+      // For black pawns, en passant target is at row 5, pawn should be at row 4
+      if (piece.color === 'White' && piece.row === 3 && target.row === 2) {
+        isEligible = true;
+        console.log('White pawn is eligible for en passant');
+      } else if (piece.color === 'Black' && piece.row === 4 && target.row === 5) {
+        isEligible = true;
+        console.log('Black pawn is eligible for en passant');
+      }
+      
+      const isAdjacentToTarget = Math.abs(piece.col - target.col) === 1;
+      
+      if (isEligible && isAdjacentToTarget) {
+        console.log("This pawn is positioned to make an en passant capture");
+        
+        // Get the direction and capture destination
+        const direction = piece.color === "White" ? -1 : 1;
+        
+        // Create an en passant move
+        const enPassantMove = {
+          row: piece.row + direction, 
+          col: target.col,
+          specialMove: 'enPassant',
+          capturedPawnRow: target.row,
+          capturedPawnCol: target.col,
+          notation: toChessNotation(piece.row + direction, target.col)
+        };
+        
+        console.log("Adding en passant move:", enPassantMove);
+        
+        // Calculate regular valid moves
+        const regularMoves = calculateValidMoves(piece);
+        
+        // Check if the en passant move is already in the valid moves
+        const enPassantExists = regularMoves.some(move => 
+          move.specialMove === 'enPassant' && 
+          move.row === enPassantMove.row && 
+          move.col === enPassantMove.col
+        );
+        
+        if (!enPassantExists) {
+          console.log("En passant move was missing, adding it");
+          // Add the en passant move to valid moves
+          validMoves.value = [...regularMoves, enPassantMove];
+        } else {
+          console.log("En passant move already exists in valid moves");
+          validMoves.value = regularMoves;
+        }
+      } else {
+        // Calculate regular valid moves
+        validMoves.value = calculateValidMoves(piece);
+      }
+    } else {
+      // Regular valid moves calculation
+      validMoves.value = calculateValidMoves(piece);
+    }
+  } else {
+    // For non-pawns, just get the regular valid moves
+    validMoves.value = calculateValidMoves(piece);
+  }
+  
+  console.log("Valid moves for", piece.type, "at", piece.row, piece.col, ":", validMoves.value);
 };
 
 /**
@@ -414,17 +504,8 @@ const handleMouseMove = throttle((e) => {
   mouseY.value = e.clientY;
 }, 16); // Throttle the function to run at most once every 16 milliseconds
 
-/**
- * Convert row and column indices to chess notation (e.g., 0,0 -> A8)
- * @param {Number} row - Row index (0-7)
- * @param {Number} col - Column index (0-7)
- * @returns {String} Chess notation
- */
- const toChessNotation = (row, col) => {
-  const files = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-  // Chess notation has row 0 as 8, row 7 as 1
-  return `${files[col]}${8 - row}`;
-};
+// Initialize the chess notation composable
+const { toChessNotation, fromChessNotation } = useChessNotation();
 
 /**
  * Handle the MouseUp event
@@ -498,12 +579,54 @@ const handleMouseUp = async (event) => {
         takePiece(existingPiece);
       }
       
-      // Check if this is a castling move
+      // Check what kind of special move this is (castling, en passant, etc.)
       const validMove = validMoves.value.find(
         (move) => move.row === newRow && move.col === newCol
       );
       const isCastling = validMove && validMove.specialMove === 'castling';
       let castlingSide = isCastling ? validMove.castlingSide : null;
+      
+      const isEnPassant = validMove && validMove.specialMove === 'enPassant';
+      let enPassantCapturedPawn = null;
+      
+      // Handle en passant capture - the captured pawn is not at the destination square
+      if (isEnPassant) {
+        console.log("Executing en passant capture");
+        console.log("Moving piece:", movingPiece, "Original position:", originalPosition.value);
+        console.log("Destination:", { row: newRow, col: newCol });
+        
+        // In en passant, the captured pawn is ALWAYS at:
+        // - The ORIGINAL ROW of the capturing pawn (NOT new row)
+        // - The DESTINATION COLUMN of the capturing pawn 
+        const capturedPawnRow = originalPosition.value.row; // Same row as original position
+        const capturedPawnCol = newCol;                    // Same column as destination
+        
+        console.log(`Looking for pawn to capture at (${capturedPawnRow},${capturedPawnCol})`);
+        
+        // Try to find the pawn at this exact location - this is the ONLY correct position
+        const opponentColor = movingPiece.color === "White" ? "Black" : "White";
+        const capturedPawn = pieces.value.find(p => 
+          p.type === "Pawn" && 
+          p.color === opponentColor && 
+          p.row === capturedPawnRow && 
+          p.col === capturedPawnCol
+        );
+        
+        if (capturedPawn) {
+          console.log(`Found pawn to capture:`, capturedPawn);
+          capturedPiece = {...capturedPawn}; // Save a copy
+          
+          // Immediately remove the pawn from the board
+          console.log(`Removing pawn at (${capturedPawnRow},${capturedPawnCol}) from board`);
+          pieces.value = pieces.value.filter(p => p.id !== capturedPawn.id);
+        } else {
+          console.error(`Could not find a ${opponentColor} pawn at (${capturedPawnRow},${capturedPawnCol}) to capture via en passant!`);
+          
+          // Debug all pawns of opponent color
+          const opponentPawns = pieces.value.filter(p => p.type === "Pawn" && p.color === opponentColor);
+          console.log(`All ${opponentColor} pawns on the board:`, opponentPawns);
+        }
+      }
       
       // Check if the move will put the opponents King in check (do this BEFORE switching turns)
       // Store the original piece position temporarily
@@ -526,8 +649,39 @@ const handleMouseUp = async (event) => {
         pieces.value[index].col = origCol;
       }
       
-      // Update the moving piece's position in the pieces array and record the move
-      movePiece(movingPiece, newRow, newCol, capturedPiece, createsCheck, isCastling, castlingSide);
+      // Check if this is a pawn promotion (pawn reaches the back rank)
+      const isPawnPromotion = movingPiece.type === "Pawn" && 
+        ((movingPiece.color === "White" && newRow === 0) || 
+         (movingPiece.color === "Black" && newRow === 7));
+      
+      if (isPawnPromotion) {
+        console.log(`Pawn promotion detected for ${movingPiece.color} pawn at (${newRow},${newCol})`);
+        
+        // Store the pending move information to be completed after promotion choice
+        pendingMove.value = {
+          piece: movingPiece,
+          fromRow: originalPosition.value.row,
+          fromCol: originalPosition.value.col,
+          toRow: newRow,
+          toCol: newCol,
+          capturedPiece,
+          createsCheck,
+          isCastling,
+          castlingSide,
+          isEnPassant
+        };
+        
+        // Show the promotion selection UI
+        promotionPosition.value = { row: newRow, col: newCol };
+        promotionColor.value = movingPiece.color;
+        showPromotion.value = true;
+        
+        // Don't complete the move yet - we'll wait for the promotion choice
+        console.log("Waiting for promotion piece selection...");
+      } else {
+        // For non-promotion moves, complete the move immediately
+        movePiece(movingPiece, newRow, newCol, capturedPiece, createsCheck, isCastling, castlingSide, isEnPassant);
+      }
       
       // If this was a castling move, also move the rook
       if (isCastling) {
@@ -561,24 +715,28 @@ const handleMouseUp = async (event) => {
         }
       }
 
-      // Switch turns after a valid move
-      switchTurn();
-      
-      // Check for checkmate and update the last move to indicate it caused checkmate
-      const isCheckmated = isCheckmate(currentTurn.value);
-      if (isCheckmated) {
-        // Update the last move in the move history to indicate it caused checkmate
-        const lastMoveIndex = moveHistory.value.length - 1;
-        if (lastMoveIndex >= 0) {
-          moveHistory.value[lastMoveIndex].isCheckmate = true;
+      // For non-promotion moves, switch turns and check for checkmate
+      // (Promotion moves handle this in the handlePromotion function)
+      if (!isPawnPromotion) {
+        // Switch turns after a valid move
+        switchTurn();
+        
+        // Check for checkmate and update the last move to indicate it caused checkmate
+        const isCheckmated = isCheckmate(currentTurn.value);
+        if (isCheckmated) {
+          // Update the last move in the move history to indicate it caused checkmate
+          const lastMoveIndex = moveHistory.value.length - 1;
+          if (lastMoveIndex >= 0) {
+            moveHistory.value[lastMoveIndex].isCheckmate = true;
+          }
+          
+          gameState.handleCheckmate(currentTurn.value);
         }
         
-        gameState.handleCheckmate(currentTurn.value);
-      }
-      
-      // Build a list of attacked squares if check is created
-      if (createsCheck) {
-        attackedSquares.value = calculateAttackedSquares(movingPiece.color);
+        // Build a list of attacked squares if check is created
+        if (createsCheck) {
+          attackedSquares.value = calculateAttackedSquares(movingPiece.color);
+        }
       }
     } else {
       returnPiece(movingPiece);
@@ -650,6 +808,108 @@ const takePiece = (piece) => {
 };
 
 /**
+ * Handle the piece selection for pawn promotion
+ * 
+ * @param {Object} promotionChoice - The selected promotion piece type
+ */
+const handlePromotion = (promotionChoice) => {
+  console.log("Promotion piece selected:", promotionChoice);
+  
+  if (!pendingMove.value) {
+    console.error("No pending move found for promotion!");
+    return;
+  }
+  
+  const { 
+    piece, 
+    toRow, 
+    toCol, 
+    capturedPiece, 
+    createsCheck, 
+    isCastling, 
+    castlingSide, 
+    isEnPassant 
+  } = pendingMove.value;
+  
+  // Find the promoting pawn
+  const pawnIndex = pieces.value.findIndex(p => p.id === piece.id);
+  
+  if (pawnIndex !== -1) {
+    // Remove the pawn from the board
+    const pawn = pieces.value[pawnIndex];
+    const { row: fromRow, col: fromCol } = pawn;
+    
+    // Create a new piece of the chosen type
+    const newPiece = {
+      id: piece.id, // Reuse the pawn's ID
+      type: promotionChoice.type,
+      color: piece.color,
+      row: toRow,
+      col: toCol,
+      image: getPieceImagePath(promotionChoice.type, piece.color) // Add the image path
+    };
+    
+    // Replace the pawn with the new piece
+    pieces.value.splice(pawnIndex, 1, newPiece);
+    
+    // Check if the promotion creates check
+    const promotionCreatesCheck = checkForCheck(newPiece) || createsCheck;
+    
+    // Record the move with promotion
+    recordMove({
+      piece: piece.type,
+      color: piece.color,
+      from: {
+        row: fromRow,
+        col: fromCol,
+        notation: toChessNotation(fromRow, fromCol)
+      },
+      to: {
+        row: toRow,
+        col: toCol,
+        notation: toChessNotation(toRow, toCol)
+      },
+      capturedPiece: capturedPiece ? {
+        type: capturedPiece.type,
+        color: capturedPiece.color,
+        position: toChessNotation(capturedPiece.row, capturedPiece.col)
+      } : null,
+      createsCheck: promotionCreatesCheck,
+      isCastling: isCastling,
+      castlingSide: castlingSide,
+      isEnPassant: isEnPassant,
+      isPromotion: true,
+      promotedTo: promotionChoice.type
+    });
+    
+    // Check for checkmate after promotion
+    const opponentColor = piece.color === "White" ? "Black" : "White";
+    const isCheckmated = isCheckmate(opponentColor);
+    if (isCheckmated) {
+      // Update the last move in the move history to indicate it caused checkmate
+      const lastMoveIndex = moveHistory.value.length - 1;
+      if (lastMoveIndex >= 0) {
+        moveHistory.value[lastMoveIndex].isCheckmate = true;
+      }
+      
+      gameState.handleCheckmate(opponentColor);
+    }
+    
+    // Switch turns after promotion
+    switchTurn();
+    
+    // Build a list of attacked squares if check is created
+    if (promotionCreatesCheck) {
+      attackedSquares.value = calculateAttackedSquares(piece.color);
+    }
+  }
+  
+  // Hide the promotion UI
+  showPromotion.value = false;
+  pendingMove.value = null;
+};
+
+/**
  * Move a piece to a new square
  *
  * @param piece - The piece to move
@@ -659,8 +919,11 @@ const takePiece = (piece) => {
  * @param createsCheck - Whether the move creates check
  * @param isCastling - Whether this is a castling move
  * @param castlingSide - Which side the castling is happening on ('kingside' or 'queenside')
+ * @param isEnPassant - Whether this is an en passant capture
+ * @param isPromotion - Whether this is a pawn promotion
+ * @param promotedTo - If it's a promotion, what piece type the pawn was promoted to
  */
-const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false, isCastling = false, castlingSide = null) => {
+const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false, isCastling = false, castlingSide = null, isEnPassant = false, isPromotion = false, promotedTo = null) => {
   const index = pieces.value.findIndex((p) => p.id === piece.id);
   if (index !== -1) {
     // Store original position before updating
@@ -671,8 +934,42 @@ const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false, 
     pieces.value[index].row = row;
     pieces.value[index].col = col;
     
+    // If this is a promotion, change the piece type
+    if (isPromotion && promotedTo) {
+      pieces.value[index].type = promotedTo;
+    }
+    
     // Track if this piece is a king or rook for castling purposes
     updateMovedPiecesTracking(piece, fromRow, fromCol);
+    
+    // Check if this is a pawn moving two squares (for en passant)
+    if (piece.type === "Pawn" && Math.abs(fromRow - row) === 2) {
+      console.log(`Pawn moved two squares from (${fromRow},${fromCol}) to (${row},${col})`);
+      
+      // Set en passant target between the start and end positions
+      setEnPassantTarget(row, col, piece.color);
+      
+      // Access the target either directly or through .value based on whether it's a ref
+      const target = enPassantTarget.value || enPassantTarget;
+      console.log("En passant target set to:", target);
+      
+      // Debug pawns that might be eligible to capture en passant
+      const opponentColor = piece.color === "White" ? "Black" : "White";
+      const direction = piece.color === "White" ? 1 : -1; // Direction is reversed from the capturing pawn's perspective
+      const enPassantRow = row;
+      
+      // Check for pawns to the left that could capture en passant
+      const leftPawn = getPieceAtPosition(enPassantRow, col - 1);
+      if (leftPawn && leftPawn.type === "Pawn" && leftPawn.color === opponentColor) {
+        console.log(`Found eligible pawn to the left at (${leftPawn.row},${leftPawn.col})`);
+      }
+      
+      // Check for pawns to the right that could capture en passant
+      const rightPawn = getPieceAtPosition(enPassantRow, col + 1);
+      if (rightPawn && rightPawn.type === "Pawn" && rightPawn.color === opponentColor) {
+        console.log(`Found eligible pawn to the right at (${rightPawn.row},${rightPawn.col})`);
+      }
+    }
     
     // Record move in game state
     recordMove({
@@ -695,7 +992,10 @@ const movePiece = (piece, row, col, capturedPiece = null, createsCheck = false, 
       } : null,
       createsCheck: createsCheck,
       isCastling: isCastling,
-      castlingSide: castlingSide
+      castlingSide: castlingSide,
+      isEnPassant: isEnPassant,
+      isPromotion: isPromotion,
+      promotedTo: promotedTo
     });
   }
 };
@@ -736,7 +1036,192 @@ onMounted(() => {
     debugCheckDetection,
     pieces,
     currentTurn,
-    moveHistory
+    moveHistory,
+    enPassantTarget,
+    
+    // Test en passant for a specific pawn
+    testEnPassantForPawn: (row, col) => {
+      // Find the pawn
+      const pawn = pieces.value.find(p => 
+        p.type === "Pawn" && 
+        p.row === row && 
+        p.col === col
+      );
+      
+      if (!pawn) {
+        console.error(`No pawn found at position (${row},${col})`);
+        return null;
+      }
+      
+      console.log(`Testing en passant for ${pawn.color} pawn at (${row},${col})`);
+      
+      // Get the current en passant target
+      const target = enPassantTarget.value || enPassantTarget;
+      console.log("Current en passant target:", JSON.stringify(target, null, 2));
+      
+      // Check if this pawn is eligible for en passant
+      if (!target || target.row === null) {
+        console.log("No en passant target is currently set");
+        return false;
+      }
+      
+      if (target.availableForColor !== pawn.color) {
+        console.log(`En passant is only available for ${target.availableForColor} pawns, but this is a ${pawn.color} pawn`);
+        return false;
+      }
+      
+      // Check position eligibility
+      let isEligible = false;
+      
+      // For white pawns (moving upward/negative direction), en passant target is at row 2, pawn should be at row 3
+      // For black pawns (moving downward/positive direction), en passant target is at row 5, pawn should be at row 4
+      if (pawn.color === 'White' && row === 3 && target.row === 2) {
+        isEligible = true;
+        console.log('White pawn is at the correct rank for en passant');
+      } else if (pawn.color === 'Black' && row === 4 && target.row === 5) {
+        isEligible = true;
+        console.log('Black pawn is at the correct rank for en passant');
+      } else {
+        console.log(`Pawn's row (${row}) doesn't match required row for en passant capture`);
+      }
+      
+      const isAdjacentToTarget = Math.abs(col - target.col) === 1;
+      console.log('Is adjacent to target square:', isAdjacentToTarget);
+      
+      if (isEligible && isAdjacentToTarget) {
+        console.log(`${pawn.color} pawn at (${row},${col}) is eligible for en passant capture`);
+        
+        // Calculate the en passant move destination
+        const direction = pawn.color === "White" ? -1 : 1;
+        const captureRow = row + direction;
+        const captureCol = target.col;
+        
+        console.log(`En passant capture would move to (${captureRow},${captureCol})`);
+        
+        // Get raw moves
+        const rawMoves = calculateRawMoves(pawn);
+        console.log("Raw moves:", rawMoves);
+        
+        const enPassantMoves = rawMoves.filter(move => move.specialMove === 'enPassant');
+        console.log("En passant moves from raw:", enPassantMoves);
+        
+        // Get valid moves
+        const validMoves = calculateValidMoves(pawn);
+        console.log("Valid moves:", validMoves);
+        
+        const validEnPassantMoves = validMoves.filter(move => move.specialMove === 'enPassant');
+        console.log("Valid en passant moves:", validEnPassantMoves);
+        
+        return {
+          pawn,
+          isEligible: true,
+          target,
+          captureDestination: { row: captureRow, col: captureCol },
+          rawMoves,
+          rawEnPassantMoves: enPassantMoves,
+          validMoves,
+          validEnPassantMoves
+        };
+      }
+      
+      return {
+        pawn,
+        isEligible: false,
+        reason: !isEligible ? "wrong rank" : "not adjacent to target"
+      };
+    },
+    
+    // En passant debug function that can be called from the console
+    debugEnPassant: () => {
+      const target = enPassantTarget.value || enPassantTarget;
+      console.log("Current en passant target:", JSON.stringify(target, null, 2));
+      
+      if (target && target.row !== null) {
+        console.log(`En passant is available for ${target.availableForColor} pawns to capture at (${target.row},${target.col})`);
+        console.log(`Target square in chess notation: ${toChessNotation(target.row, target.col)}`);
+        
+        // Find pawns that could potentially capture en passant
+        const pawns = pieces.value.filter(p => 
+          p.type === "Pawn" && 
+          p.color === target.availableForColor &&
+          p.row === target.row &&
+          Math.abs(p.col - target.col) === 1
+        );
+        
+        console.log(`Found ${pawns.length} pawns eligible for en passant capture:`);
+        pawns.forEach(pawn => {
+          console.log(`- ${pawn.color} pawn at (${pawn.row},${pawn.col}) [${toChessNotation(pawn.row, pawn.col)}]`);
+          
+          // Get raw moves (without check validation)
+          const rawMoves = calculateRawMoves(pawn);
+          
+          // Look specifically for en passant moves in raw moves
+          const rawEnPassantMoves = rawMoves.filter(move => move.specialMove === 'enPassant');
+          console.log(`  Raw en passant moves: ${rawEnPassantMoves.length}`);
+          if (rawEnPassantMoves.length > 0) {
+            rawEnPassantMoves.forEach(move => {
+              console.log(`    - To: (${move.row},${move.col}) [${toChessNotation(move.row, move.col)}], captures pawn at: (${move.capturedPawnRow},${move.capturedPawnCol})`);
+            });
+          }
+          
+          // Get valid moves (with check validation)
+          const validMoves = calculateValidMoves(pawn);
+          console.log(`  Total valid moves: ${validMoves.length}`);
+          
+          // Check for en passant moves in valid moves
+          const enPassantMoves = validMoves.filter(move => move.specialMove === 'enPassant');
+          if (enPassantMoves.length > 0) {
+            console.log(`  Valid en passant moves: ${enPassantMoves.length}`);
+            enPassantMoves.forEach(move => {
+              console.log(`    - To: (${move.row},${move.col}) [${toChessNotation(move.row, move.col)}], captures pawn at: (${move.capturedPawnRow},${move.capturedPawnCol})`);
+            });
+          } else {
+            console.log(`  No valid en passant moves found! This could be due to check constraints.`);
+            
+            // Test if the move would leave in check
+            if (rawEnPassantMoves.length > 0) {
+              rawEnPassantMoves.forEach(move => {
+                const wouldLeaveInCheck = moveWouldLeaveInCheck(pawn, move);
+                console.log(`    - Move to ${toChessNotation(move.row, move.col)} would leave in check: ${wouldLeaveInCheck}`);
+              });
+            }
+          }
+        });
+        
+        // Check for the pawn that just moved two squares
+        const opponentColor = target.availableForColor === "White" ? "Black" : "White";
+        const expectedPawnRow = target.availableForColor === "White" ? target.row + 1 : target.row - 1;
+        const expectedPawn = getPieceAtPosition(expectedPawnRow, target.col);
+        
+        if (expectedPawn && expectedPawn.type === "Pawn" && expectedPawn.color === opponentColor) {
+          console.log(`Found ${expectedPawn.color} pawn at (${expectedPawnRow},${target.col}) that just moved two squares`);
+        } else {
+          console.log(`Did not find a ${opponentColor} pawn at the expected position (${expectedPawnRow},${target.col})`);
+        }
+        
+        // Check if there's a pawn exactly at the en passant target position (shouldn't be one)
+        const targetSquarePiece = getPieceAtPosition(target.row, target.col);
+        if (targetSquarePiece) {
+          console.log(`WARNING: Found a ${targetSquarePiece.type} at the en passant target square. This square should be empty!`);
+        } else {
+          console.log(`En passant target square is empty as expected.`);
+        }
+      } else {
+        console.log("No en passant target is currently set");
+      }
+      
+      return {
+        target,
+        eligiblePawns: pieces.value.filter(p => 
+          p.type === "Pawn" && 
+          target && target.row !== null &&
+          p.color === target.availableForColor &&
+          p.row === target.row &&
+          Math.abs(p.col - target.col) === 1
+        ),
+        currentTurn: currentTurn.value
+      };
+    }
   };
   
   window.addEventListener("mousemove", handleMouseMove);
@@ -812,30 +1297,194 @@ defineExpose({
   resetBoard, 
   currentTurn, 
   moveHistory,
+  enPassantTarget,
   
   // Debug functions
   exportBoardState,
   debugMoveValidation,
-  debugCheckDetection
+  debugCheckDetection,
+
+  // Test en passant for a specific pawn
+  testEnPassantForPawn: (row, col) => {
+    // Find the pawn
+    const pawn = pieces.value.find(p => 
+      p.type === "Pawn" && 
+      p.row === row && 
+      p.col === col
+    );
+    
+    if (!pawn) {
+      console.error(`No pawn found at position (${row},${col})`);
+      return null;
+    }
+    
+    console.log(`Testing en passant for ${pawn.color} pawn at (${row},${col})`);
+    
+    // Get the current en passant target
+    const target = enPassantTarget.value || enPassantTarget;
+    console.log("Current en passant target:", JSON.stringify(target, null, 2));
+    
+    // Check if this pawn is eligible for en passant
+    if (!target || target.row === null) {
+      console.log("No en passant target is currently set");
+      return false;
+    }
+    
+    if (target.availableForColor !== pawn.color) {
+      console.log(`En passant is only available for ${target.availableForColor} pawns, but this is a ${pawn.color} pawn`);
+      return false;
+    }
+    
+    // Check position eligibility
+    let isEligible = false;
+    
+    // For white pawns (moving upward/negative direction), en passant target is at row 2, pawn should be at row 3
+    // For black pawns (moving downward/positive direction), en passant target is at row 5, pawn should be at row 4
+    if (pawn.color === 'White' && row === 3 && target.row === 2) {
+      isEligible = true;
+      console.log('White pawn is at the correct rank for en passant');
+    } else if (pawn.color === 'Black' && row === 4 && target.row === 5) {
+      isEligible = true;
+      console.log('Black pawn is at the correct rank for en passant');
+    } else {
+      console.log(`Pawn's row (${row}) doesn't match required row for en passant capture`);
+    }
+    
+    const isAdjacentToTarget = Math.abs(col - target.col) === 1;
+    console.log('Is adjacent to target square:', isAdjacentToTarget);
+    
+    if (isEligible && isAdjacentToTarget) {
+      console.log(`${pawn.color} pawn at (${row},${col}) is eligible for en passant capture`);
+      
+      // Calculate the en passant move destination
+      const direction = pawn.color === "White" ? -1 : 1;
+      const captureRow = row + direction;
+      const captureCol = target.col;
+      
+      console.log(`En passant capture would move to (${captureRow},${captureCol})`);
+      
+      // Get raw moves
+      const rawMoves = calculateRawMoves(pawn);
+      console.log("Raw moves:", rawMoves);
+      
+      const enPassantMoves = rawMoves.filter(move => move.specialMove === 'enPassant');
+      console.log("En passant moves from raw:", enPassantMoves);
+      
+      // Get valid moves
+      const validMoves = calculateValidMoves(pawn);
+      console.log("Valid moves:", validMoves);
+      
+      const validEnPassantMoves = validMoves.filter(move => move.specialMove === 'enPassant');
+      console.log("Valid en passant moves:", validEnPassantMoves);
+      
+      return {
+        pawn,
+        isEligible: true,
+        target,
+        captureDestination: { row: captureRow, col: captureCol },
+        rawMoves,
+        rawEnPassantMoves: enPassantMoves,
+        validMoves,
+        validEnPassantMoves
+      };
+    }
+    
+    return {
+      pawn,
+      isEligible: false,
+      reason: !isEligible ? "wrong rank" : "not adjacent to target"
+    };
+  },
+  
+  // En passant debug
+  debugEnPassant: () => {
+    const target = enPassantTarget.value || enPassantTarget;
+    console.log("Current en passant target:", JSON.stringify(target, null, 2));
+    
+    if (target && target.row !== null) {
+      console.log(`En passant is available for ${target.availableForColor} pawns to capture at (${target.row},${target.col})`);
+      console.log(`Target square in chess notation: ${toChessNotation(target.row, target.col)}`);
+      
+      // Find pawns that could potentially capture en passant
+      const pawns = pieces.value.filter(p => 
+        p.type === "Pawn" && 
+        p.color === target.availableForColor &&
+        p.row === target.row &&
+        Math.abs(p.col - target.col) === 1
+      );
+      
+      console.log(`Found ${pawns.length} pawns eligible for en passant capture:`);
+      pawns.forEach(pawn => {
+        console.log(`- ${pawn.color} pawn at (${pawn.row},${pawn.col}) [${toChessNotation(pawn.row, pawn.col)}]`);
+        
+        // Get raw moves (without check validation)
+        const rawMoves = calculateRawMoves(pawn);
+        
+        // Look specifically for en passant moves in raw moves
+        const rawEnPassantMoves = rawMoves.filter(move => move.specialMove === 'enPassant');
+        console.log(`  Raw en passant moves: ${rawEnPassantMoves.length}`);
+        
+        // Get valid moves (with check validation)
+        const validMoves = calculateValidMoves(pawn);
+        console.log(`  Total valid moves: ${validMoves.length}`);
+        
+        // Check for en passant moves in valid moves
+        const enPassantMoves = validMoves.filter(move => move.specialMove === 'enPassant');
+        if (enPassantMoves.length > 0) {
+          console.log(`  Valid en passant moves: ${enPassantMoves.length}`);
+        } else {
+          console.log(`  No valid en passant moves found! This could be due to check constraints.`);
+          
+          // Test if the move would leave in check
+          if (rawEnPassantMoves.length > 0) {
+            rawEnPassantMoves.forEach(move => {
+              const wouldLeaveInCheck = moveWouldLeaveInCheck(pawn, move);
+              console.log(`    - Move to ${toChessNotation(move.row, move.col)} would leave in check: ${wouldLeaveInCheck}`);
+            });
+          }
+        }
+      });
+      
+      // Return diagnostic data for console use
+      return {
+        target,
+        eligiblePawns: pawns,
+        currentTurn: currentTurn.value
+      };
+    } else {
+      console.log("No en passant target is currently set");
+      return { target: null, eligiblePawns: [], currentTurn: currentTurn.value };
+    }
+  }
 });
 </script>
 
 <template>
   <div>
-    <div class="chessboard">
-      <Square
-        v-for="(square, index) in squares"
-        :key="index"
-        :color="square.color"
-        :row="square.row"
-        :col="square.col"
-        :topLeftLabel="square.topLeftLabel"
-        :bottomRightLabel="square.bottomRightLabel"
-        :piece="square.piece"
-        :selected="square.selected"
-        :validMove="square.validMove"
-        :inCheck="square.inCheck"
-        @mousedown="square.piece && handleMouseDown(square.piece, $event)"
+    <div class="chessboard-container">
+      <div class="chessboard">
+        <Square
+          v-for="(square, index) in squares"
+          :key="index"
+          :color="square.color"
+          :row="square.row"
+          :col="square.col"
+          :topLeftLabel="square.topLeftLabel"
+          :bottomRightLabel="square.bottomRightLabel"
+          :piece="square.piece"
+          :selected="square.selected"
+          :validMove="square.validMove"
+          :inCheck="square.inCheck"
+          @mousedown="square.piece && handleMouseDown(square.piece, $event)"
+        />
+      </div>
+      
+      <!-- Pawn promotion UI -->
+      <PiecePromotion
+        :color="promotionColor"
+        :position="promotionPosition"
+        :visible="showPromotion"
+        @piece-selected="handlePromotion"
       />
     </div>
   </div>
@@ -846,6 +1495,13 @@ defineExpose({
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.chessboard-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
 }
 
 .chessboard {

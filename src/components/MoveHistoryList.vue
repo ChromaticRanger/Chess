@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, defineProps, defineEmits, onUpdated } from 'vue';
+import { ref, computed, defineProps, onUpdated } from 'vue';
 import { getPieceImagePath } from "../utils/PieceFactory";
+import useChessNotation from "../composables/useChessNotation";
 
 const props = defineProps({
   moveHistory: {
@@ -13,46 +14,75 @@ const props = defineProps({
 // Reference to the move history panel
 const moveHistoryPanel = ref(null);
 
+// Initialize the chess notation composable
+const chessNotation = useChessNotation();
+
 // Create a formatted move history grouped by move number
 const formattedMoveHistoryByNumber = computed(() => {
+  // Use the groupMovesByNumber function from the composable
+  const groupedMoves = chessNotation.groupMovesByNumber(props.moveHistory);
   const result = {};
   
-  props.moveHistory.forEach((move, index) => {
-    const moveNumber = Math.floor(index / 2) + 1;
-    const isWhiteMove = move.color === "White";
+  // Enhance move data with additional display information
+  for (const moveNumber in groupedMoves) {
+    result[moveNumber] = { white: null, black: null };
     
-    if (!result[moveNumber]) {
-      result[moveNumber] = { white: null, black: null };
-    }
-    
-    const moveData = {
-      piece: move.piece,
-      color: move.color,
-      from: move.from.notation,
-      to: move.to.notation,
-      pieceImage: getPieceImagePath(move.piece, move.color),
-      createsCheck: move.createsCheck,
-      isCheckmate: move.isCheckmate || false,
-      isCastling: move.isCastling || false,
-      castlingSide: move.castlingSide || null,
-      capturedPiece: null
-    };
-    
-    // Add captured piece data if applicable
-    if (move.capturedPiece) {
-      moveData.capturedPiece = {
-        piece: move.capturedPiece.type,
-        color: move.capturedPiece.color,
-        image: getPieceImagePath(move.capturedPiece.type, move.capturedPiece.color)
+    // Process white move if it exists
+    if (groupedMoves[moveNumber].white) {
+      const move = groupedMoves[moveNumber].white;
+      result[moveNumber].white = {
+        piece: move.piece,
+        color: move.color,
+        from: move.from.notation,
+        to: move.to.notation,
+        pieceImage: getPieceImagePath(move.piece, move.color),
+        createsCheck: move.createsCheck,
+        isCheckmate: move.isCheckmate || false,
+        isCastling: move.isCastling || false,
+        isEnPassant: move.isEnPassant || false,
+        castlingSide: move.castlingSide || null,
+        notation: chessNotation.formatMove(move),
+        capturedPiece: null
       };
+      
+      // Add captured piece data if applicable
+      if (move.capturedPiece) {
+        result[moveNumber].white.capturedPiece = {
+          piece: move.capturedPiece.type,
+          color: move.capturedPiece.color,
+          image: getPieceImagePath(move.capturedPiece.type, move.capturedPiece.color)
+        };
+      }
     }
     
-    if (isWhiteMove) {
-      result[moveNumber].white = moveData;
-    } else {
-      result[moveNumber].black = moveData;
+    // Process black move if it exists
+    if (groupedMoves[moveNumber].black) {
+      const move = groupedMoves[moveNumber].black;
+      result[moveNumber].black = {
+        piece: move.piece,
+        color: move.color,
+        from: move.from.notation,
+        to: move.to.notation,
+        pieceImage: getPieceImagePath(move.piece, move.color),
+        createsCheck: move.createsCheck,
+        isCheckmate: move.isCheckmate || false,
+        isCastling: move.isCastling || false,
+        isEnPassant: move.isEnPassant || false,
+        castlingSide: move.castlingSide || null,
+        notation: chessNotation.formatMove(move),
+        capturedPiece: null
+      };
+      
+      // Add captured piece data if applicable
+      if (move.capturedPiece) {
+        result[moveNumber].black.capturedPiece = {
+          piece: move.capturedPiece.type,
+          color: move.capturedPiece.color,
+          image: getPieceImagePath(move.capturedPiece.type, move.capturedPiece.color)
+        };
+      }
     }
-  });
+  }
   
   return result;
 });
@@ -98,35 +128,18 @@ onUpdated(() => {
             class="w-5 h-5 mr-1" 
           />
           
-          <!-- Castling move -->
-          <template v-if="moves.white.isCastling">
-            <span class="font-semibold">
-              {{ moves.white.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}
-              <template v-if="moves.white.createsCheck">{{ moves.white.isCheckmate ? '++' : '+' }}</template>
+          <div>
+            <!-- Standard notation format only -->
+            <span class="font-semibold text-sm">
+              {{ moves.white.notation }}
             </span>
-          </template>
-          
-          <!-- Regular move (non-capture) -->
-          <template v-else-if="!moves.white.capturedPiece">
-            <span class="font-semibold">
-              {{ moves.white.from }} → {{ moves.white.to }}
-              <template v-if="moves.white.createsCheck">{{ moves.white.isCheckmate ? '++' : '+' }}</template>
+            <!-- Special move indicators -->
+            <span v-if="moves.white.isEnPassant" 
+                  class="ml-1 text-xs text-amber-700 font-light" 
+                  title="En passant capture">
+              e.p.
             </span>
-          </template>
-          
-          <!-- Capture move -->
-          <template v-else>
-            <span class="font-semibold">{{ moves.white.from }} × </span>
-            <img 
-              :src="moves.white.capturedPiece.image" 
-              :alt="`${moves.white.capturedPiece.color} ${moves.white.capturedPiece.piece}`" 
-              class="w-5 h-5 mx-1" 
-            />
-            <span class="font-semibold">
-              {{ moves.white.to }}
-              <template v-if="moves.white.createsCheck">{{ moves.white.isCheckmate ? '++' : '+' }}</template>
-            </span>
-          </template>
+          </div>
         </div>
         <div v-else class="p-3"></div>
         
@@ -138,35 +151,18 @@ onUpdated(() => {
             class="w-5 h-5 mr-1" 
           />
           
-          <!-- Castling move -->
-          <template v-if="moves.black.isCastling">
-            <span>
-              {{ moves.black.castlingSide === 'kingside' ? 'O-O' : 'O-O-O' }}
-              <template v-if="moves.black.createsCheck">{{ moves.black.isCheckmate ? '++' : '+' }}</template>
+          <div>
+            <!-- Standard notation format only -->
+            <span class="text-sm">
+              {{ moves.black.notation }}
             </span>
-          </template>
-          
-          <!-- Regular move (non-capture) -->
-          <template v-else-if="!moves.black.capturedPiece">
-            <span>
-              {{ moves.black.from }} → {{ moves.black.to }}
-              <template v-if="moves.black.createsCheck">{{ moves.black.isCheckmate ? '++' : '+' }}</template>
+            <!-- Special move indicators -->
+            <span v-if="moves.black.isEnPassant" 
+                  class="ml-1 text-xs text-amber-700 font-light" 
+                  title="En passant capture">
+              e.p.
             </span>
-          </template>
-          
-          <!-- Capture move -->
-          <template v-else>
-            <span>{{ moves.black.from }} × </span>
-            <img 
-              :src="moves.black.capturedPiece.image" 
-              :alt="`${moves.black.capturedPiece.color} ${moves.black.capturedPiece.piece}`" 
-              class="w-5 h-5 mx-1" 
-            />
-            <span>
-              {{ moves.black.to }}
-              <template v-if="moves.black.createsCheck">{{ moves.black.isCheckmate ? '++' : '+' }}</template>
-            </span>
-          </template>
+          </div>
         </div>
         <div v-else class="p-3"></div>
       </div>
