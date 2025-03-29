@@ -116,17 +116,6 @@ const selectMove = (moveIndex) => {
   }
 };
 
-// Function to go to latest move
-const goToLatestMove = () => {
-  // Emit Vue event
-  emit('move-selected', -1); // -1 indicates latest move
-  
-  // Also dispatch a DOM event
-  window.dispatchEvent(new CustomEvent('chess-move-selected', { 
-    detail: -1 
-  }));
-};
-
 // Scroll to the bottom when move history updates
 onUpdated(() => {
   if (moveHistoryPanel.value && props.currentMoveIndex === -1) {
@@ -140,14 +129,6 @@ onUpdated(() => {
   <div ref="moveHistoryPanel" class="w-88 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
     <div class="flex justify-between items-center p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
       <div>Move History</div>
-      <button 
-        v-if="currentMoveIndex !== -1" 
-        @click="goToLatestMove()"
-        class="text-xs bg-amber-700 hover:bg-amber-600 px-2 py-1 rounded text-white"
-        title="Return to current position"
-      >
-        Return to current
-      </button>
     </div>
     
     <!-- Column Headers - Sticky -->

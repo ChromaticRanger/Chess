@@ -1176,12 +1176,15 @@ const captureCurrentBoardState = () => {
 /**
  * Restore the board to a specific move in history
  * 
- * @param {Number} moveIndex - The index of the move to display, or -1 for latest move
+ * @param {Number} moveIndex - The index of the move to display:
+ *                         -2: starting position (before any moves)
+ *                         -1: latest move
+ *                         0+: specific move from history
  * @returns {void}
  */
 const restoreBoardStateToMove = (moveIndex) => {
   // Validate the move index
-  if (moveIndex < -1 || moveIndex >= moveHistory.value.length) {
+  if (moveIndex < -2 || moveIndex >= moveHistory.value.length) {
     console.error(`Invalid move index: ${moveIndex}`);
     return;
   }
@@ -1189,6 +1192,13 @@ const restoreBoardStateToMove = (moveIndex) => {
   // Update current move index
   currentMoveIndex.value = moveIndex;
   emit('current-move-index-changed', currentMoveIndex.value);
+  
+  // Special case: -2 represents the starting position (before any moves)
+  if (moveIndex === -2) {
+    // Reset to the initial position
+    pieces.value = JSON.parse(JSON.stringify(initialPieces));
+    return;
+  }
   
   // If we're going to the latest move, use the latest state
   const stateIndex = moveIndex === -1 ? boardStateHistory.value.length - 1 : moveIndex + 1;

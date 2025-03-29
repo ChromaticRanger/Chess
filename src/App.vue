@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import Board from "./components/Board.vue";
 import Modal from "./components/Modal.vue";
 import MoveHistoryList from "./components/MoveHistoryList.vue";
+import MoveControlPanel from "./components/MoveControlPanel.vue";
 import { getPieceImagePath } from "./utils/PieceFactory";
 
 // Track the current turn
@@ -129,7 +130,7 @@ onMounted(() => {
                   class="ml-3 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
                   title="Viewing past board position"
                 >
-                  Viewing Past Move
+                  Viewing Past Moves
                 </span>
               </div>
               
@@ -140,25 +141,27 @@ onMounted(() => {
                 Reset Board
               </button>
             </div>
-            
-            <!-- Return to current button (only visible when viewing past move) -->
-            <div v-if="viewingPastMove" class="flex justify-center">
-              <button
-                @click="goToMove(-1)"
-                class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-1 px-4 rounded"
-              >
-                Return to Current Position
-              </button>
-            </div>
           </div>
         </div>
         
-        <!-- Move History Component -->
-        <MoveHistoryList 
-          :move-history="moveHistory" 
-          :current-move-index="currentMoveIndex"
-          @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
-        />
+        <!-- Move History Component with Control Panel -->
+        <div class="flex flex-col">
+          <MoveHistoryList 
+            :move-history="moveHistory" 
+            :current-move-index="currentMoveIndex"
+            @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
+          />
+          
+          <!-- Move Control Panel -->
+          <MoveControlPanel
+            :move-history="moveHistory"
+            :current-move-index="currentMoveIndex"
+            @move-to-first="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+            @move-to-previous="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+            @move-to-next="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+            @move-to-last="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+          />
+        </div>
       </div>
     </div>
     <!-- Modal Component -->
