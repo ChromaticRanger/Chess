@@ -12,7 +12,12 @@ import useChessNotation from "../composables/useChessNotation";
 import { getPieceImagePath, createPiece } from "../utils/PieceFactory";
 
 // Add event emitter
-const emit = defineEmits(['turn-changed', 'move-history-updated', 'checkmate']);
+const emit = defineEmits([
+  'turn-changed', 
+  'move-history-updated', 
+  'checkmate',
+  'current-move-index-changed'
+]);
 
 // Initialize game state with callbacks
 const gameState = useGameState({
@@ -367,8 +372,18 @@ const resetBoard = () => {
   promotionColor.value = null;
   pendingMove.value = null;
   
+  // Reset board history state
+  boardStateHistory.value = [];
+  currentMoveIndex.value = -1;
+  emit('current-move-index-changed', currentMoveIndex.value);
+  
   // Reset game state using the composable
   gameState.resetGameState();
+  
+  // Capture initial board state after reset
+  nextTick(() => {
+    captureCurrentBoardState();
+  });
 };
 
 // The pieces are now managed by usePieceManagement composable
@@ -389,6 +404,11 @@ const promotionPosition = ref({ row: null, col: null });
 const promotionColor = ref(null);
 const pendingMove = ref(null);
 
+// Board history state
+const boardStateHistory = ref([]); // Stores snapshots of board state after each move
+const currentMoveIndex = ref(-1); // -1 means "latest move"
+const viewingPastMove = computed(() => currentMoveIndex.value >= 0 && currentMoveIndex.value < moveHistory.value.length);
+
 /**
  * Handle the MouseDown event
  *
@@ -400,6 +420,12 @@ const handleMouseDown = (piece, event) => {
   // Don't allow dragging if promotion UI is active
   if (showPromotion.value) {
     console.log('Promotion in progress, cannot move pieces');
+    return;
+  }
+  
+  // Don't allow dragging if viewing a past move
+  if (viewingPastMove.value) {
+    console.log('Viewing past move, cannot move pieces');
     return;
   }
 
@@ -800,6 +826,9 @@ const handleMouseUp = async (event) => {
         if (createsCheck) {
           attackedSquares.value = calculateAttackedSquares(movingPiece.color);
         }
+        
+        // Capture the board state after the move is completed
+        captureCurrentBoardState();
       }
     } else {
       returnPiece(movingPiece);
@@ -987,6 +1016,9 @@ const handlePromotion = (promotionChoice) => {
     if (promotionCreatesCheck) {
       attackedSquares.value = calculateAttackedSquares(piece.color);
     }
+    
+    // Capture the board state after the promotion is completed
+    captureCurrentBoardState();
   }
   
   // Hide the promotion UI
@@ -1119,6 +1151,60 @@ const returnPiece = async (piece) => {
   }
 };
 
+/**
+ * Capture the current board state
+ * This is called after each move to build up the history of board states
+ */
+const captureCurrentBoardState = () => {
+  // Create a deep copy of the current pieces
+  const boardState = JSON.parse(JSON.stringify(pieces.value));
+  
+  // Add the state to our history
+  boardStateHistory.value.push(boardState);
+  
+  // Trim history if it's longer than our move history
+  // This can happen if we undo moves and then make new ones
+  if (boardStateHistory.value.length > moveHistory.value.length + 1) {
+    boardStateHistory.value = boardStateHistory.value.slice(0, moveHistory.value.length + 1);
+  }
+  
+  // Keep currentMoveIndex at -1 (latest move)
+  currentMoveIndex.value = -1;
+  emit('current-move-index-changed', currentMoveIndex.value);
+};
+
+/**
+ * Restore the board to a specific move in history
+ * 
+ * @param {Number} moveIndex - The index of the move to display, or -1 for latest move
+ * @returns {void}
+ */
+const restoreBoardStateToMove = (moveIndex) => {
+  // Validate the move index
+  if (moveIndex < -1 || moveIndex >= moveHistory.value.length) {
+    console.error(`Invalid move index: ${moveIndex}`);
+    return;
+  }
+  
+  // Update current move index
+  currentMoveIndex.value = moveIndex;
+  emit('current-move-index-changed', currentMoveIndex.value);
+  
+  // If we're going to the latest move, use the latest state
+  const stateIndex = moveIndex === -1 ? boardStateHistory.value.length - 1 : moveIndex + 1;
+  
+  // Make sure we have a state for this index
+  if (stateIndex >= 0 && stateIndex < boardStateHistory.value.length) {
+    // Get the board state at this index
+    const boardState = boardStateHistory.value[stateIndex];
+    
+    // Apply the state to our current pieces
+    pieces.value = JSON.parse(JSON.stringify(boardState));
+  } else {
+    console.error(`No board state found for move index ${moveIndex} (state index ${stateIndex})`);
+  }
+};
+
 
 
 
@@ -1130,6 +1216,9 @@ const returnPiece = async (piece) => {
  * Set up mouse events on component mount
  */
 onMounted(() => {
+  // Capture initial board state
+  captureCurrentBoardState();
+  
   // Store reference to board for debugging
   window.chessBoard = {
     exportBoardState,
@@ -1392,6 +1481,17 @@ const squares = computed(() => {
   return result;
 });
 
+/**
+ * Handle selection of a move from the move history list
+ * 
+ * @param {Number} moveIndex - The index of the move to display, or -1 for latest move
+ * @returns {void}
+ */
+const handleMoveSelection = (moveIndex) => {
+  console.log(`Restoring board state to move index ${moveIndex}`);
+  restoreBoardStateToMove(moveIndex);
+};
+
 // Expose methods and game state to the parent component
 defineExpose({
   // Core game functionality
@@ -1399,6 +1499,8 @@ defineExpose({
   currentTurn, 
   moveHistory,
   enPassantTarget,
+  currentMoveIndex,
+  handleMoveSelection,
   
   // Debug functions
   exportBoardState,
