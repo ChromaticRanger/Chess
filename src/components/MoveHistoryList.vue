@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, defineProps, onUpdated } from 'vue';
+import { ref, computed, defineProps, defineEmits, onUpdated } from 'vue';
 import { getPieceImagePath } from "../utils/PieceFactory";
 import useChessNotation from "../composables/useChessNotation";
 
@@ -8,8 +8,15 @@ const props = defineProps({
     type: Array,
     required: true,
     default: () => []
+  },
+  currentMoveIndex: {
+    type: Number,
+    default: -1 // -1 indicates we're at the latest move
   }
 });
+
+// Define emits for when a move is selected
+const emit = defineEmits(['move-selected']);
 
 // Reference to the move history panel
 const moveHistoryPanel = ref(null);
@@ -87,9 +94,43 @@ const formattedMoveHistoryByNumber = computed(() => {
   return result;
 });
 
+// Helper functions to calculate move indices
+const getWhiteMoveIndex = (moveNumber) => {
+  return (parseInt(moveNumber) - 1) * 2;
+};
+
+const getBlackMoveIndex = (moveNumber) => {
+  return (parseInt(moveNumber) - 1) * 2 + 1;
+};
+
+// Function to handle move selection
+const selectMove = (moveIndex) => {
+  if (moveIndex >= 0 && moveIndex < props.moveHistory.length) {
+    // Emit Vue event
+    emit('move-selected', moveIndex);
+    
+    // Also dispatch a DOM event that can be caught globally
+    window.dispatchEvent(new CustomEvent('chess-move-selected', { 
+      detail: moveIndex 
+    }));
+  }
+};
+
+// Function to go to latest move
+const goToLatestMove = () => {
+  // Emit Vue event
+  emit('move-selected', -1); // -1 indicates latest move
+  
+  // Also dispatch a DOM event
+  window.dispatchEvent(new CustomEvent('chess-move-selected', { 
+    detail: -1 
+  }));
+};
+
 // Scroll to the bottom when move history updates
 onUpdated(() => {
-  if (moveHistoryPanel.value) {
+  if (moveHistoryPanel.value && props.currentMoveIndex === -1) {
+    // Only auto-scroll when we're viewing the latest move
     moveHistoryPanel.value.scrollTop = moveHistoryPanel.value.scrollHeight;
   }
 });
@@ -97,8 +138,16 @@ onUpdated(() => {
 
 <template>
   <div ref="moveHistoryPanel" class="w-88 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
-    <div class="p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
-      Move History
+    <div class="flex justify-between items-center p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
+      <div>Move History</div>
+      <button 
+        v-if="currentMoveIndex !== -1" 
+        @click="goToLatestMove()"
+        class="text-xs bg-amber-700 hover:bg-amber-600 px-2 py-1 rounded text-white"
+        title="Return to current position"
+      >
+        Return to current
+      </button>
     </div>
     
     <!-- Column Headers - Sticky -->
@@ -120,7 +169,12 @@ onUpdated(() => {
         :class="{'bg-gray-50': parseInt(moveNumber) % 2 === 1}"
       >
         <!-- White's move (left column) -->
-        <div v-if="moves.white" class="p-3 flex items-center">
+        <div 
+          v-if="moves.white" 
+          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer"
+          :class="{'bg-blue-100': getWhiteMoveIndex(moveNumber) === currentMoveIndex}"
+          @click="selectMove(getWhiteMoveIndex(moveNumber))"
+        >
           <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
           <img 
             :src="moves.white.pieceImage" 
@@ -133,13 +187,17 @@ onUpdated(() => {
             <span class="font-semibold text-sm">
               {{ moves.white.notation }}
             </span>
-            <!-- We removed the separate e.p. span since it's already in the notation -->
           </div>
         </div>
         <div v-else class="p-3"></div>
         
         <!-- Black's move (right column) -->
-        <div v-if="moves.black" class="p-3 flex items-center">
+        <div 
+          v-if="moves.black" 
+          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer"
+          :class="{'bg-blue-100': getBlackMoveIndex(moveNumber) === currentMoveIndex}"
+          @click="selectMove(getBlackMoveIndex(moveNumber))"
+        >
           <img 
             :src="moves.black.pieceImage" 
             :alt="`${moves.black.color} ${moves.black.piece}`" 
@@ -151,7 +209,6 @@ onUpdated(() => {
             <span class="text-sm">
               {{ moves.black.notation }}
             </span>
-            <!-- We removed the separate e.p. span since it's already in the notation -->
           </div>
         </div>
         <div v-else class="p-3"></div>
