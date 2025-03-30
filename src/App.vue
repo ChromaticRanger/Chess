@@ -4,6 +4,7 @@ import Board from "./components/Board.vue";
 import Modal from "./components/Modal.vue";
 import MoveHistoryList from "./components/MoveHistoryList.vue";
 import MoveControlPanel from "./components/MoveControlPanel.vue";
+import BoardStatusPanel from "./components/BoardStatusPanel.vue";
 import { getPieceImagePath } from "./utils/PieceFactory";
 
 // Track the current turn
@@ -118,30 +119,12 @@ onMounted(() => {
             />
           </div>
           
-          <!-- Chess Board Controls -->
-          <div class="flex flex-col space-y-2 mt-4">
-            <div class="flex justify-between items-center">
-              <div class="text-lg font-semibold flex items-center">
-                <span>Current turn: {{ currentTurn }}</span>
-                
-                <!-- Past Move Indicator -->
-                <span 
-                  v-if="viewingPastMove" 
-                  class="ml-3 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                  title="Viewing past board position"
-                >
-                  Viewing Past Moves
-                </span>
-              </div>
-              
-              <button 
-                @click="boardComponent ? boardComponent.resetBoard() : null" 
-                class="bg-amber-800 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
-              >
-                Reset Board
-              </button>
-            </div>
-          </div>
+          <!-- Chess Board Status Panel -->
+          <BoardStatusPanel
+            :current-turn="currentTurn"
+            :viewing-past-move="viewingPastMove"
+            @reset-board="boardComponent ? boardComponent.resetBoard() : null"
+          />
         </div>
         
         <!-- Move History Component with Control Panel -->
