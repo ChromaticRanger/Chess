@@ -38,6 +38,9 @@ const currentMoveIndex = ref(-1);
 // Track whether we're viewing a past move
 const viewingPastMove = ref(false);
 
+// Track captured pieces
+const capturedPieces = ref([]);
+
 // Handler for turn changes
 const handleTurnChange = (newTurn) => {
   currentTurn.value = newTurn;
@@ -61,6 +64,12 @@ const handleCurrentMoveIndexChange = (newIndex) => {
   currentMoveIndex.value = newIndex;
   viewingPastMove.value = newIndex !== -1;
   console.log(`Current move index changed to ${newIndex}, viewing past move: ${viewingPastMove.value}`);
+};
+
+// Handler for captured pieces updates
+const handleCapturedPiecesUpdate = (newCapturedPieces) => {
+  capturedPieces.value = newCapturedPieces;
+  console.log("Captured pieces updated:", newCapturedPieces);
 };
 
 // Create a ref for the board component
@@ -113,6 +122,8 @@ onMounted(() => {
             <BoardStatusPanel
               :current-turn="currentTurn"
               :viewing-past-move="viewingPastMove"
+              :captured-pieces="capturedPieces"
+              :current-move-index="currentMoveIndex"
               position="top"
               class="w-full"
             />
@@ -133,6 +144,7 @@ onMounted(() => {
                   @move-history-updated="handleMoveHistoryUpdate"
                   @checkmate="handleCheckmate"
                   @current-move-index-changed="handleCurrentMoveIndexChange"
+                  @captured-pieces-updated="handleCapturedPiecesUpdate"
                 />
               </div>
             </div>
@@ -155,6 +167,8 @@ onMounted(() => {
             <BoardStatusPanel
               :current-turn="currentTurn"
               :viewing-past-move="viewingPastMove"
+              :captured-pieces="capturedPieces"
+              :current-move-index="currentMoveIndex"
               position="bottom"
               style="width: 820px;"
               class="mr-6"

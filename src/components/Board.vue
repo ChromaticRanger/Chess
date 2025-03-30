@@ -16,7 +16,8 @@ const emit = defineEmits([
   'turn-changed', 
   'move-history-updated', 
   'checkmate',
-  'current-move-index-changed'
+  'current-move-index-changed',
+  'captured-pieces-updated'
 ]);
 
 // Initialize game state with callbacks
@@ -366,6 +367,10 @@ const resetBoard = () => {
   validMoves.value = [];
   attackedSquares.value = [];
   
+  // Reset captured pieces
+  capturedPieces.value = [];
+  emit('captured-pieces-updated', capturedPieces.value);
+  
   // Reset promotion state
   showPromotion.value = false;
   promotionPosition.value = { row: null, col: null };
@@ -397,6 +402,7 @@ const offsetX = ref(0);
 const offsetY = ref(0);
 const validMoves = ref([]);
 const attackedSquares = ref([]);
+const capturedPieces = ref([]); // Track captured pieces
 
 // Pawn promotion state
 const showPromotion = ref(false);
@@ -649,7 +655,7 @@ const handleMouseUp = async (event) => {
       
       if (existingPiece) {
         capturedPiece = {...existingPiece}; // Save a copy before taking it
-        takePiece(existingPiece);
+        takePiece(existingPiece, movingPiece.color);
       }
       
       // Check what kind of special move this is (castling, en passant, etc.)
@@ -689,9 +695,8 @@ const handleMouseUp = async (event) => {
           console.log(`Found pawn to capture:`, capturedPawn);
           capturedPiece = {...capturedPawn}; // Save a copy
           
-          // Immediately remove the pawn from the board
-          console.log(`Removing pawn at (${capturedPawnRow},${capturedPawnCol}) from board`);
-          pieces.value = pieces.value.filter(p => p.id !== capturedPawn.id);
+          // Use our takePiece function to track the captured piece
+          takePiece(capturedPawn, movingPiece.color);
         } else {
           console.error(`Could not find a ${opponentColor} pawn at (${capturedPawnRow},${capturedPawnCol}) to capture via en passant!`);
           
@@ -903,10 +908,23 @@ const checkForExistingPiece = (row, col) => {
  * Take a piece from the board
  *
  * @param piece - The piece to take
+ * @param capturedBy - The color of the piece that captured this piece
  */
-const takePiece = (piece) => {
+const takePiece = (piece, capturedBy) => {
   const index = pieces.value.findIndex((p) => p.id === piece.id);
   pieces.value.splice(index, 1);
+  
+  // Add the captured piece to our tracking array
+  capturedPieces.value.push({
+    id: piece.id,
+    type: piece.type,
+    color: piece.color,
+    capturedBy: capturedBy || (currentTurn.value === 'White' ? 'Black' : 'White'),
+    moveNumber: moveHistory.value.length + 1
+  });
+  
+  // Emit event to update the UI
+  emit('captured-pieces-updated', capturedPieces.value);
 };
 
 /**
