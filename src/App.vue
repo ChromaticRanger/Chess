@@ -106,44 +106,71 @@ onMounted(() => {
 <template>
   <div class="flex items-center justify-center min-h-screen">
     <div class="flex flex-col">
-      <div class="flex items-start">
-        <!-- Chess Board Section -->
-        <div class="mr-6 flex flex-col">
-          <div class="border-brown border-10 rounded shadow-md">
-            <Board 
-              ref="boardComponent"
-              @turn-changed="handleTurnChange"
-              @move-history-updated="handleMoveHistoryUpdate"
-              @checkmate="handleCheckmate"
-              @current-move-index-changed="handleCurrentMoveIndexChange"
+      <div class="flex flex-col items-center">
+        <!-- Top Row: Board Status Panel (aligned with chess board width) -->
+        <div class="flex justify-center w-full mb-2">
+          <div class="flex" style="width: 820px;">
+            <BoardStatusPanel
+              :current-turn="currentTurn"
+              :viewing-past-move="viewingPastMove"
+              position="top"
+              class="w-full"
             />
           </div>
-          
-          <!-- Chess Board Status Panel -->
-          <BoardStatusPanel
-            :current-turn="currentTurn"
-            :viewing-past-move="viewingPastMove"
-            @reset-board="boardComponent ? boardComponent.resetBoard() : null"
-          />
+          <!-- Empty space for alignment with move history -->
+          <div style="width: 352px;" class="ml-6"></div>
         </div>
         
-        <!-- Move History Component with Control Panel -->
-        <div class="flex flex-col">
-          <MoveHistoryList 
-            :move-history="moveHistory" 
-            :current-move-index="currentMoveIndex"
-            @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
-          />
-          
-          <!-- Move Control Panel -->
-          <MoveControlPanel
-            :move-history="moveHistory"
-            :current-move-index="currentMoveIndex"
-            @move-to-first="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-            @move-to-previous="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-            @move-to-next="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-            @move-to-last="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-          />
+        <!-- Middle Row: Game Board + Move History -->
+        <div class="flex justify-center w-full">
+          <div class="flex">
+            <!-- Chess Board Section -->
+            <div class="mr-6" style="width: 820px;">
+              <div class="border-brown border-10 rounded shadow-md">
+                <Board 
+                  ref="boardComponent"
+                  @turn-changed="handleTurnChange"
+                  @move-history-updated="handleMoveHistoryUpdate"
+                  @checkmate="handleCheckmate"
+                  @current-move-index-changed="handleCurrentMoveIndexChange"
+                />
+              </div>
+            </div>
+            
+            <!-- Move History Component -->
+            <MoveHistoryList 
+              :move-history="moveHistory" 
+              :current-move-index="currentMoveIndex"
+              @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
+              @reset-board="boardComponent ? boardComponent.resetBoard() : null"
+              style="width: 352px;"
+            />
+          </div>
+        </div>
+        
+        <!-- Bottom Row: Board Status Panel + Move Control Panel -->
+        <div class="flex justify-center w-full mt-2">
+          <div class="flex">
+            <!-- Bottom Board Status Panel - aligned with chess board width -->
+            <BoardStatusPanel
+              :current-turn="currentTurn"
+              :viewing-past-move="viewingPastMove"
+              position="bottom"
+              style="width: 820px;"
+              class="mr-6"
+            />
+            
+            <!-- Move Control Panel - aligned with Move History List width -->
+            <MoveControlPanel
+              :move-history="moveHistory"
+              :current-move-index="currentMoveIndex"
+              @move-to-first="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+              @move-to-previous="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+              @move-to-next="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+              @move-to-last="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+              style="width: 352px;"
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue';
-import resetSvg from '/src/assets/reset.svg';
+import { defineProps } from 'vue';
 
 // Define props
 const props = defineProps({
@@ -11,42 +10,52 @@ const props = defineProps({
   viewingPastMove: {
     type: Boolean,
     default: false
+  },
+  position: {
+    type: String,
+    required: true,
+    validator: (value) => ["top", "bottom"].includes(value)
+  },
+  showCurrentTurn: {
+    type: Boolean,
+    default: true
   }
 });
 
-// Define emits
-const emit = defineEmits(['reset-board']);
-
-// Handler for reset button click
-const handleResetBoard = () => {
-  emit('reset-board');
-};
 </script>
 
 <template>
-  <div class="board-status-panel chess-width flex justify-between items-center bg-gray-100 border border-gray-300 p-2 rounded-md mt-2">
-    <!-- Current Turn Display -->
-    <div class="flex items-center">
-      <span class="text-lg font-semibold">Current turn: {{ currentTurn }}</span>
-      
+  <div 
+    class="board-status-panel flex items-center justify-between bg-gray-100 border border-gray-300 p-2 rounded-md w-full"
+  >
+    <!-- Left Side Content -->
+    <div class="flex items-center h-10">
       <!-- Past Move Indicator -->
       <span 
         v-if="viewingPastMove" 
-        class="ml-3 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+        class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
         title="Viewing past board position"
       >
         Viewing Past Moves
       </span>
     </div>
-    
-    <!-- Reset Board Button -->
-    <button 
-      @click="handleResetBoard" 
-      class="control-button"
-      title="Reset board"
+
+    <!-- Right Side: Turn Indicator -->
+    <div 
+      v-if="showCurrentTurn && ((position === 'top' && currentTurn === 'Black') || (position === 'bottom' && currentTurn === 'White'))"
+      class="flex items-center"
     >
-      <img :src="resetSvg" alt="Reset Board" class="w-6 h-6" />
-    </button>
+      <span class="text-lg font-semibold mr-2">{{ currentTurn }} to Move</span>
+      <!-- Visual indicator - colored circle to match the turn color -->
+      <div 
+        class="w-4 h-4 rounded-full" 
+        :class="{ 
+          'bg-gray-800': currentTurn === 'Black',
+          'bg-white border border-gray-400': currentTurn === 'White'
+        }"
+      ></div>
+    </div>
+    <div v-else class="w-6 h-6"></div>
   </div>
 </template>
 

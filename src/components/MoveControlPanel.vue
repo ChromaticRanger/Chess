@@ -184,7 +184,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="move-control-panel w-88 flex justify-between items-center bg-gray-100 border border-gray-300 p-2 rounded-md mt-2">
+  <div class="move-control-panel flex justify-between items-center bg-gray-100 border border-gray-300 p-2 rounded-md" style="height: 58px;">
     <button 
       @click="goToFirstMove" 
       class="control-button" 

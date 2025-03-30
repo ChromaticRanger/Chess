@@ -2,6 +2,7 @@
 import { ref, computed, defineProps, defineEmits, onUpdated } from 'vue';
 import { getPieceImagePath } from "../utils/PieceFactory";
 import useChessNotation from "../composables/useChessNotation";
+import resetSvg from '/src/assets/reset.svg';
 
 const props = defineProps({
   moveHistory: {
@@ -15,8 +16,8 @@ const props = defineProps({
   }
 });
 
-// Define emits for when a move is selected
-const emit = defineEmits(['move-selected']);
+// Define emits for when a move is selected or reset is requested
+const emit = defineEmits(['move-selected', 'reset-board']);
 
 // Reference to the move history panel
 const moveHistoryPanel = ref(null);
@@ -116,6 +117,11 @@ const selectMove = (moveIndex) => {
   }
 };
 
+// Handler for reset button click
+const handleResetBoard = () => {
+  emit('reset-board');
+};
+
 // Scroll to the bottom when move history updates
 onUpdated(() => {
   if (moveHistoryPanel.value && props.currentMoveIndex === -1) {
@@ -129,6 +135,13 @@ onUpdated(() => {
   <div ref="moveHistoryPanel" class="w-88 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
     <div class="flex justify-between items-center p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
       <div>Move History</div>
+      <button 
+        @click="handleResetBoard" 
+        class="reset-button"
+        title="Reset board"
+      >
+        <img :src="resetSvg" alt="Reset Board" class="w-6 h-6 invert" />
+      </button>
     </div>
     
     <!-- Column Headers - Sticky -->
@@ -201,5 +214,13 @@ onUpdated(() => {
 <style scoped>
 .h-chess-board {
   height: 820px; /* Match chessboard height + border (800px + 20px) */
+}
+
+.reset-button {
+  @apply p-1 rounded-md hover:bg-amber-700 transition-colors;
+}
+
+.invert {
+  filter: invert(1);
 }
 </style>
