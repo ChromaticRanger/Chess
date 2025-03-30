@@ -166,7 +166,10 @@ onUpdated(() => {
         <div 
           v-if="moves.white" 
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer"
-          :class="{'bg-blue-100': getWhiteMoveIndex(moveNumber) === currentMoveIndex}"
+          :class="{
+            'bg-blue-100': getWhiteMoveIndex(moveNumber) === currentMoveIndex,
+            'text-red-600': moves.white.createsCheck
+          }"
           @click="selectMove(getWhiteMoveIndex(moveNumber))"
         >
           <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
@@ -189,7 +192,10 @@ onUpdated(() => {
         <div 
           v-if="moves.black" 
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer"
-          :class="{'bg-blue-100': getBlackMoveIndex(moveNumber) === currentMoveIndex}"
+          :class="{
+            'bg-blue-100': getBlackMoveIndex(moveNumber) === currentMoveIndex,
+            'text-red-600': moves.black.createsCheck
+          }"
           @click="selectMove(getBlackMoveIndex(moveNumber))"
         >
           <img 

@@ -1215,6 +1215,9 @@ const restoreBoardStateToMove = (moveIndex) => {
   if (moveIndex === -2) {
     // Reset to the initial position
     pieces.value = JSON.parse(JSON.stringify(initialPieces));
+    // Reset check status when viewing initial position
+    setCheckStatus("White", false);
+    setCheckStatus("Black", false);
     return;
   }
   
@@ -1228,6 +1231,27 @@ const restoreBoardStateToMove = (moveIndex) => {
     
     // Apply the state to our current pieces
     pieces.value = JSON.parse(JSON.stringify(boardState));
+    
+    // Reset both check statuses first
+    setCheckStatus("White", false);
+    setCheckStatus("Black", false);
+    
+    // If this isn't the latest move, set check status based on move history
+    if (moveIndex >= 0 && moveIndex < moveHistory.value.length) {
+      const move = moveHistory.value[moveIndex];
+      if (move.createsCheck) {
+        // The move puts the opponent's king in check
+        const opponentColor = move.color === "White" ? "Black" : "White";
+        setCheckStatus(opponentColor, true);
+      }
+    } else if (moveIndex === -1 && moveHistory.value.length > 0) {
+      // For the latest move, use the current check status
+      const lastMove = moveHistory.value[moveHistory.value.length - 1];
+      if (lastMove.createsCheck) {
+        const opponentColor = lastMove.color === "White" ? "Black" : "White";
+        setCheckStatus(opponentColor, true);
+      }
+    }
   } else {
     console.error(`No board state found for move index ${moveIndex} (state index ${stateIndex})`);
   }
