@@ -68,6 +68,11 @@ export default function useChessNotation() {
     // Add destination square
     notation += move.to.notation.toLowerCase();
     
+    // Add promotion notation if applicable
+    if (move.isPromotion && move.promotedTo) {
+      notation += '=' + getPieceSymbol(move.promotedTo);
+    }
+    
     // Add en passant annotation (optional, but helpful for clarity)
     if (move.isEnPassant) {
       notation += ' e.p.';

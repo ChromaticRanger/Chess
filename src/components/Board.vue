@@ -937,11 +937,11 @@ const handlePromotion = (promotionChoice) => {
   const pawnIndex = pieces.value.findIndex(p => p.id === piece.id);
   
   if (pawnIndex !== -1) {
-    // Remove the pawn from the board
-    const pawn = pieces.value[pawnIndex];
-    const { row: fromRow, col: fromCol } = pawn;
+    // Get the original position of the pawn from the pendingMove
+    const fromRow = pendingMove.value.fromRow;
+    const fromCol = pendingMove.value.fromCol;
     
-    console.log("Promoting pawn:", JSON.stringify(pawn));
+    console.log("Promoting pawn:", JSON.stringify(piece));
     
     // Use the factory function to properly create a new piece of the chosen type
     // This ensures all needed properties are set correctly
