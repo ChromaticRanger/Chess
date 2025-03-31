@@ -41,6 +41,9 @@ const viewingPastMove = ref(false);
 // Track captured pieces
 const capturedPieces = ref([]);
 
+// Track board orientation (true = flipped, black at bottom)
+const boardFlipped = ref(false);
+
 // Handler for turn changes
 const handleTurnChange = (newTurn) => {
   currentTurn.value = newTurn;
@@ -70,6 +73,12 @@ const handleCurrentMoveIndexChange = (newIndex) => {
 const handleCapturedPiecesUpdate = (newCapturedPieces) => {
   capturedPieces.value = newCapturedPieces;
   console.log("Captured pieces updated:", newCapturedPieces);
+};
+
+// Handler for board orientation changes
+const handleBoardOrientationChange = (isFlipped) => {
+  boardFlipped.value = isFlipped;
+  console.log("Board orientation changed, flipped:", isFlipped);
 };
 
 // Create a ref for the board component
@@ -124,6 +133,7 @@ onMounted(() => {
               :viewing-past-move="viewingPastMove"
               :captured-pieces="capturedPieces"
               :current-move-index="currentMoveIndex"
+              :board-flipped="boardFlipped"
               position="top"
               class="w-full"
             />
@@ -145,6 +155,7 @@ onMounted(() => {
                   @checkmate="handleCheckmate"
                   @current-move-index-changed="handleCurrentMoveIndexChange"
                   @captured-pieces-updated="handleCapturedPiecesUpdate"
+                  @board-orientation-changed="handleBoardOrientationChange"
                 />
               </div>
             </div>
@@ -169,6 +180,7 @@ onMounted(() => {
               :viewing-past-move="viewingPastMove"
               :captured-pieces="capturedPieces"
               :current-move-index="currentMoveIndex"
+              :board-flipped="boardFlipped"
               position="bottom"
               style="width: 820px;"
               class="mr-6"

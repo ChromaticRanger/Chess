@@ -17,7 +17,8 @@ const emit = defineEmits([
   'move-history-updated', 
   'checkmate',
   'current-move-index-changed',
-  'captured-pieces-updated'
+  'captured-pieces-updated',
+  'board-orientation-changed'
 ]);
 
 // Initialize game state with callbacks
@@ -403,6 +404,7 @@ const offsetY = ref(0);
 const validMoves = ref([]);
 const attackedSquares = ref([]);
 const capturedPieces = ref([]); // Track captured pieces
+const boardFlipped = ref(false); // Track if the board is flipped (black at bottom)
 
 // Pawn promotion state
 const showPromotion = ref(false);
@@ -604,8 +606,13 @@ const handleMouseUp = async (event) => {
     offsetX.value = boardRect.left;
     offsetY.value = boardRect.top;
 
-    const newRow = Math.floor((event.clientY - offsetY.value) / 100);
-    const newCol = Math.floor((event.clientX - offsetX.value) / 100);
+    // Get visual coordinates from mouse position
+    let visualRow = Math.floor((event.clientY - offsetY.value) / 100);
+    let visualCol = Math.floor((event.clientX - offsetX.value) / 100);
+    
+    // Convert visual coordinates to logical coordinates based on board orientation
+    const newRow = boardFlipped.value ? 7 - visualRow : visualRow;
+    const newCol = boardFlipped.value ? 7 - visualCol : visualCol;
 
     // Check if the piece is dropped in its original position
     if (newRow === originalPosition.value.row && newCol === originalPosition.value.col) {
@@ -1494,15 +1501,56 @@ onBeforeUnmount(() => {
   window.chessBoard = null;
 });
 
+/**
+ * Flip a board coordinate based on board orientation
+ * 
+ * @param {Number} coord - The coordinate to flip (0-7)
+ * @returns {Number} - The flipped coordinate
+ */
+const flipCoordinate = (coord) => {
+  return boardFlipped.value ? 7 - coord : coord;
+};
+
+/**
+ * Toggle the board orientation
+ */
+const flipBoard = () => {
+  boardFlipped.value = !boardFlipped.value;
+  // Emit an event so parent components can react
+  emit('board-orientation-changed', boardFlipped.value);
+};
+
 // Generate the chessboard pattern
 const squares = computed(() => {
   const result = [];
   const files = ["A", "B", "C", "D", "E", "F", "G", "H"];
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const isBlack = (row + col) % 2 === 1;
-      const topLeftLabel = col === 0 ? (8 - row).toString() : null; // Left column (1-8)
-      const bottomRightLabel = row === 7 ? files[col] : null; // Bottom row (a-h)
+      // Get the visual row/col based on board orientation
+      const visualRow = flipCoordinate(row);
+      const visualCol = flipCoordinate(col);
+      
+      const isBlack = (visualRow + visualCol) % 2 === 1;
+      
+      // For a normal board (white at bottom), rank numbers (8-1) appear on the left side from top to bottom
+      // and file letters (A-H) appear on the bottom from left to right
+      let topLeftLabel, bottomRightLabel;
+      
+      if (boardFlipped.value) {
+        // Flipped board (black at bottom):
+        // - Rank numbers (1-8) appear on the left side from top to bottom
+        // - File letters (H-A) appear on the bottom from left to right
+        topLeftLabel = visualCol === 0 ? (visualRow + 1).toString() : null;
+        bottomRightLabel = visualRow === 7 ? files[7 - visualCol] : null;
+      } else {
+        // Normal board (white at bottom):
+        // - Rank numbers (8-1) appear on the left side from top to bottom
+        // - File letters (A-H) appear on the bottom from left to right
+        topLeftLabel = visualCol === 0 ? (8 - visualRow).toString() : null;
+        bottomRightLabel = visualRow === 7 ? files[visualCol] : null;
+      }
+      
+      // Find pieces based on logical coordinates (not visual)
       const piece =
         pieces.value.find((p) => p.row === row && p.col === col) || null;
       const selected =
@@ -1517,10 +1565,14 @@ const squares = computed(() => {
         (blackInCheck.value &&
           piece?.color === "Black" &&
           piece?.type === "King");
+      
       result.push({
         color: isBlack ? "black" : "white",
-        row,
+        // Store both logical and visual coordinates
+        row, 
         col,
+        visualRow,
+        visualCol,
         topLeftLabel,
         bottomRightLabel,
         piece,
@@ -1553,6 +1605,8 @@ defineExpose({
   enPassantTarget,
   currentMoveIndex,
   handleMoveSelection,
+  flipBoard,
+  boardFlipped,
   
   // Debug functions
   exportBoardState,
@@ -1717,13 +1771,18 @@ defineExpose({
 <template>
   <div>
     <div class="chessboard-container">
+      <!-- Flip board button -->
+      <div class="flip-board-button" @click="flipBoard" title="Flip board orientation">
+        <img src="/src/assets/swap.svg" alt="Flip Board" />
+      </div>
+      
       <div class="chessboard">
         <Square
           v-for="(square, index) in squares"
           :key="index"
           :color="square.color"
-          :row="square.row"
-          :col="square.col"
+          :row="square.visualRow"
+          :col="square.visualCol"
           :topLeftLabel="square.topLeftLabel"
           :bottomRightLabel="square.bottomRightLabel"
           :piece="square.piece"
@@ -1765,5 +1824,31 @@ defineExpose({
   grid-template-rows: repeat(8, 1fr);
   width: 800px; /* Adjust size as needed */
   height: 800px; /* Adjust size as needed */
+}
+
+.flip-board-button {
+  position: absolute;
+  left: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: transparent;
+  border-radius: 5px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+  z-index: 10;
+}
+
+.flip-board-button:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.flip-board-button img {
+  width: 32px;
+  height: 32px;
 }
 </style>
