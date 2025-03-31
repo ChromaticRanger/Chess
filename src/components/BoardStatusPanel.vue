@@ -30,6 +30,10 @@ const props = defineProps({
   currentMoveIndex: {
     type: Number,
     default: -1
+  },
+  boardFlipped: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -43,9 +47,17 @@ const PIECE_VALUES = {
   King: 0 // King is not typically assigned a value
 };
 
-// Filter captured pieces based on panel position and current move index
+// Filter captured pieces based on panel position, board orientation, and current move index
 const filteredCapturedPieces = computed(() => {
-  const color = props.position === "top" ? "Black" : "White";
+  // Determine which color's pieces to show based on position and board orientation
+  let color;
+  if (props.boardFlipped) {
+    // When flipped, top shows White pieces, bottom shows Black pieces
+    color = props.position === "top" ? "White" : "Black";
+  } else {
+    // Normal orientation, top shows Black pieces, bottom shows White pieces
+    color = props.position === "top" ? "Black" : "White";
+  }
   
   // First filter by the capturing side
   const sideFilteredPieces = props.capturedPieces.filter(piece => piece.capturedBy === color);
@@ -132,8 +144,13 @@ const materialAdvantage = computed(() => {
         v-if="filteredCapturedPieces.length > 0 || materialAdvantage.value !== 0" 
         class="flex items-center mr-4 px-2 py-1 rounded-lg"
         :class="{
-          'bg-green-100 text-green-800': materialAdvantage.value > 0 && position === 'bottom' || materialAdvantage.value < 0 && position === 'top',
-          'bg-red-100 text-red-800': materialAdvantage.value < 0 && position === 'bottom' || materialAdvantage.value > 0 && position === 'top',
+          // Normal orientation (white at bottom)
+          'bg-green-100 text-green-800': !boardFlipped && ((materialAdvantage.value > 0 && position === 'bottom') || (materialAdvantage.value < 0 && position === 'top')),
+          'bg-red-100 text-red-800': !boardFlipped && ((materialAdvantage.value < 0 && position === 'bottom') || (materialAdvantage.value > 0 && position === 'top')),
+          // Flipped orientation (black at bottom)
+          'bg-green-100 text-green-800': boardFlipped && ((materialAdvantage.value < 0 && position === 'bottom') || (materialAdvantage.value > 0 && position === 'top')),
+          'bg-red-100 text-red-800': boardFlipped && ((materialAdvantage.value > 0 && position === 'bottom') || (materialAdvantage.value < 0 && position === 'top')),
+          // Equal material
           'bg-gray-100 text-gray-800': materialAdvantage.value === 0
         }"
       >
@@ -152,7 +169,11 @@ const materialAdvantage = computed(() => {
 
     <!-- Right Side: Turn Indicator -->
     <div 
-      v-if="showCurrentTurn && ((position === 'top' && currentTurn === 'Black') || (position === 'bottom' && currentTurn === 'White'))"
+      v-if="showCurrentTurn && (
+        // Display turn indicator in the correct panel based on board orientation
+        (boardFlipped && ((position === 'top' && currentTurn === 'White') || (position === 'bottom' && currentTurn === 'Black'))) ||
+        (!boardFlipped && ((position === 'top' && currentTurn === 'Black') || (position === 'bottom' && currentTurn === 'White')))
+      )"
       class="flex items-center"
     >
       <span class="text-lg font-semibold mr-2">{{ currentTurn }} to Move</span>
