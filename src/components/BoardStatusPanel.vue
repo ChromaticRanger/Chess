@@ -144,12 +144,16 @@ const materialAdvantage = computed(() => {
         v-if="filteredCapturedPieces.length > 0 || materialAdvantage.value !== 0" 
         class="flex items-center mr-4 px-2 py-1 rounded-lg"
         :class="{
-          // Normal orientation (white at bottom)
-          'bg-green-100 text-green-800': !boardFlipped && ((materialAdvantage.value > 0 && position === 'bottom') || (materialAdvantage.value < 0 && position === 'top')),
-          'bg-red-100 text-red-800': !boardFlipped && ((materialAdvantage.value < 0 && position === 'bottom') || (materialAdvantage.value > 0 && position === 'top')),
-          // Flipped orientation (black at bottom)
-          'bg-green-100 text-green-800': boardFlipped && ((materialAdvantage.value < 0 && position === 'bottom') || (materialAdvantage.value > 0 && position === 'top')),
-          'bg-red-100 text-red-800': boardFlipped && ((materialAdvantage.value > 0 && position === 'bottom') || (materialAdvantage.value < 0 && position === 'top')),
+          // Favorable position (green) - when the side this panel represents has an advantage
+          'bg-green-100 text-green-800': (position === 'bottom' && !boardFlipped && materialAdvantage.value > 0) || // White has advantage (white at bottom)
+                                        (position === 'top' && !boardFlipped && materialAdvantage.value < 0) ||    // Black has advantage (black at top)
+                                        (position === 'bottom' && boardFlipped && materialAdvantage.value < 0) ||  // Black has advantage (black at bottom)
+                                        (position === 'top' && boardFlipped && materialAdvantage.value > 0),       // White has advantage (white at top)
+          // Unfavorable position (red) - when the opposing side has an advantage
+          'bg-red-100 text-red-800': (position === 'bottom' && !boardFlipped && materialAdvantage.value < 0) ||   // Black has advantage (white at bottom)
+                                     (position === 'top' && !boardFlipped && materialAdvantage.value > 0) ||      // White has advantage (black at top)
+                                     (position === 'bottom' && boardFlipped && materialAdvantage.value > 0) ||    // White has advantage (black at bottom)
+                                     (position === 'top' && boardFlipped && materialAdvantage.value < 0),         // Black has advantage (white at top)
           // Equal material
           'bg-gray-100 text-gray-800': materialAdvantage.value === 0
         }"
