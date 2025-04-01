@@ -7,13 +7,15 @@ import { ref, watch, computed } from 'vue';
  * @param {Function} options.onTurnChanged - Callback when turn changes
  * @param {Function} options.onMoveHistoryUpdated - Callback when move history updates
  * @param {Function} options.onCheckmate - Callback when checkmate occurs
+ * @param {Function} options.onStalemate - Callback when stalemate occurs
  * @returns {Object} Game state and methods
  */
 export default function useGameState(options = {}) {
   const { 
     onTurnChanged,
     onMoveHistoryUpdated,
-    onCheckmate
+    onCheckmate,
+    onStalemate
   } = options;
 
   // Current turn state (White always moves first in chess)
@@ -171,6 +173,19 @@ export default function useGameState(options = {}) {
       onCheckmate(winner);
     }
   };
+  
+  /**
+   * Handles stalemate, including calling the appropriate callback
+   * 
+   * @param {String} stalematedColor - The color that is in stalemate
+   */
+  const handleStalemate = (stalematedColor) => {
+    console.log(`Stalemate! The game is a draw`);
+    
+    if (onStalemate) {
+      onStalemate(stalematedColor);
+    }
+  };
 
   /**
    * Resets the game state to initial values
@@ -229,6 +244,7 @@ export default function useGameState(options = {}) {
     switchTurn,
     updateMovedPiecesTracking,
     handleCheckmate,
+    handleStalemate,
     resetGameState,
     setCheckStatus,
     setEnPassantTarget,

@@ -16,6 +16,7 @@ const emit = defineEmits([
   'turn-changed', 
   'move-history-updated', 
   'checkmate',
+  'stalemate',
   'current-move-index-changed',
   'captured-pieces-updated',
   'board-orientation-changed'
@@ -25,7 +26,8 @@ const emit = defineEmits([
 const gameState = useGameState({
   onTurnChanged: (newTurn) => emit('turn-changed', newTurn),
   onMoveHistoryUpdated: (newHistory) => emit('move-history-updated', newHistory),
-  onCheckmate: (winner) => emit('checkmate', winner)
+  onCheckmate: (winner) => emit('checkmate', winner),
+  onStalemate: (stalematedColor) => emit('stalemate', stalematedColor)
 });
 
 // Initialize piece management
@@ -71,6 +73,7 @@ const {
   calculateValidMoves,
   isKingInCheck,
   isCheckmate,
+  isStalemate,
   moveWouldLeaveInCheck,
   calculateAttackedSquares
 } = moveValidator;
@@ -832,6 +835,18 @@ const handleMouseUp = async (event) => {
           }
           
           gameState.handleCheckmate(currentTurn.value);
+        } else {
+          // If not checkmate, check for stalemate
+          const isStalemated = isStalemate(currentTurn.value);
+          if (isStalemated) {
+            // Update the last move in the move history to indicate it caused stalemate
+            const lastMoveIndex = moveHistory.value.length - 1;
+            if (lastMoveIndex >= 0) {
+              moveHistory.value[lastMoveIndex].isStalemate = true;
+            }
+            
+            gameState.handleStalemate(currentTurn.value);
+          }
         }
         
         // Build a list of attacked squares if check is created
@@ -1032,6 +1047,18 @@ const handlePromotion = (promotionChoice) => {
       }
       
       gameState.handleCheckmate(opponentColor);
+    } else {
+      // Check for stalemate after promotion (just like after normal moves)
+      const isStalemated = isStalemate(opponentColor);
+      if (isStalemated) {
+        // Update the last move in the move history to indicate it caused stalemate
+        const lastMoveIndex = moveHistory.value.length - 1;
+        if (lastMoveIndex >= 0) {
+          moveHistory.value[lastMoveIndex].isStalemate = true;
+        }
+        
+        gameState.handleStalemate(opponentColor);
+      }
     }
     
     // Switch turns after promotion

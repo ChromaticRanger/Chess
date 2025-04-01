@@ -5,6 +5,7 @@ import Modal from "./components/Modal.vue";
 import MoveHistoryList from "./components/MoveHistoryList.vue";
 import MoveControlPanel from "./components/MoveControlPanel.vue";
 import BoardStatusPanel from "./components/BoardStatusPanel.vue";
+import GameSavePanel from "./components/GameSavePanel.vue";
 import { getPieceImagePath } from "./utils/PieceFactory";
 
 // Track the current turn
@@ -54,6 +55,13 @@ const handleTurnChange = (newTurn) => {
 const handleCheckmate = (winner) => {
   const winnerKingImage = getPieceImagePath("King", winner);
   showModal("Checkmate", `${winner} has won the game.`, winnerKingImage);
+};
+
+// Handler for stalemate
+const handleStalemate = (stalematedColor) => {
+  // Use both kings to represent a draw
+  const whiteKingImage = getPieceImagePath("King", "White");
+  showModal("Stalemate", `The game is a draw by stalemate.`, whiteKingImage);
 };
 
 // Handler for move history updates
@@ -107,6 +115,15 @@ const goToMove = (index) => {
   }
 };
 
+// Handler for saving the game
+const handleSaveGame = () => {
+  console.log('Save game button clicked');
+  
+  // We'll implement the actual save functionality later
+  // For now, we'll just show a modal to indicate the feature is coming soon
+  showModal('Save Game Position', 'This feature will allow you to save the current game position for later analysis or sharing.');
+};
+
 // Add debug info when component is mounted
 onMounted(() => {
   console.log('App mounted, boardComponent ref:', boardComponent.value);
@@ -125,9 +142,10 @@ onMounted(() => {
   <div class="flex items-center justify-center min-h-screen">
     <div class="flex flex-col">
       <div class="flex flex-col items-center">
-        <!-- Top Row: Board Status Panel (aligned with chess board width) -->
+        <!-- Top Row: Board Status Panel + Game Save Panel -->
         <div class="flex justify-center w-full mb-2">
-          <div class="flex" style="width: 820px;">
+          <!-- Left: Board Status Panel - aligned with chess board width -->
+          <div class="mr-6" style="width: 820px;">
             <BoardStatusPanel
               :current-turn="currentTurn"
               :viewing-past-move="viewingPastMove"
@@ -138,8 +156,13 @@ onMounted(() => {
               class="w-full"
             />
           </div>
-          <!-- Empty space for alignment with move history -->
-          <div style="width: 352px;" class="ml-6"></div>
+          
+          <!-- Right: Game Save Panel - aligned with Move History width -->
+          <div style="width: 352px;">
+            <GameSavePanel
+              @save-game="handleSaveGame"
+            />
+          </div>
         </div>
         
         <!-- Middle Row: Game Board + Move History -->
@@ -153,6 +176,7 @@ onMounted(() => {
                   @turn-changed="handleTurnChange"
                   @move-history-updated="handleMoveHistoryUpdate"
                   @checkmate="handleCheckmate"
+                  @stalemate="handleStalemate"
                   @current-move-index-changed="handleCurrentMoveIndexChange"
                   @captured-pieces-updated="handleCapturedPiecesUpdate"
                   @board-orientation-changed="handleBoardOrientationChange"
@@ -161,13 +185,14 @@ onMounted(() => {
             </div>
             
             <!-- Move History Component -->
-            <MoveHistoryList 
-              :move-history="moveHistory" 
-              :current-move-index="currentMoveIndex"
-              @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
-              @reset-board="boardComponent ? boardComponent.resetBoard() : null"
-              style="width: 352px;"
-            />
+            <div style="width: 352px;">
+              <MoveHistoryList 
+                :move-history="moveHistory" 
+                :current-move-index="currentMoveIndex"
+                @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
+                @reset-board="boardComponent ? boardComponent.resetBoard() : null"
+              />
+            </div>
           </div>
         </div>
         

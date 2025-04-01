@@ -1126,6 +1126,33 @@ export default function useMoveValidation(options) {
     // If no piece has a valid move and the king is in check, it's checkmate
     return true;
   };
+  
+  /**
+   * Check if a player is in stalemate
+   * 
+   * @param {String} playerColor - The color of the player to check
+   * @return {Boolean} - True if the player is in stalemate
+   */
+  const isStalemate = (playerColor) => {
+    // First check if the king is NOT in check (stalemate only occurs when the king is not in check)
+    if (isKingInCheck(playerColor)) {
+      return false;
+    }
+    
+    // Get all of the player's pieces
+    const playerPieces = getPiecesByColor().filter(p => p.color === playerColor);
+    
+    // Check if any piece has a valid move
+    for (const piece of playerPieces) {
+      const validMoves = calculateValidMoves(piece);
+      if (validMoves.length > 0) {
+        return false; // If any piece has a valid move, it's not stalemate
+      }
+    }
+    
+    // If no piece has a valid move and the king is not in check, it's stalemate
+    return true;
+  };
 
   /**
    * Calculate squares that are attacked by a specific color
@@ -1159,6 +1186,7 @@ export default function useMoveValidation(options) {
     calculateValidMoves,
     isKingInCheck,
     isCheckmate,
+    isStalemate,
     moveWouldLeaveInCheck,
     calculateAttackedSquares
   };
