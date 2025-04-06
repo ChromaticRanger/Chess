@@ -4,17 +4,50 @@ import { prisma } from '../index.js';
 export const createGame = async (c) => {
   try {
     const user = c.get('user');
-    const { name, description, moveHistory } = await c.req.json();
+    const { 
+      name, 
+      description, 
+      date,
+      venue,
+      event,
+      round,
+      whitePlayer,
+      whiteRating,
+      blackPlayer,
+      blackRating,
+      result,
+      moveHistory 
+    } = await c.req.json();
     
     // Check if required fields are present
     if (!name || !moveHistory) {
       return c.json({ error: 'Name and move history are required' }, 400);
     }
     
+    // Parse date if it's a string
+    let parsedDate = null;
+    if (date) {
+      try {
+        parsedDate = new Date(date);
+      } catch (e) {
+        console.error('Date parsing error:', e);
+      }
+    }
+    
+    // Create complete game record
     const game = await prisma.game.create({
       data: {
         name,
         description: description || '',
+        date: parsedDate,
+        venue: venue || null,
+        event: event || null,
+        round: round || null,
+        whitePlayer: whitePlayer || null,
+        whiteRating: whiteRating ? parseInt(whiteRating) : null,
+        blackPlayer: blackPlayer || null,
+        blackRating: blackRating ? parseInt(blackRating) : null,
+        result: result || null,
         moveHistory,
         userId: user.id
       }
@@ -27,17 +60,117 @@ export const createGame = async (c) => {
   }
 };
 
-// Get all games for the current user
+// Get all games for the current user with filtering
 export const getUserGames = async (c) => {
   try {
     const user = c.get('user');
     
-    const games = await prisma.game.findMany({
-      where: { userId: user.id },
-      orderBy: { updatedAt: 'desc' }
-    });
+    // Extract query parameters for filtering
+    const url = new URL(c.req.url);
+    const params = url.searchParams;
     
-    return c.json({ games });
+    // Build filter conditions
+    const whereCondition = {
+      userId: user.id
+    };
+    
+    // Apply filters if they exist
+    if (params.has('whitePlayer')) {
+      whereCondition.whitePlayer = {
+        contains: params.get('whitePlayer'),
+        mode: 'insensitive'
+      };
+    }
+    
+    if (params.has('blackPlayer')) {
+      whereCondition.blackPlayer = {
+        contains: params.get('blackPlayer'),
+        mode: 'insensitive'
+      };
+    }
+    
+    if (params.has('event')) {
+      whereCondition.event = {
+        contains: params.get('event'),
+        mode: 'insensitive'
+      };
+    }
+    
+    if (params.has('venue')) {
+      whereCondition.venue = {
+        contains: params.get('venue'),
+        mode: 'insensitive'
+      };
+    }
+    
+    // Date range filtering
+    if (params.has('dateFrom')) {
+      const dateFrom = new Date(params.get('dateFrom'));
+      if (!isNaN(dateFrom.getTime())) {
+        whereCondition.date = {
+          ...whereCondition.date,
+          gte: dateFrom
+        };
+      }
+    }
+    
+    if (params.has('dateTo')) {
+      const dateTo = new Date(params.get('dateTo'));
+      if (!isNaN(dateTo.getTime())) {
+        whereCondition.date = {
+          ...whereCondition.date,
+          lte: dateTo
+        };
+      }
+    }
+    
+    // Set up ordering
+    const orderBy = {};
+    const sortField = params.get('sortBy') || 'updatedAt';
+    const sortDirection = params.get('sortDir') || 'desc';
+    
+    // Validate sort field
+    const validSortFields = [
+      'name', 'date', 'venue', 'event', 'whitePlayer', 
+      'blackPlayer', 'createdAt', 'updatedAt'
+    ];
+    
+    if (validSortFields.includes(sortField)) {
+      orderBy[sortField] = sortDirection === 'asc' ? 'asc' : 'desc';
+    } else {
+      orderBy.updatedAt = 'desc'; // Default sorting
+    }
+    
+    // Pagination
+    const page = parseInt(params.get('page')) || 1;
+    const pageSize = parseInt(params.get('pageSize')) || 10;
+    const skip = (page - 1) * pageSize;
+    
+    // Execute query with filters and pagination
+    const [games, totalCount] = await Promise.all([
+      prisma.game.findMany({
+        where: whereCondition,
+        orderBy,
+        skip,
+        take: pageSize
+      }),
+      prisma.game.count({
+        where: whereCondition
+      })
+    ]);
+    
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / pageSize);
+    
+    return c.json({
+      games,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages
+      }
+    });
   } catch (error) {
     console.error('Get user games error:', error);
     return c.json({ error: 'Internal Server Error' }, 500);
@@ -78,7 +211,20 @@ export const updateGame = async (c) => {
   try {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
-    const { name, description, moveHistory } = await c.req.json();
+    const { 
+      name, 
+      description, 
+      date,
+      venue,
+      event,
+      round,
+      whitePlayer,
+      whiteRating,
+      blackPlayer,
+      blackRating,
+      result,
+      moveHistory 
+    } = await c.req.json();
     
     if (isNaN(id)) {
       return c.json({ error: 'Invalid game ID' }, 400);
@@ -97,14 +243,51 @@ export const updateGame = async (c) => {
       return c.json({ error: 'Unauthorized' }, 403);
     }
     
+    // Parse date if it's a string
+    let parsedDate = undefined;
+    if (date !== undefined) {
+      if (date === null) {
+        parsedDate = null;
+      } else {
+        try {
+          parsedDate = new Date(date);
+          if (isNaN(parsedDate.getTime())) {
+            parsedDate = existingGame.date;
+          }
+        } catch (e) {
+          console.error('Date parsing error:', e);
+          parsedDate = existingGame.date;
+        }
+      }
+    }
+    
+    // Prepare update data
+    const updateData = {
+      name: name !== undefined ? name : existingGame.name,
+      description: description !== undefined ? description : existingGame.description,
+      date: parsedDate,
+      venue: venue !== undefined ? venue : existingGame.venue,
+      event: event !== undefined ? event : existingGame.event,
+      round: round !== undefined ? round : existingGame.round,
+      whitePlayer: whitePlayer !== undefined ? whitePlayer : existingGame.whitePlayer,
+      blackPlayer: blackPlayer !== undefined ? blackPlayer : existingGame.blackPlayer,
+      result: result !== undefined ? result : existingGame.result,
+      moveHistory: moveHistory !== undefined ? moveHistory : existingGame.moveHistory
+    };
+    
+    // Handle numeric fields separately to ensure they're properly coerced
+    if (whiteRating !== undefined) {
+      updateData.whiteRating = whiteRating !== null ? parseInt(whiteRating) : null;
+    }
+    
+    if (blackRating !== undefined) {
+      updateData.blackRating = blackRating !== null ? parseInt(blackRating) : null;
+    }
+    
     // Update game
     const game = await prisma.game.update({
       where: { id },
-      data: {
-        name: name || existingGame.name,
-        description: description !== undefined ? description : existingGame.description,
-        moveHistory: moveHistory || existingGame.moveHistory
-      }
+      data: updateData
     });
     
     return c.json({ game });

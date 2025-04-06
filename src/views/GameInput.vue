@@ -87,6 +87,14 @@
         </div>
       </div>
     </div>
+    
+    <!-- Save Game Dialog -->
+    <SaveGameDialog 
+      v-if="showSaveDialog" 
+      :move-history="moveHistory"
+      @save="saveGame"
+      @cancel="cancelSave"
+    />
   </div>
 </template>
 
@@ -97,14 +105,15 @@ import MoveHistoryList from "../components/MoveHistoryList.vue";
 import MoveControlPanel from "../components/MoveControlPanel.vue";
 import BoardStatusPanel from "../components/BoardStatusPanel.vue";
 import GameSavePanel from "../components/GameSavePanel.vue";
+import SaveGameDialog from "../components/SaveGameDialog.vue";
 import { getPieceImagePath } from "../utils/PieceFactory";
 import { usePositions } from "../composables/usePositions";
 
 // Emits
 const emit = defineEmits(['show-modal']);
 
-// State from App.vue
-const { createGame } = usePositions();
+// Get functions from composables
+const { createGame, error: saveError } = usePositions();
 
 // Track the current turn
 const currentTurn = ref("White");
@@ -171,9 +180,65 @@ const handleBoardOrientationChange = (isFlipped) => {
   console.log("Board orientation changed, flipped:", isFlipped);
 };
 
+// Show/hide save game dialog
+const showSaveDialog = ref(false);
+
 // Handler for saving the game
-const handleSaveGame = async () => {
-  emit('show-modal', 'Save Game', 'Enter a name for this game:');
+const handleSaveGame = () => {
+  showSaveDialog.value = true;
+};
+
+// Handle the actual game saving
+const saveGame = async (gameData) => {
+  try {
+    // Add the move history to the game data
+    const gameToSave = {
+      ...gameData,
+      moveHistory: moveHistory.value
+    };
+    
+    // Format date properly if it exists
+    if (gameToSave.date) {
+      // Ensure it's in ISO format for the API
+      gameToSave.date = new Date(gameToSave.date).toISOString();
+    }
+    
+    // Make sure ratings are stored as integers or null
+    if (gameToSave.whiteRating === '') gameToSave.whiteRating = null;
+    if (gameToSave.blackRating === '') gameToSave.blackRating = null;
+    
+    // Convert ratings to numbers if provided
+    if (gameToSave.whiteRating) gameToSave.whiteRating = parseInt(gameToSave.whiteRating);
+    if (gameToSave.blackRating) gameToSave.blackRating = parseInt(gameToSave.blackRating);
+    
+    // Call the API to save the game
+    console.log('Saving game:', gameToSave);
+    const result = await createGame(gameToSave);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save game');
+    }
+    
+    // Close the dialog
+    showSaveDialog.value = false;
+    
+    // Show success message
+    emit('show-modal', 'Success', 'Game saved successfully!');
+  } catch (error) {
+    console.error('Error saving game:', error);
+    
+    // Get detailed error message if available
+    const errorMessage = error.message || 
+                        saveError.value || 
+                        'Failed to save the game. Please check your connection and try again.';
+    
+    emit('show-modal', 'Error', errorMessage);
+  }
+};
+
+// Cancel save
+const cancelSave = () => {
+  showSaveDialog.value = false;
 };
 
 </script>
