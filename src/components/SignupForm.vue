@@ -1,7 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useAuth } from '../composables/useAuth';
-import axios from 'axios';
 
 const { register, isLoading, error } = useAuth();
 
@@ -63,22 +62,6 @@ const goToLogin = () => {
   emit('show-login');
 };
 
-// Test backend connectivity
-const testApiConnectivity = async () => {
-  try {
-    localError.value = 'Testing API connection...';
-    const response = await axios.get('http://localhost:3000/api/test');
-    console.log('API test successful:', response.data);
-    localError.value = 'API is reachable! You can now try to register.';
-  } catch (err) {
-    console.error('API test failed:', err);
-    localError.value = `API connection error: ${err.message}`;
-  }
-};
-
-onMounted(() => {
-  testApiConnectivity();
-});
 </script>
 
 <template>
