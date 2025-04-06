@@ -1639,6 +1639,106 @@ defineExpose({
   exportBoardState,
   debugMoveValidation,
   debugCheckDetection,
+  
+  // FEN notation support
+  getCurrentFen: () => {
+    // 1. Piece placement: Describe the position row by row from rank 8 to rank 1
+    let placement = '';
+    for (let row = 0; row < 8; row++) {
+      let emptySquares = 0;
+      
+      for (let col = 0; col < 8; col++) {
+        const piece = getPieceAtPosition(row, col);
+        
+        if (piece) {
+          // If we had empty squares before this piece, add the count
+          if (emptySquares > 0) {
+            placement += emptySquares;
+            emptySquares = 0;
+          }
+          
+          // Add piece symbol based on type and color
+          let symbol = '';
+          switch (piece.type) {
+            case 'King': symbol = 'K'; break;
+            case 'Queen': symbol = 'Q'; break;
+            case 'Rook': symbol = 'R'; break;
+            case 'Bishop': symbol = 'B'; break;
+            case 'Knight': symbol = 'N'; break;
+            case 'Pawn': symbol = 'P'; break;
+          }
+          
+          // Adjust case based on color
+          if (piece.color === 'Black') {
+            symbol = symbol.toLowerCase();
+          }
+          
+          placement += symbol;
+        } else {
+          // Increment empty square counter
+          emptySquares++;
+        }
+      }
+      
+      // If the row ends with empty squares, add the count
+      if (emptySquares > 0) {
+        placement += emptySquares;
+      }
+      
+      // Add row separator (slash) except after the last row
+      if (row < 7) {
+        placement += '/';
+      }
+    }
+    
+    // 2. Active color: 'w' for White, 'b' for Black
+    const activeColor = currentTurn.value === 'White' ? 'w' : 'b';
+    
+    // 3. Castling availability
+    let castling = '';
+    
+    // White kingside castling
+    if (!movedPieces.value.whiteKing && !movedPieces.value.whiteRookH) {
+      castling += 'K';
+    }
+    // White queenside castling
+    if (!movedPieces.value.whiteKing && !movedPieces.value.whiteRookA) {
+      castling += 'Q';
+    }
+    // Black kingside castling
+    if (!movedPieces.value.blackKing && !movedPieces.value.blackRookH) {
+      castling += 'k';
+    }
+    // Black queenside castling
+    if (!movedPieces.value.blackKing && !movedPieces.value.blackRookA) {
+      castling += 'q';
+    }
+    
+    // If no castling is available, use '-'
+    if (castling === '') {
+      castling = '-';
+    }
+    
+    // 4. En passant target square in algebraic notation, or '-' if no en passant is possible
+    let enPassantSquare = '-';
+    if (enPassantTarget.value && enPassantTarget.value.row !== null) {
+      const { row, col } = enPassantTarget.value;
+      const files = 'abcdefgh';
+      const ranks = '87654321';
+      enPassantSquare = files[col] + ranks[row];
+    }
+    
+    // 5. Halfmove clock - resets after captures or pawn moves, increments otherwise
+    // For simplicity, we'll use 0 since we don't track this specifically
+    const halfmoveClock = 0;
+    
+    // 6. Fullmove number - increments after Black's move
+    // Calculate from move history - add 1 since we start from move 1
+    const fullmoveNumber = Math.floor(moveHistory.value.length / 2) + 1;
+    
+    // Combine all parts to create the FEN string
+    return `${placement} ${activeColor} ${castling} ${enPassantSquare} ${halfmoveClock} ${fullmoveNumber}`;
+  },
 
   // Test en passant for a specific pawn
   testEnPassantForPawn: (row, col) => {

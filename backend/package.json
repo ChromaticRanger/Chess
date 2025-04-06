@@ -1,0 +1,28 @@
+{
+  "name": "chess-api",
+  "version": "1.0.0",
+  "description": "API for Chess Application",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "migrate": "prisma migrate dev",
+    "generate": "prisma generate",
+    "setup": "npm install && npx prisma generate && npx prisma migrate dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hono/node-server": "^1.1.1",
+    "@prisma/client": "^5.3.1",
+    "bcrypt": "^5.1.0",
+    "hono": "^3.5.0",
+    "jsonwebtoken": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "prisma": "^5.3.1"
+  }
+}
