@@ -6,7 +6,15 @@ import MoveHistoryList from "./components/MoveHistoryList.vue";
 import MoveControlPanel from "./components/MoveControlPanel.vue";
 import BoardStatusPanel from "./components/BoardStatusPanel.vue";
 import GameSavePanel from "./components/GameSavePanel.vue";
+import AuthPage from "./components/AuthPage.vue";
 import { getPieceImagePath } from "./utils/PieceFactory";
+import { useAuth } from "./composables/useAuth";
+import { usePositions } from "./composables/usePositions";
+
+// Auth state
+const { isAuthenticated, user, logout } = useAuth();
+const { createPosition } = usePositions();
+const isAuthenticatedUser = ref(isAuthenticated.value);
 
 // Track the current turn
 const currentTurn = ref("White");
@@ -116,12 +124,76 @@ const goToMove = (index) => {
 };
 
 // Handler for saving the game
-const handleSaveGame = () => {
-  console.log('Save game button clicked');
+const handleSaveGame = async () => {
+  if (!isAuthenticated.value) {
+    // Show login prompt if not authenticated
+    showModal('Authentication Required', 'Please log in or sign up to save positions.');
+    return;
+  }
   
-  // We'll implement the actual save functionality later
-  // For now, we'll just show a modal to indicate the feature is coming soon
-  showModal('Save Game Position', 'This feature will allow you to save the current game position for later analysis or sharing.');
+  try {
+    // Get current position data from board component
+    const fen = boardComponent.value ? boardComponent.value.getCurrentFen() : null;
+    
+    if (!fen) {
+      showModal('Error', 'Could not get current position.');
+      return;
+    }
+    
+    // Open save position dialog
+    const positionName = prompt('Enter a name for this position:');
+    
+    if (!positionName) return; // User cancelled
+    
+    const positionData = {
+      name: positionName,
+      description: '',
+      fenString: fen,
+      moveHistory: moveHistory.value
+    };
+    
+    const result = await createPosition(positionData);
+    
+    if (result.success) {
+      showModal('Success', 'Position saved successfully!');
+    } else {
+      showModal('Error', `Failed to save position: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Error saving position:', error);
+    showModal('Error', 'An error occurred while saving the position.');
+  }
+};
+
+// Handler for loading a saved position
+const handleLoadPosition = async (position) => {
+  try {
+    if (!boardComponent.value) {
+      showModal('Error', 'Board component not available.');
+      return;
+    }
+    
+    // TODO: Implement a loadFromFen method in Board.vue
+    // For now, we'll just reset the board and show a message
+    showModal('Feature Coming Soon', 'Position loading will be implemented in the next update.');
+    
+    console.log('Position to load:', position);
+  } catch (error) {
+    console.error('Error loading position:', error);
+    showModal('Error', 'An error occurred while loading the position.');
+  }
+};
+
+// Handler for authentication success
+const handleAuthSuccess = (authUser) => {
+  console.log('Authentication successful:', authUser);
+  isAuthenticatedUser.value = true;
+};
+
+// Handler for logout
+const handleLogout = () => {
+  logout();
+  isAuthenticatedUser.value = false;
 };
 
 // Add debug info when component is mounted
@@ -135,96 +207,127 @@ onMounted(() => {
       boardComponent.value.handleMoveSelection(event.detail);
     }
   });
+  
+  // Check if user is already authenticated
+  isAuthenticatedUser.value = isAuthenticated.value;
 });
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen">
-    <div class="flex flex-col">
-      <div class="flex flex-col items-center">
-        <!-- Top Row: Board Status Panel + Game Save Panel -->
-        <div class="flex justify-center w-full mb-2">
-          <!-- Left: Board Status Panel - aligned with chess board width -->
-          <div class="mr-6" style="width: 820px;">
-            <BoardStatusPanel
-              :current-turn="currentTurn"
-              :viewing-past-move="viewingPastMove"
-              :captured-pieces="capturedPieces"
-              :current-move-index="currentMoveIndex"
-              :board-flipped="boardFlipped"
-              position="top"
-              class="w-full"
-            />
+  <!-- Auth page if not authenticated -->
+  <AuthPage 
+    v-if="!isAuthenticatedUser" 
+    @auth-success="handleAuthSuccess" 
+  />
+  
+  <!-- Chess app if authenticated -->
+  <div v-else class="flex flex-col min-h-screen">
+    <!-- Header with user info and logout -->
+    <header class="bg-blue-600 text-white p-4">
+      <div class="container mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold">Chess App</h1>
+        <div class="flex items-center">
+          <span class="mr-4">{{ user?.username }}</span>
+          <button 
+            @click="handleLogout"
+            class="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100 transition"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Main content -->
+    <div class="flex-grow flex items-center justify-center">
+      <div class="flex flex-col">
+        <div class="flex flex-col items-center">
+          <!-- Top Row: Board Status Panel + Game Save Panel -->
+          <div class="flex justify-center w-full mb-2">
+            <!-- Left: Board Status Panel - aligned with chess board width -->
+            <div class="mr-6" style="width: 820px;">
+              <BoardStatusPanel
+                :current-turn="currentTurn"
+                :viewing-past-move="viewingPastMove"
+                :captured-pieces="capturedPieces"
+                :current-move-index="currentMoveIndex"
+                :board-flipped="boardFlipped"
+                position="top"
+                class="w-full"
+              />
+            </div>
+            
+            <!-- Right: Game Save Panel - aligned with Move History width -->
+            <div style="width: 352px;">
+              <GameSavePanel
+                @save-game="handleSaveGame"
+                @load-position="handleLoadPosition"
+              />
+            </div>
           </div>
           
-          <!-- Right: Game Save Panel - aligned with Move History width -->
-          <div style="width: 352px;">
-            <GameSavePanel
-              @save-game="handleSaveGame"
-            />
-          </div>
-        </div>
-        
-        <!-- Middle Row: Game Board + Move History -->
-        <div class="flex justify-center w-full">
-          <div class="flex">
-            <!-- Chess Board Section -->
-            <div class="mr-6" style="width: 820px;">
-              <div class="border-brown border-10 rounded shadow-md">
-                <Board 
-                  ref="boardComponent"
-                  @turn-changed="handleTurnChange"
-                  @move-history-updated="handleMoveHistoryUpdate"
-                  @checkmate="handleCheckmate"
-                  @stalemate="handleStalemate"
-                  @current-move-index-changed="handleCurrentMoveIndexChange"
-                  @captured-pieces-updated="handleCapturedPiecesUpdate"
-                  @board-orientation-changed="handleBoardOrientationChange"
+          <!-- Middle Row: Game Board + Move History -->
+          <div class="flex justify-center w-full">
+            <div class="flex">
+              <!-- Chess Board Section -->
+              <div class="mr-6" style="width: 820px;">
+                <div class="border-blue-600 border-10 rounded shadow-md">
+                  <Board 
+                    ref="boardComponent"
+                    @turn-changed="handleTurnChange"
+                    @move-history-updated="handleMoveHistoryUpdate"
+                    @checkmate="handleCheckmate"
+                    @stalemate="handleStalemate"
+                    @current-move-index-changed="handleCurrentMoveIndexChange"
+                    @captured-pieces-updated="handleCapturedPiecesUpdate"
+                    @board-orientation-changed="handleBoardOrientationChange"
+                  />
+                </div>
+              </div>
+              
+              <!-- Move History Component -->
+              <div style="width: 352px;">
+                <MoveHistoryList 
+                  :move-history="moveHistory" 
+                  :current-move-index="currentMoveIndex"
+                  @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
+                  @reset-board="boardComponent ? boardComponent.resetBoard() : null"
                 />
               </div>
             </div>
-            
-            <!-- Move History Component -->
-            <div style="width: 352px;">
-              <MoveHistoryList 
-                :move-history="moveHistory" 
+          </div>
+          
+          <!-- Bottom Row: Board Status Panel + Move Control Panel -->
+          <div class="flex justify-center w-full mt-2">
+            <div class="flex">
+              <!-- Bottom Board Status Panel - aligned with chess board width -->
+              <BoardStatusPanel
+                :current-turn="currentTurn"
+                :viewing-past-move="viewingPastMove"
+                :captured-pieces="capturedPieces"
                 :current-move-index="currentMoveIndex"
-                @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
-                @reset-board="boardComponent ? boardComponent.resetBoard() : null"
+                :board-flipped="boardFlipped"
+                position="bottom"
+                style="width: 820px;"
+                class="mr-6"
+              />
+              
+              <!-- Move Control Panel - aligned with Move History List width -->
+              <MoveControlPanel
+                :move-history="moveHistory"
+                :current-move-index="currentMoveIndex"
+                @move-to-first="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+                @move-to-previous="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+                @move-to-next="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+                @move-to-last="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+                style="width: 352px;"
               />
             </div>
           </div>
         </div>
-        
-        <!-- Bottom Row: Board Status Panel + Move Control Panel -->
-        <div class="flex justify-center w-full mt-2">
-          <div class="flex">
-            <!-- Bottom Board Status Panel - aligned with chess board width -->
-            <BoardStatusPanel
-              :current-turn="currentTurn"
-              :viewing-past-move="viewingPastMove"
-              :captured-pieces="capturedPieces"
-              :current-move-index="currentMoveIndex"
-              :board-flipped="boardFlipped"
-              position="bottom"
-              style="width: 820px;"
-              class="mr-6"
-            />
-            
-            <!-- Move Control Panel - aligned with Move History List width -->
-            <MoveControlPanel
-              :move-history="moveHistory"
-              :current-move-index="currentMoveIndex"
-              @move-to-first="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-              @move-to-previous="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-              @move-to-next="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-              @move-to-last="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
-              style="width: 352px;"
-            />
-          </div>
-        </div>
       </div>
     </div>
+    
     <!-- Modal Component -->
     <Modal 
       :visible="modalVisible" 
@@ -237,8 +340,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.border-brown {
-  border: 10px solid #8B4513; /* SaddleBrown color */
+.border-blue-600 {
+  border: 10px solid #2563eb; /* TailwindCSS blue-600 */
 }
 .border-10 {
   border-width: 10px;

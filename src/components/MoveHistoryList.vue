@@ -133,7 +133,7 @@ onUpdated(() => {
 
 <template>
   <div ref="moveHistoryPanel" class="w-88 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
-    <div class="flex justify-between items-center p-3 bg-amber-800 text-white font-semibold sticky top-0 z-20">
+    <div class="flex justify-between items-center p-3 bg-blue-600 text-white font-semibold sticky top-0 z-20">
       <div>Move History</div>
       <button 
         @click="handleResetBoard" 
@@ -223,7 +223,7 @@ onUpdated(() => {
 }
 
 .reset-button {
-  @apply p-1 rounded-md hover:bg-amber-700 transition-colors;
+  @apply p-1 rounded-md hover:bg-blue-500 transition-colors;
 }
 
 .invert {
