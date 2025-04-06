@@ -2,128 +2,147 @@ import { ref } from 'vue';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:3000/api';
-const positions = ref([]);
-const currentPosition = ref(null);
+const games = ref([]);
+const currentGame = ref(null);
 const isLoading = ref(false);
 const error = ref('');
 
 export function usePositions() {
-  // Fetch all positions for the current user
-  const fetchPositions = async () => {
+  // Fetch all games for the current user
+  const fetchGames = async () => {
     isLoading.value = true;
     error.value = '';
     
     try {
-      const response = await axios.get(`${API_URL}/positions`);
-      positions.value = response.data.positions;
-      return { success: true, positions: positions.value };
+      const response = await axios.get(`${API_URL}/games`);
+      games.value = response.data.games;
+      return { success: true, games: games.value };
     } catch (err) {
-      console.error('Fetch positions error:', err);
-      error.value = err.response?.data?.error || 'Failed to fetch positions';
+      console.error('Fetch games error:', err);
+      error.value = err.response?.data?.error || 'Failed to fetch games';
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
     }
   };
 
-  // Fetch a specific position by ID
-  const fetchPositionById = async (id) => {
+  // Fetch a specific game by ID
+  const fetchGameById = async (id) => {
     isLoading.value = true;
     error.value = '';
     
     try {
-      const response = await axios.get(`${API_URL}/positions/${id}`);
-      currentPosition.value = response.data.position;
-      return { success: true, position: currentPosition.value };
+      const response = await axios.get(`${API_URL}/games/${id}`);
+      currentGame.value = response.data.game;
+      return { success: true, game: currentGame.value };
     } catch (err) {
-      console.error('Fetch position error:', err);
-      error.value = err.response?.data?.error || 'Failed to fetch position';
+      console.error('Fetch game error:', err);
+      error.value = err.response?.data?.error || 'Failed to fetch game';
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
     }
   };
 
-  // Create a new position
-  const createPosition = async (positionData) => {
+  // Create a new game
+  const createGame = async (gameData) => {
     isLoading.value = true;
     error.value = '';
     
     try {
-      const response = await axios.post(`${API_URL}/positions`, positionData);
+      const response = await axios.post(`${API_URL}/games`, gameData);
       
-      // Add to positions array
-      const newPosition = response.data.position;
-      positions.value = [newPosition, ...positions.value];
+      // Add to games array
+      const newGame = response.data.game;
+      games.value = [newGame, ...games.value];
       
-      return { success: true, position: newPosition };
+      return { success: true, game: newGame };
     } catch (err) {
-      console.error('Create position error:', err);
-      error.value = err.response?.data?.error || 'Failed to create position';
+      console.error('Create game error:', err);
+      error.value = err.response?.data?.error || 'Failed to create game';
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
     }
   };
 
-  // Update a position
-  const updatePosition = async (id, positionData) => {
+  // Update a game
+  const updateGame = async (id, gameData) => {
     isLoading.value = true;
     error.value = '';
     
     try {
-      const response = await axios.put(`${API_URL}/positions/${id}`, positionData);
+      const response = await axios.put(`${API_URL}/games/${id}`, gameData);
       
-      // Update in positions array
-      const updatedPosition = response.data.position;
-      positions.value = positions.value.map(pos => 
-        pos.id === updatedPosition.id ? updatedPosition : pos
+      // Update in games array
+      const updatedGame = response.data.game;
+      games.value = games.value.map(game => 
+        game.id === updatedGame.id ? updatedGame : game
       );
       
-      if (currentPosition.value?.id === updatedPosition.id) {
-        currentPosition.value = updatedPosition;
+      if (currentGame.value?.id === updatedGame.id) {
+        currentGame.value = updatedGame;
       }
       
-      return { success: true, position: updatedPosition };
+      return { success: true, game: updatedGame };
     } catch (err) {
-      console.error('Update position error:', err);
-      error.value = err.response?.data?.error || 'Failed to update position';
+      console.error('Update game error:', err);
+      error.value = err.response?.data?.error || 'Failed to update game';
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
     }
   };
 
-  // Delete a position
-  const deletePosition = async (id) => {
+  // Delete a game
+  const deleteGame = async (id) => {
     isLoading.value = true;
     error.value = '';
     
     try {
-      await axios.delete(`${API_URL}/positions/${id}`);
+      await axios.delete(`${API_URL}/games/${id}`);
       
-      // Remove from positions array
-      positions.value = positions.value.filter(pos => pos.id !== id);
+      // Remove from games array
+      games.value = games.value.filter(game => game.id !== id);
       
-      if (currentPosition.value?.id === id) {
-        currentPosition.value = null;
+      if (currentGame.value?.id === id) {
+        currentGame.value = null;
       }
       
       return { success: true };
     } catch (err) {
-      console.error('Delete position error:', err);
-      error.value = err.response?.data?.error || 'Failed to delete position';
+      console.error('Delete game error:', err);
+      error.value = err.response?.data?.error || 'Failed to delete game';
       return { success: false, error: error.value };
     } finally {
       isLoading.value = false;
     }
   };
 
+  // For backward compatibility
+  const positions = games;
+  const currentPosition = currentGame;
+  const fetchPositions = fetchGames;
+  const fetchPositionById = fetchGameById;
+  const createPosition = createGame;
+  const updatePosition = updateGame;
+  const deletePosition = deleteGame;
+
   return {
-    positions,
-    currentPosition,
+    // New names
+    games,
+    currentGame,
     isLoading,
     error,
+    fetchGames,
+    fetchGameById,
+    createGame,
+    updateGame,
+    deleteGame,
+    
+    // For backward compatibility
+    positions,
+    currentPosition,
     fetchPositions,
     fetchPositionById,
     createPosition,
