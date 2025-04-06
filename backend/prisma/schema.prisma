@@ -18,12 +18,34 @@ model User {
 }
 
 model Game {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  moveHistory Json
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            Int       @id @default(autoincrement())
+  name          String
+  description   String?
+  // Game details
+  date          DateTime?
+  venue         String?
+  event         String?
+  round         String?
+  // Player information
+  whitePlayer   String?
+  whiteRating   Int?
+  blackPlayer   String?
+  blackRating   Int?
+  // Game data
+  moveHistory   Json
+  result        String?   // "1-0", "0-1", "1/2-1/2", "*" (in progress)
+  // Relationships
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  // Audit fields
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Index for filtering
+  @@index([userId])
+  @@index([whitePlayer])
+  @@index([blackPlayer])
+  @@index([date])
+  @@index([event])
+  @@index([venue])
 }
