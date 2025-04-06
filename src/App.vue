@@ -215,10 +215,13 @@ onMounted(() => {
   <div v-else class="flex flex-col min-h-screen">
     <!-- Header with user info and logout -->
     <header class="bg-blue-600 text-white p-4">
-      <div class="container mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold">Log My Chess Games</h1>
-        <div class="flex items-center">
-          <span class="mr-4">{{ user?.username }}</span>
+      <div class="w-full flex justify-between items-center">
+        <!-- Title on the very left -->
+        <h1 class="text-xl font-bold pl-2">Log My Chess Games</h1>
+        
+        <!-- User info and logout on right -->
+        <div class="flex items-center pr-2">
+          <span class="mr-2">{{ user?.username }}</span>
           <button 
             @click="handleLogout"
             class="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100 transition"
