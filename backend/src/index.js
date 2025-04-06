@@ -3,7 +3,7 @@ import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.js';
-import positionRoutes from './routes/positions.js';
+import gameRoutes from './routes/games.js';
 
 // Initialize Prisma client
 export const prisma = new PrismaClient();
@@ -30,7 +30,7 @@ app.get('/api/test', (c) => {
 
 // Routes
 app.route('/api/auth', authRoutes);
-app.route('/api/positions', positionRoutes);
+app.route('/api/games', gameRoutes);
 
 // Error handling
 app.onError((err, c) => {

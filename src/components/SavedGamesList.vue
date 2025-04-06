@@ -2,23 +2,23 @@
 import { ref, onMounted, watch } from 'vue';
 import { usePositions } from '../composables/usePositions';
 
-const { positions, isLoading, error, fetchPositions, deletePosition } = usePositions();
+const { games, isLoading, error, fetchGames, deleteGame } = usePositions();
 
 const emit = defineEmits(['load-position']);
 
 // Local state
-const selectedPositionId = ref(null);
+const selectedGameId = ref(null);
 const deleteConfirmId = ref(null);
 const loadingState = ref({});
 
-// Load positions when component is mounted
+// Load games when component is mounted
 onMounted(async () => {
-  await loadPositions();
+  await loadGames();
 });
 
-// Fetch all positions
-const loadPositions = async () => {
-  await fetchPositions();
+// Fetch all games
+const loadGames = async () => {
+  await fetchGames();
 };
 
 // Format date for display
@@ -27,21 +27,21 @@ const formatDate = (dateString) => {
   return date.toLocaleString();
 };
 
-// Handle position selection
-const selectPosition = (id) => {
-  selectedPositionId.value = id;
+// Handle game selection
+const selectGame = (id) => {
+  selectedGameId.value = id;
 };
 
-// Load the selected position
-const loadPosition = async (position) => {
-  loadingState.value[position.id] = true;
+// Load the selected game
+const loadGame = async (game) => {
+  loadingState.value[game.id] = true;
   
   try {
-    emit('load-position', position);
+    emit('load-position', game);
   } catch (err) {
-    console.error('Error loading position:', err);
+    console.error('Error loading game:', err);
   } finally {
-    loadingState.value[position.id] = false;
+    loadingState.value[game.id] = false;
   }
 };
 
@@ -57,21 +57,21 @@ const cancelDelete = (event) => {
   deleteConfirmId.value = null;
 };
 
-// Handle position deletion
+// Handle game deletion
 const handleDelete = async (id, event) => {
   event.stopPropagation();
   loadingState.value[id] = true;
   
   try {
-    await deletePosition(id);
+    await deleteGame(id);
     deleteConfirmId.value = null;
     
-    // If the deleted position was selected, clear the selection
-    if (selectedPositionId.value === id) {
-      selectedPositionId.value = null;
+    // If the deleted game was selected, clear the selection
+    if (selectedGameId.value === id) {
+      selectedGameId.value = null;
     }
   } catch (err) {
-    console.error('Error deleting position:', err);
+    console.error('Error deleting game:', err);
   } finally {
     loadingState.value[id] = false;
   }
@@ -81,9 +81,9 @@ const handleDelete = async (id, event) => {
 <template>
   <div class="bg-white border border-gray-200 rounded-lg shadow-md p-4 h-full">
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-900">Saved Positions</h3>
+      <h3 class="text-lg font-semibold text-gray-900">Saved Games</h3>
       <button 
-        @click="loadPositions" 
+        @click="loadGames" 
         class="text-blue-600 hover:text-blue-800 text-sm"
       >
         Refresh
@@ -91,16 +91,16 @@ const handleDelete = async (id, event) => {
     </div>
     
     <!-- Loading state -->
-    <div v-if="isLoading && !positions.length" class="text-center py-6">
+    <div v-if="isLoading && !games.length" class="text-center py-6">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      <p class="mt-2 text-gray-600">Loading positions...</p>
+      <p class="mt-2 text-gray-600">Loading games...</p>
     </div>
     
     <!-- Error state -->
     <div v-else-if="error" class="text-center py-6 text-red-500">
       <p>{{ error }}</p>
       <button 
-        @click="loadPositions" 
+        @click="loadGames" 
         class="mt-2 text-blue-600 hover:text-blue-800"
       >
         Try Again
@@ -108,52 +108,52 @@ const handleDelete = async (id, event) => {
     </div>
     
     <!-- Empty state -->
-    <div v-else-if="!positions.length" class="text-center py-8">
-      <p class="text-gray-500">You haven't saved any positions yet.</p>
-      <p class="text-gray-500 mt-1">Create your first position and click "Save"!</p>
+    <div v-else-if="!games.length" class="text-center py-8">
+      <p class="text-gray-500">You haven't saved any games yet.</p>
+      <p class="text-gray-500 mt-1">Create your first game and click "Save"!</p>
     </div>
     
-    <!-- Position list -->
+    <!-- Game list -->
     <div v-else class="overflow-y-auto max-h-96">
       <ul class="divide-y divide-gray-200">
         <li 
-          v-for="position in positions" 
-          :key="position.id"
-          @click="selectPosition(position.id)"
+          v-for="game in games" 
+          :key="game.id"
+          @click="selectGame(game.id)"
           :class="[
             'p-3 hover:bg-gray-50 cursor-pointer transition-colors',
-            selectedPositionId === position.id ? 'bg-blue-50' : ''
+            selectedGameId === game.id ? 'bg-blue-50' : ''
           ]"
         >
           <div class="flex justify-between">
             <div>
-              <h4 class="font-medium text-gray-900">{{ position.name }}</h4>
-              <p v-if="position.description" class="text-sm text-gray-600 mt-1">
-                {{ position.description }}
+              <h4 class="font-medium text-gray-900">{{ game.name }}</h4>
+              <p v-if="game.description" class="text-sm text-gray-600 mt-1">
+                {{ game.description }}
               </p>
               <p class="text-xs text-gray-500 mt-1">
-                Saved: {{ formatDate(position.createdAt) }}
+                Saved: {{ formatDate(game.createdAt) }}
               </p>
             </div>
             
             <div class="flex items-start space-x-2">
               <!-- Load button -->
               <button 
-                @click="loadPosition(position)"
+                @click="loadGame(game)"
                 class="text-blue-600 hover:bg-blue-100 p-1 rounded"
-                :disabled="loadingState[position.id]"
+                :disabled="loadingState[game.id]"
               >
-                <span v-if="loadingState[position.id]">Loading...</span>
+                <span v-if="loadingState[game.id]">Loading...</span>
                 <span v-else>Load</span>
               </button>
               
               <!-- Delete button/confirmation -->
-              <div v-if="deleteConfirmId === position.id">
+              <div v-if="deleteConfirmId === game.id">
                 <div class="flex items-center space-x-1">
                   <button 
-                    @click="handleDelete(position.id, $event)"
+                    @click="handleDelete(game.id, $event)"
                     class="text-red-600 hover:bg-red-100 p-1 rounded text-xs"
-                    :disabled="loadingState[position.id]"
+                    :disabled="loadingState[game.id]"
                   >
                     Confirm
                   </button>
@@ -167,7 +167,7 @@ const handleDelete = async (id, event) => {
               </div>
               <button 
                 v-else
-                @click="confirmDelete(position.id, $event)"
+                @click="confirmDelete(game.id, $event)"
                 class="text-gray-400 hover:text-red-600 p-1 rounded"
               >
                 Delete

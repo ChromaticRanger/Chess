@@ -13,7 +13,7 @@ import { usePositions } from "./composables/usePositions";
 
 // Auth state
 const { isAuthenticated, user, logout } = useAuth();
-const { createPosition } = usePositions();
+const { createGame } = usePositions();
 const isAuthenticatedUser = ref(isAuthenticated.value);
 
 // Track the current turn
@@ -127,60 +127,51 @@ const goToMove = (index) => {
 const handleSaveGame = async () => {
   if (!isAuthenticated.value) {
     // Show login prompt if not authenticated
-    showModal('Authentication Required', 'Please log in or sign up to save positions.');
+    showModal('Authentication Required', 'Please log in or sign up to save games.');
     return;
   }
   
   try {
-    // Get current position data from board component
-    const fen = boardComponent.value ? boardComponent.value.getCurrentFen() : null;
+    // Open save game dialog
+    const gameName = prompt('Enter a name for this game:');
     
-    if (!fen) {
-      showModal('Error', 'Could not get current position.');
-      return;
-    }
+    if (!gameName) return; // User cancelled
     
-    // Open save position dialog
-    const positionName = prompt('Enter a name for this position:');
-    
-    if (!positionName) return; // User cancelled
-    
-    const positionData = {
-      name: positionName,
+    const gameData = {
+      name: gameName,
       description: '',
-      fenString: fen,
       moveHistory: moveHistory.value
     };
     
-    const result = await createPosition(positionData);
+    const result = await createGame(gameData);
     
     if (result.success) {
-      showModal('Success', 'Position saved successfully!');
+      showModal('Success', 'Game saved successfully!');
     } else {
-      showModal('Error', `Failed to save position: ${result.error}`);
+      showModal('Error', `Failed to save game: ${result.error}`);
     }
   } catch (error) {
-    console.error('Error saving position:', error);
-    showModal('Error', 'An error occurred while saving the position.');
+    console.error('Error saving game:', error);
+    showModal('Error', 'An error occurred while saving the game.');
   }
 };
 
-// Handler for loading a saved position
-const handleLoadPosition = async (position) => {
+// Handler for loading a saved game
+const handleLoadGame = async (game) => {
   try {
     if (!boardComponent.value) {
       showModal('Error', 'Board component not available.');
       return;
     }
     
-    // TODO: Implement a loadFromFen method in Board.vue
+    // TODO: Implement a loadGameHistory method in Board.vue
     // For now, we'll just reset the board and show a message
-    showModal('Feature Coming Soon', 'Position loading will be implemented in the next update.');
+    showModal('Feature Coming Soon', 'Game loading will be implemented in the next update.');
     
-    console.log('Position to load:', position);
+    console.log('Game to load:', game);
   } catch (error) {
-    console.error('Error loading position:', error);
-    showModal('Error', 'An error occurred while loading the position.');
+    console.error('Error loading game:', error);
+    showModal('Error', 'An error occurred while loading the game.');
   }
 };
 
@@ -225,7 +216,7 @@ onMounted(() => {
     <!-- Header with user info and logout -->
     <header class="bg-blue-600 text-white p-4">
       <div class="container mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold">Chess App</h1>
+        <h1 class="text-xl font-bold">Log My Chess Games</h1>
         <div class="flex items-center">
           <span class="mr-4">{{ user?.username }}</span>
           <button 
@@ -261,7 +252,7 @@ onMounted(() => {
             <div style="width: 352px;">
               <GameSavePanel
                 @save-game="handleSaveGame"
-                @load-position="handleLoadPosition"
+                @load-game="handleLoadGame"
               />
             </div>
           </div>
