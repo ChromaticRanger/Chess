@@ -188,6 +188,59 @@ export default function useGameState(options = {}) {
   };
 
   /**
+   * Takes back the last move made
+   * Returns the board to the previous state and updates all relevant game state
+   */
+  const takeBackMove = () => {
+    // Only allow taking back if we have moves in history
+    if (moveHistory.value.length > 0) {
+      // Remove the last move from history
+      const removedMove = moveHistory.value.pop();
+      
+      // Switch the turn back
+      currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
+      
+      // Reset check status if needed
+      if (whiteInCheck.value || blackInCheck.value) {
+        whiteInCheck.value = false;
+        blackInCheck.value = false;
+      }
+      
+      // If this was a king or rook's first move, restore their unmoved status
+      if (removedMove.piece.type === "King") {
+        if (removedMove.piece.color === "White" && !movedPieces.value.whiteKing) {
+          movedPieces.value.whiteKing = false;
+        } else if (removedMove.piece.color === "Black" && !movedPieces.value.blackKing) {
+          movedPieces.value.blackKing = false;
+        }
+      } else if (removedMove.piece.type === "Rook") {
+        const { fromCol } = removedMove;
+        if (removedMove.piece.color === "White") {
+          if (fromCol === 0) movedPieces.value.whiteRookA = false;
+          if (fromCol === 7) movedPieces.value.whiteRookH = false;
+        } else {
+          if (fromCol === 0) movedPieces.value.blackRookA = false;
+          if (fromCol === 7) movedPieces.value.blackRookH = false;
+        }
+      }
+      
+      // Notify of turn change
+      if (onTurnChanged) {
+        onTurnChanged(currentTurn.value);
+      }
+      
+      // Notify of move history update
+      if (onMoveHistoryUpdated) {
+        onMoveHistoryUpdated(moveHistory.value);
+      }
+      
+      console.log("Move taken back:", removedMove);
+      return removedMove;
+    }
+    return null;
+  };
+
+  /**
    * Resets the game state to initial values
    */
   const resetGameState = () => {
@@ -246,6 +299,7 @@ export default function useGameState(options = {}) {
     handleCheckmate,
     handleStalemate,
     resetGameState,
+    takeBackMove,
     setCheckStatus,
     setEnPassantTarget,
     clearEnPassantTarget

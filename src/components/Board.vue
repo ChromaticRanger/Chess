@@ -19,7 +19,8 @@ const emit = defineEmits([
   'stalemate',
   'current-move-index-changed',
   'captured-pieces-updated',
-  'board-orientation-changed'
+  'board-orientation-changed',
+  'take-back-move'
 ]);
 
 // Initialize game state with callbacks
@@ -46,7 +47,8 @@ const {
   updateMovedPiecesTracking,
   setCheckStatus,
   setEnPassantTarget,
-  clearEnPassantTarget
+  clearEnPassantTarget,
+  takeBackMove
 } = gameState;
 
 const {
@@ -418,7 +420,11 @@ const pendingMove = ref(null);
 // Board history state
 const boardStateHistory = ref([]); // Stores snapshots of board state after each move
 const currentMoveIndex = ref(-1); // -1 means "latest move"
-const viewingPastMove = computed(() => currentMoveIndex.value >= 0 && currentMoveIndex.value < moveHistory.value.length);
+// Consider both viewing specific past moves (index >= 0) and the starting position (index = -2)
+const viewingPastMove = computed(() => 
+  (currentMoveIndex.value >= 0 && currentMoveIndex.value < moveHistory.value.length) || 
+  currentMoveIndex.value === -2
+);
 
 /**
  * Handle the MouseDown event
@@ -590,6 +596,17 @@ const { toChessNotation, fromChessNotation } = useChessNotation();
 const handleMouseUp = async (event) => {
   // Don't process mouse up events when promotion UI is active
   if (showPromotion.value) {
+    return;
+  }
+  
+  // Don't process moves when viewing past positions
+  if (viewingPastMove.value) {
+    // Just ensure any dragged piece is returned to its position
+    if (draggingPiece.value) {
+      returnPiece(draggingPiece.value);
+      draggingPiece.value = null;
+      validMoves.value = [];
+    }
     return;
   }
 
@@ -1623,6 +1640,166 @@ const handleMoveSelection = (moveIndex) => {
   restoreBoardStateToMove(moveIndex);
 };
 
+/**
+ * Handle taking back the last move
+ */
+const handleTakeBackMove = () => {
+  console.log('Taking back the last move');
+  
+  // Don't allow taking back moves when viewing past positions
+  if (viewingPastMove.value) {
+    console.log('Cannot take back move when viewing past positions');
+    return;
+  }
+  
+  // Take back the last move from game state
+  const removedMove = takeBackMove();
+  
+  if (removedMove) {
+    console.log('Move taken back successfully:', removedMove);
+    
+    // Get the original position of the piece
+    const fromPosition = removedMove.from;
+    const toPosition = removedMove.to;
+    
+    // Find the piece that was moved
+    let movedPiece = pieces.value.find(p => 
+      p.type === removedMove.piece && 
+      p.color === removedMove.color && 
+      p.row === toPosition.row && 
+      p.col === toPosition.col
+    );
+    
+    if (movedPiece) {
+      console.log(`Moving ${movedPiece.color} ${movedPiece.type} back from (${toPosition.row},${toPosition.col}) to (${fromPosition.row},${fromPosition.col})`);
+      
+      // Move the piece back to its original position
+      const pieceIndex = pieces.value.findIndex(p => p.id === movedPiece.id);
+      if (pieceIndex !== -1) {
+        pieces.value[pieceIndex].row = fromPosition.row;
+        pieces.value[pieceIndex].col = fromPosition.col;
+      }
+      
+      // If a piece was captured, restore it
+      if (removedMove.capturedPiece) {
+        const captured = removedMove.capturedPiece;
+        console.log(`Restoring captured ${captured.color} ${captured.type} at ${captured.position}`);
+        
+        // Convert the notation (e.g., "e4") to row/col
+        const { row, col } = fromChessNotation(captured.position);
+        
+        // Create a new unique ID for the restored piece
+        const newId = `restored_${captured.type}_${captured.color}_${Date.now()}`;
+        
+        // Create the restored piece using PieceFactory
+        const restoredPiece = createPiece(
+          newId,
+          captured.type,
+          captured.color,
+          row,
+          col
+        );
+        
+        // Add the restored piece back to the board
+        pieces.value.push(restoredPiece);
+        
+        // Update the captured pieces list
+        const capturedIndex = capturedPieces.value.findIndex(
+          p => p.type === captured.type && p.color === captured.color
+        );
+        if (capturedIndex !== -1) {
+          capturedPieces.value.splice(capturedIndex, 1);
+          emit('captured-pieces-updated', capturedPieces.value);
+        }
+      }
+      
+      // If it was a castling move, move the rook back as well
+      if (removedMove.isCastling) {
+        const castlingSide = removedMove.castlingSide;
+        const kingRow = fromPosition.row;
+        let rookOrigCol, rookDestCol;
+        
+        if (castlingSide === 'kingside') {
+          rookOrigCol = 7; // h-file
+          rookDestCol = 5; // f-file
+        } else {
+          rookOrigCol = 0; // a-file
+          rookDestCol = 3; // d-file
+        }
+        
+        // Find the rook that was moved
+        const rook = pieces.value.find(p => 
+          p.type === "Rook" && 
+          p.color === movedPiece.color && 
+          p.row === kingRow && 
+          p.col === rookDestCol
+        );
+        
+        if (rook) {
+          console.log(`Moving castled rook back from (${kingRow},${rookDestCol}) to (${kingRow},${rookOrigCol})`);
+          
+          // Move the rook back
+          const rookIndex = pieces.value.findIndex(p => p.id === rook.id);
+          if (rookIndex !== -1) {
+            pieces.value[rookIndex].row = kingRow;
+            pieces.value[rookIndex].col = rookOrigCol;
+          }
+        }
+      }
+      
+      // If it was an en passant capture, the captured pawn is in a different position
+      if (removedMove.isEnPassant && removedMove.capturedPiece) {
+        // Find the captured pawn we just restored and adjust its position if needed
+        const lastPiece = pieces.value[pieces.value.length - 1];
+        if (lastPiece && lastPiece.type === "Pawn") {
+          // The pawn should be in the same row as the capturing pawn's original position
+          // and in the same column as the capturing pawn's destination
+          const correctRow = fromPosition.row;
+          const correctCol = toPosition.col;
+          
+          // Adjust position if needed
+          if (lastPiece.row !== correctRow || lastPiece.col !== correctCol) {
+            console.log(`Adjusting en passant captured pawn from (${lastPiece.row},${lastPiece.col}) to (${correctRow},${correctCol})`);
+            lastPiece.row = correctRow;
+            lastPiece.col = correctCol;
+          }
+        }
+      }
+      
+      // If it was a promotion, change piece type back to pawn
+      if (removedMove.isPromotion) {
+        console.log(`Reverting promoted piece back to Pawn`);
+        
+        // Find the promoted piece index
+        const promotedIndex = pieces.value.findIndex(p => p.id === movedPiece.id);
+        if (promotedIndex !== -1) {
+          // Create a new pawn to replace the promoted piece
+          const newPawn = createPiece(
+            movedPiece.id,
+            "Pawn",
+            movedPiece.color,
+            fromPosition.row,
+            fromPosition.col
+          );
+          
+          // Replace the promoted piece with the pawn
+          pieces.value.splice(promotedIndex, 1, newPawn);
+        }
+      }
+    } else {
+      console.error(`Could not find piece to take back: ${removedMove.color} ${removedMove.piece} at (${toPosition.row},${toPosition.col})`);
+    }
+    
+    // Update the current board state
+    captureCurrentBoardState();
+    
+    // Emit event
+    emit('take-back-move', removedMove);
+  } else {
+    console.log('No moves to take back');
+  }
+};
+
 // Expose methods and game state to the parent component
 defineExpose({
   // Core game functionality
@@ -1632,6 +1809,7 @@ defineExpose({
   enPassantTarget,
   currentMoveIndex,
   handleMoveSelection,
+  handleTakeBackMove,
   flipBoard,
   boardFlipped,
   
@@ -1914,9 +2092,9 @@ defineExpose({
           :bottomRightLabel="square.bottomRightLabel"
           :piece="square.piece"
           :selected="square.selected"
-          :validMove="square.validMove"
+          :validMove="square.validMove && !viewingPastMove"
           :inCheck="square.inCheck"
-          @mousedown="square.piece && handleMouseDown(square.piece, $event)"
+          @mousedown="square.piece && !viewingPastMove && handleMouseDown(square.piece, $event)"
         />
       </div>
       
