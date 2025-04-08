@@ -80,6 +80,7 @@
                 @move-to-previous="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
                 @move-to-next="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
                 @move-to-last="index => boardComponent ? boardComponent.handleMoveSelection(index) : null"
+                @take-back-move="boardComponent ? boardComponent.handleTakeBackMove() : null"
                 style="width: 352px;"
               />
             </div>

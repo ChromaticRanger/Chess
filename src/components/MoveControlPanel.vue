@@ -23,7 +23,7 @@ const props = defineProps({
 });
 
 // Define emits
-const emit = defineEmits(['move-to-first', 'move-to-previous', 'toggle-play', 'move-to-next', 'move-to-last']);
+const emit = defineEmits(['move-to-first', 'move-to-previous', 'toggle-play', 'move-to-next', 'move-to-last', 'take-back-move']);
 
 // State for playback control
 const isPlaying = ref(false);
@@ -166,6 +166,20 @@ const stopPlayback = () => {
   }
 };
 
+// Function to take back a move
+const takeBackMove = () => {
+  // Only allow taking back moves when we're at the latest move
+  if (props.currentMoveIndex === -1 && props.moveHistory.length > 0) {
+    emit('take-back-move');
+  }
+};
+
+// Check if take back is possible
+const canTakeBack = () => {
+  // Only allow taking back when we're at the latest position (not viewing past moves) and have moves
+  return props.currentMoveIndex === -1 && props.moveHistory.length > 0;
+};
+
 // Watch for changes to the currentMoveIndex
 watch(() => props.currentMoveIndex, (newIndex) => {
   // If we're at the end of the moves and playing, stop playback
@@ -233,6 +247,15 @@ onUnmounted(() => {
     >
       <img :src="lastSvg" alt="Last Move" class="w-6 h-6" />
     </button>
+    
+    <button 
+      @click="takeBackMove" 
+      class="control-button take-back-button" 
+      :disabled="!canTakeBack()"
+      title="Take back move"
+    >
+      <img :src="previousSvg" alt="Take Back Move" class="w-6 h-6 transform -rotate-45" />
+    </button>
   </div>
 </template>
 
@@ -241,8 +264,16 @@ onUnmounted(() => {
   @apply p-2 rounded-md bg-gray-200 hover:bg-gray-300 transition-colors;
 }
 
+.take-back-button {
+  @apply bg-red-200 hover:bg-red-300;
+}
+
 .control-button:disabled {
   @apply opacity-50 cursor-not-allowed hover:bg-gray-200;
+}
+
+.take-back-button:disabled {
+  @apply opacity-50 cursor-not-allowed hover:bg-red-200;
 }
 
 /* Match the width of the MoveHistoryList component */
