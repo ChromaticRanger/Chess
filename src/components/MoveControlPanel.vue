@@ -247,15 +247,6 @@ onUnmounted(() => {
     >
       <img :src="lastSvg" alt="Last Move" class="w-6 h-6" />
     </button>
-    
-    <button 
-      @click="takeBackMove" 
-      class="control-button take-back-button" 
-      :disabled="!canTakeBack()"
-      title="Take back move"
-    >
-      <img :src="previousSvg" alt="Take Back Move" class="w-6 h-6 transform -rotate-45" />
-    </button>
   </div>
 </template>
 
@@ -264,16 +255,8 @@ onUnmounted(() => {
   @apply p-2 rounded-md bg-gray-200 hover:bg-gray-300 transition-colors;
 }
 
-.take-back-button {
-  @apply bg-red-200 hover:bg-red-300;
-}
-
 .control-button:disabled {
   @apply opacity-50 cursor-not-allowed hover:bg-gray-200;
-}
-
-.take-back-button:disabled {
-  @apply opacity-50 cursor-not-allowed hover:bg-red-200;
 }
 
 /* Match the width of the MoveHistoryList component */

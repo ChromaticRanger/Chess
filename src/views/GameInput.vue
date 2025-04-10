@@ -52,6 +52,7 @@
                   :current-move-index="currentMoveIndex"
                   @move-selected="index => index >= 0 && boardComponent ? boardComponent.handleMoveSelection(index) : null"
                   @reset-board="boardComponent ? boardComponent.resetBoard() : null"
+                  @take-back-move="boardComponent ? boardComponent.handleTakeBackMove() : null"
                 />
               </div>
             </div>

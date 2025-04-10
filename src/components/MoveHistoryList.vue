@@ -3,6 +3,7 @@ import { ref, computed, defineProps, defineEmits, onUpdated } from 'vue';
 import { getPieceImagePath } from "../utils/PieceFactory";
 import useChessNotation from "../composables/useChessNotation";
 import resetSvg from '/src/assets/reset.svg';
+import deleteSvg from '/src/assets/delete.svg';
 
 const props = defineProps({
   moveHistory: {
@@ -16,8 +17,8 @@ const props = defineProps({
   }
 });
 
-// Define emits for when a move is selected or reset is requested
-const emit = defineEmits(['move-selected', 'reset-board']);
+// Define emits for when a move is selected, reset is requested, or a move is taken back
+const emit = defineEmits(['move-selected', 'reset-board', 'take-back-move']);
 
 // Reference to the move history panel
 const moveHistoryPanel = ref(null);
@@ -104,6 +105,11 @@ const getBlackMoveIndex = (moveNumber) => {
   return (parseInt(moveNumber) - 1) * 2 + 1;
 };
 
+// Function to check if a move is the latest move
+const isLatestMove = (moveIndex) => {
+  return props.currentMoveIndex === -1 && moveIndex === props.moveHistory.length - 1;
+};
+
 // Function to handle move selection
 const selectMove = (moveIndex) => {
   if (moveIndex >= 0 && moveIndex < props.moveHistory.length) {
@@ -120,6 +126,11 @@ const selectMove = (moveIndex) => {
 // Handler for reset button click
 const handleResetBoard = () => {
   emit('reset-board');
+};
+
+// Handler for take back move click
+const handleTakeBackMove = () => {
+  emit('take-back-move');
 };
 
 // Scroll to the bottom when move history updates
@@ -165,7 +176,7 @@ onUpdated(() => {
         <!-- White's move (left column) -->
         <div 
           v-if="moves.white" 
-          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer"
+          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100': getWhiteMoveIndex(moveNumber) === currentMoveIndex,
             'text-red-600': moves.white.createsCheck
@@ -179,19 +190,29 @@ onUpdated(() => {
             class="w-5 h-5 mr-1" 
           />
           
-          <div>
+          <div class="flex-grow">
             <!-- Standard notation format only, which already includes e.p. notation -->
             <span class="font-semibold text-sm">
               {{ moves.white.notation }}
             </span>
           </div>
+          
+          <!-- Take back button - only show if this is the latest move and black didn't move yet -->
+          <button 
+            v-if="isLatestMove(getWhiteMoveIndex(moveNumber)) && !moves.black"
+            @click.stop="handleTakeBackMove"
+            class="take-back-button absolute right-1 top-1/2 transform -translate-y-1/2"
+            title="Take back move"
+          >
+            <img :src="deleteSvg" alt="Take Back" class="w-4 h-4" />
+          </button>
         </div>
         <div v-else class="p-3"></div>
         
         <!-- Black's move (right column) -->
         <div 
           v-if="moves.black" 
-          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer"
+          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100': getBlackMoveIndex(moveNumber) === currentMoveIndex,
             'text-red-600': moves.black.createsCheck
@@ -204,12 +225,22 @@ onUpdated(() => {
             class="w-5 h-5 mr-1" 
           />
           
-          <div>
+          <div class="flex-grow">
             <!-- Standard notation format only, which already includes e.p. notation -->
             <span class="text-sm">
               {{ moves.black.notation }}
             </span>
           </div>
+          
+          <!-- Take back button - only show if this is the latest move -->
+          <button 
+            v-if="isLatestMove(getBlackMoveIndex(moveNumber))"
+            @click.stop="handleTakeBackMove"
+            class="take-back-button absolute right-1 top-1/2 transform -translate-y-1/2"
+            title="Take back move"
+          >
+            <img :src="deleteSvg" alt="Take Back" class="w-4 h-4" />
+          </button>
         </div>
         <div v-else class="p-3"></div>
       </div>
@@ -224,6 +255,10 @@ onUpdated(() => {
 
 .reset-button {
   @apply p-1 rounded-md hover:bg-blue-500 transition-colors;
+}
+
+.take-back-button {
+  @apply p-1 rounded-md bg-red-100 hover:bg-red-200 transition-colors opacity-80 hover:opacity-100;
 }
 
 .invert {
