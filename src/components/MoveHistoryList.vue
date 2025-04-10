@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, defineProps, defineEmits, onUpdated } from 'vue';
+import { ref, computed, defineProps, defineEmits, onUpdated, reactive } from 'vue';
 import { getPieceImagePath } from "../utils/PieceFactory";
 import useChessNotation from "../composables/useChessNotation";
 import resetSvg from '/src/assets/reset.svg';
 import deleteSvg from '/src/assets/delete.svg';
+import Modal from './Modal.vue';
 
 const props = defineProps({
   moveHistory: {
@@ -25,6 +26,12 @@ const moveHistoryPanel = ref(null);
 
 // Initialize the chess notation composable
 const chessNotation = useChessNotation();
+
+// Reset confirmation modal state
+const resetModal = reactive({
+  visible: false,
+  message: 'Are you sure you want to reset the board? All move history will be lost.',
+});
 
 // Create a formatted move history grouped by move number
 const formattedMoveHistoryByNumber = computed(() => {
@@ -123,9 +130,20 @@ const selectMove = (moveIndex) => {
   }
 };
 
-// Handler for reset button click
+// Show reset confirmation modal
+const confirmResetBoard = () => {
+  resetModal.visible = true;
+};
+
+// Close reset confirmation modal
+const closeResetModal = () => {
+  resetModal.visible = false;
+};
+
+// Handler for reset board confirmation
 const handleResetBoard = () => {
   emit('reset-board');
+  resetModal.visible = false;
 };
 
 // Handler for take back move click
@@ -147,7 +165,7 @@ onUpdated(() => {
     <div class="flex justify-between items-center p-3 bg-blue-600 text-white font-semibold sticky top-0 z-20">
       <div>Move History</div>
       <button 
-        @click="handleResetBoard" 
+        @click="confirmResetBoard" 
         class="reset-button"
         title="Reset board"
       >
@@ -245,6 +263,20 @@ onUpdated(() => {
         <div v-else class="p-3"></div>
       </div>
     </div>
+    
+    <!-- Reset Confirmation Modal -->
+    <Modal
+      :visible="resetModal.visible"
+      title="Reset Board"
+      :message="resetModal.message"
+      icon="/src/assets/reset.svg"
+      :showActions="true"
+      confirmText="Yes, please reset"
+      confirmClass="bg-red-600 hover:bg-red-700"
+      cancelText="Cancel"
+      @close="closeResetModal"
+      @confirm="handleResetBoard"
+    />
   </div>
 </template>
 
