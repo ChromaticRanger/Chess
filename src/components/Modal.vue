@@ -17,12 +17,33 @@ const props = defineProps({
   icon: {
     type: String,
     default: ''
+  },
+  showActions: {
+    type: Boolean,
+    default: false
+  },
+  confirmText: {
+    type: String,
+    default: 'Confirm'
+  },
+  confirmClass: {
+    type: String,
+    default: 'bg-blue-600 hover:bg-blue-700'
+  },
+  cancelText: {
+    type: String,
+    default: 'Cancel'
   }
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'confirm']);
 
 const handleClose = () => {
+  emit('close');
+};
+
+const handleConfirm = () => {
+  emit('confirm');
   emit('close');
 };
 
@@ -44,6 +65,21 @@ const hasIcon = computed(() => !!props.icon);
         <div class="flex-grow">
           {{ message }}
         </div>
+      </div>
+      <div v-if="showActions" class="p-3 bg-gray-100 rounded-b-md flex justify-end space-x-2">
+        <button 
+          class="px-4 py-2 rounded text-sm font-medium bg-gray-300 hover:bg-gray-400 transition-colors"
+          @click="handleClose"
+        >
+          {{ cancelText }}
+        </button>
+        <button 
+          class="px-4 py-2 rounded text-sm font-medium text-white transition-colors"
+          :class="confirmClass"
+          @click="handleConfirm"
+        >
+          {{ confirmText }}
+        </button>
       </div>
     </div>
   </div>

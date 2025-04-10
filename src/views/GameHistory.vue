@@ -121,18 +121,39 @@
           </div>
         </div>
       </div>
+      
+      <!-- Delete Confirmation Modal -->
+      <Modal
+        :visible="deleteModal.visible"
+        title="Delete Game"
+        :message="deleteModal.message"
+        icon="/src/assets/trash.svg"
+        :showActions="true"
+        confirmText="Yes, please delete"
+        confirmClass="bg-red-600 hover:bg-red-700"
+        cancelText="Cancel"
+        @close="closeDeleteModal"
+        @confirm="handleDeleteGame"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePositions } from '../composables/usePositions';
+import Modal from '../components/Modal.vue';
 
 const router = useRouter();
 const { games, isLoading, fetchGames, deleteGame } = usePositions();
-const deleteConfirmId = ref(null);
+
+// Delete confirmation modal state
+const deleteModal = reactive({
+  visible: false,
+  message: '',
+  gameId: null
+});
 
 // Fetch games when component is mounted
 onMounted(async () => {
@@ -164,16 +185,28 @@ const loadGame = (game) => {
   router.push('/game-input');
 };
 
-// Confirm deleting a game
+// Open delete confirmation modal
 const confirmDeleteGame = (id) => {
-  if (confirm('Are you sure you want to delete this game?')) {
-    handleDeleteGame(id);
-  }
+  // Find the game to get its name
+  const gameToDelete = games.value.find(game => game.id === id);
+  const gameName = gameToDelete?.name || 'this game';
+  
+  deleteModal.message = `Are you sure you want to delete "${gameName}"? This action cannot be undone.`;
+  deleteModal.gameId = id;
+  deleteModal.visible = true;
 };
 
-// Delete a game
-const handleDeleteGame = async (id) => {
-  await deleteGame(id);
+// Close delete confirmation modal
+const closeDeleteModal = () => {
+  deleteModal.visible = false;
+};
+
+// Delete a game when confirmation is given
+const handleDeleteGame = async () => {
+  if (deleteModal.gameId) {
+    await deleteGame(deleteModal.gameId);
+    deleteModal.gameId = null;
+  }
 };
 </script>
 
