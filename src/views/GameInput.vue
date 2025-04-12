@@ -96,6 +96,7 @@
       :move-history="moveHistory"
       @save="saveGame"
       @cancel="cancelSave"
+      :result="gameResult"
     />
   </div>
 </template>
@@ -147,6 +148,7 @@ const handleTurnChange = (newTurn) => {
 // Handler for checkmate
 const handleCheckmate = (winner) => {
   const winnerKingImage = getPieceImagePath("King", winner);
+  gameResult.value = winner === "White" ? "White Win" : "Black Win";
   emit('show-modal', "Checkmate", `${winner} has won the game.`, winnerKingImage);
 };
 
@@ -154,6 +156,7 @@ const handleCheckmate = (winner) => {
 const handleStalemate = (stalematedColor) => {
   // Use both kings to represent a draw
   const whiteKingImage = getPieceImagePath("King", "White");
+  gameResult.value = "Draw - By Stalemate"; // Using the specific stalemate draw option
   emit('show-modal', "Stalemate", `The game is a draw by stalemate.`, whiteKingImage);
 };
 
@@ -181,6 +184,9 @@ const handleBoardOrientationChange = (isFlipped) => {
   boardFlipped.value = isFlipped;
   console.log("Board orientation changed, flipped:", isFlipped);
 };
+
+// State to track game result
+const gameResult = ref('In Progress');
 
 // Show/hide save game dialog
 const showSaveDialog = ref(false);

@@ -131,6 +131,26 @@
             </div>
           </div>
           
+          <!-- Game Result section -->
+          <div class="col-span-full">
+            <div class="form-group">
+              <label for="result" class="block text-sm font-medium text-gray-700 mb-1">Game Result</label>
+              <select 
+                id="result" 
+                v-model="gameData.result" 
+                class="form-select w-full shadow-sm"
+              >
+                <option value="In Progress">In Progress</option>
+                <option value="White Win">White Win</option>
+                <option value="Black Win">Black Win</option>
+                <option value="White Resigned">White Resigned</option>
+                <option value="Black Resigned">Black Resigned</option>
+                <option value="Draw Agreed">Draw Agreed</option>
+                <option value="Draw - By Stalemate">Draw - By Stalemate</option>
+              </select>
+            </div>
+          </div>
+          
           <!-- Description section -->
           <div class="col-span-full">
             <div class="form-group">
@@ -181,6 +201,7 @@ const gameData = ref({
   blackPlayer: '',
   blackRating: '',
   description: '',
+  result: 'In Progress', // Default to In Progress
   // The move history will be passed in from the parent component
 });
 
@@ -192,6 +213,10 @@ const props = defineProps({
   moveHistory: {
     type: Array,
     default: () => []
+  },
+  result: {
+    type: String,
+    default: 'In Progress'
   }
 });
 
@@ -209,14 +234,15 @@ const saveGame = () => {
 
 // Set up default values
 onMounted(() => {
-  // You could set defaults here based on user preferences or recent games
+  // Set the result from props
+  gameData.value.result = props.result;
 });
 </script>
 
 <style scoped>
 /* Any component-specific styles can go here */
 /* These classes assist with form styling */
-.form-input, .form-textarea {
+.form-input, .form-textarea, .form-select {
   @apply px-3 py-2 border border-gray-300 rounded-md;
 }
 
