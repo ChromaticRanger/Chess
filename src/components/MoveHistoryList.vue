@@ -1,25 +1,25 @@
 <script setup>
-import { ref, computed, defineProps, defineEmits, onUpdated, reactive } from 'vue';
+import { ref, computed, onUpdated, reactive } from "vue";
 import { getPieceImagePath } from "../utils/PieceFactory";
 import useChessNotation from "../composables/useChessNotation";
-import resetSvg from '/src/assets/reset.svg';
-import deleteSvg from '/src/assets/delete.svg';
-import Modal from './Modal.vue';
+import resetSvg from "/src/assets/reset.svg";
+import deleteSvg from "/src/assets/delete.svg";
+import Modal from "./Modal.vue";
 
 const props = defineProps({
   moveHistory: {
     type: Array,
     required: true,
-    default: () => []
+    default: () => [],
   },
   currentMoveIndex: {
     type: Number,
-    default: -1 // -1 indicates we're at the latest move
-  }
+    default: -1, // -1 indicates we're at the latest move
+  },
 });
 
 // Define emits for when a move is selected, reset is requested, or a move is taken back
-const emit = defineEmits(['move-selected', 'reset-board', 'take-back-move']);
+const emit = defineEmits(["move-selected", "reset-board", "take-back-move"]);
 
 // Reference to the move history panel
 const moveHistoryPanel = ref(null);
@@ -30,7 +30,8 @@ const chessNotation = useChessNotation();
 // Reset confirmation modal state
 const resetModal = reactive({
   visible: false,
-  message: 'Are you sure you want to reset the board? All move history will be lost.',
+  message:
+    "Are you sure you want to reset the board? All move history will be lost.",
 });
 
 // Create a formatted move history grouped by move number
@@ -38,11 +39,11 @@ const formattedMoveHistoryByNumber = computed(() => {
   // Use the groupMovesByNumber function from the composable
   const groupedMoves = chessNotation.groupMovesByNumber(props.moveHistory);
   const result = {};
-  
+
   // Enhance move data with additional display information
   for (const moveNumber in groupedMoves) {
     result[moveNumber] = { white: null, black: null };
-    
+
     // Process white move if it exists
     if (groupedMoves[moveNumber].white) {
       const move = groupedMoves[moveNumber].white;
@@ -58,19 +59,22 @@ const formattedMoveHistoryByNumber = computed(() => {
         isEnPassant: move.isEnPassant || false,
         castlingSide: move.castlingSide || null,
         notation: chessNotation.formatMove(move),
-        capturedPiece: null
+        capturedPiece: null,
       };
-      
+
       // Add captured piece data if applicable
       if (move.capturedPiece) {
         result[moveNumber].white.capturedPiece = {
           piece: move.capturedPiece.type,
           color: move.capturedPiece.color,
-          image: getPieceImagePath(move.capturedPiece.type, move.capturedPiece.color)
+          image: getPieceImagePath(
+            move.capturedPiece.type,
+            move.capturedPiece.color
+          ),
         };
       }
     }
-    
+
     // Process black move if it exists
     if (groupedMoves[moveNumber].black) {
       const move = groupedMoves[moveNumber].black;
@@ -86,20 +90,23 @@ const formattedMoveHistoryByNumber = computed(() => {
         isEnPassant: move.isEnPassant || false,
         castlingSide: move.castlingSide || null,
         notation: chessNotation.formatMove(move),
-        capturedPiece: null
+        capturedPiece: null,
       };
-      
+
       // Add captured piece data if applicable
       if (move.capturedPiece) {
         result[moveNumber].black.capturedPiece = {
           piece: move.capturedPiece.type,
           color: move.capturedPiece.color,
-          image: getPieceImagePath(move.capturedPiece.type, move.capturedPiece.color)
+          image: getPieceImagePath(
+            move.capturedPiece.type,
+            move.capturedPiece.color
+          ),
         };
       }
     }
   }
-  
+
   return result;
 });
 
@@ -114,19 +121,23 @@ const getBlackMoveIndex = (moveNumber) => {
 
 // Function to check if a move is the latest move
 const isLatestMove = (moveIndex) => {
-  return props.currentMoveIndex === -1 && moveIndex === props.moveHistory.length - 1;
+  return (
+    props.currentMoveIndex === -1 && moveIndex === props.moveHistory.length - 1
+  );
 };
 
 // Function to handle move selection
 const selectMove = (moveIndex) => {
   if (moveIndex >= 0 && moveIndex < props.moveHistory.length) {
     // Emit Vue event
-    emit('move-selected', moveIndex);
-    
+    emit("move-selected", moveIndex);
+
     // Also dispatch a DOM event that can be caught globally
-    window.dispatchEvent(new CustomEvent('chess-move-selected', { 
-      detail: moveIndex 
-    }));
+    window.dispatchEvent(
+      new CustomEvent("chess-move-selected", {
+        detail: moveIndex,
+      })
+    );
   }
 };
 
@@ -142,13 +153,13 @@ const closeResetModal = () => {
 
 // Handler for reset board confirmation
 const handleResetBoard = () => {
-  emit('reset-board');
+  emit("reset-board");
   resetModal.visible = false;
 };
 
 // Handler for take back move click
 const handleTakeBackMove = () => {
-  emit('take-back-move');
+  emit("take-back-move");
 };
 
 // Scroll to the bottom when move history updates
@@ -161,62 +172,72 @@ onUpdated(() => {
 </script>
 
 <template>
-  <div ref="moveHistoryPanel" class="w-88 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md">
-    <div class="flex justify-between items-center p-3 bg-blue-600 text-white font-semibold sticky top-0 z-20">
+  <div
+    ref="moveHistoryPanel"
+    class="w-88 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md"
+  >
+    <div
+      class="flex justify-between items-center p-3 bg-blue-600 text-white font-semibold sticky top-0 z-20"
+    >
       <div>Move History</div>
-      <button 
-        @click="confirmResetBoard" 
+      <button
+        @click="confirmResetBoard"
         class="reset-button"
         title="Reset board"
       >
         <img :src="resetSvg" alt="Reset Board" class="w-6 h-6 invert" />
       </button>
     </div>
-    
+
     <!-- Column Headers - Sticky -->
-    <div class="grid grid-cols-2 text-sm font-bold border-b border-gray-300 divide-x divide-gray-300 sticky top-12 z-10">
+    <div
+      class="grid grid-cols-2 text-sm font-bold border-b border-gray-300 divide-x divide-gray-300 sticky top-12 z-10"
+    >
       <div class="p-2 text-center bg-gray-100">White</div>
       <div class="p-2 text-center bg-gray-100">Black</div>
     </div>
-    
+
     <!-- Move History Content -->
-    <div v-if="Object.keys(formattedMoveHistoryByNumber).length === 0" class="text-gray-500 text-center py-4">
+    <div
+      v-if="Object.keys(formattedMoveHistoryByNumber).length === 0"
+      class="text-gray-500 text-center py-4"
+    >
       No moves yet
     </div>
-    
+
     <div class="divide-y divide-gray-200">
-      <div 
-        v-for="(moves, moveNumber) in formattedMoveHistoryByNumber" 
+      <div
+        v-for="(moves, moveNumber) in formattedMoveHistoryByNumber"
         :key="moveNumber"
         class="grid grid-cols-2 text-sm divide-x divide-gray-300"
-        :class="{'bg-gray-50': parseInt(moveNumber) % 2 === 1}"
+        :class="{ 'bg-gray-50': parseInt(moveNumber) % 2 === 1 }"
       >
         <!-- White's move (left column) -->
-        <div 
-          v-if="moves.white" 
+        <div
+          v-if="moves.white"
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100': getWhiteMoveIndex(moveNumber) === currentMoveIndex,
-            'text-red-600': moves.white.createsCheck
+            'text-red-600': moves.white.createsCheck,
           }"
           @click="selectMove(getWhiteMoveIndex(moveNumber))"
         >
           <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
-          <img 
-            :src="moves.white.pieceImage" 
-            :alt="`${moves.white.color} ${moves.white.piece}`" 
-            class="w-5 h-5 mr-1" 
+          <img
+            :src="moves.white.pieceImage"
+            :alt="`${moves.white.color} ${moves.white.piece}`"
+            class="w-5 h-5 mr-1"
           />
-          
+
           <div class="flex-grow">
             <!-- Standard notation format only, which already includes e.p. notation -->
             <span class="font-semibold text-sm">
               {{ moves.white.notation }}
             </span>
           </div>
-          
+
           <!-- Take back button - only show if this is the latest move and black didn't move yet -->
-          <button 
+          <button
             v-if="isLatestMove(getWhiteMoveIndex(moveNumber)) && !moves.black"
             @click.stop="handleTakeBackMove"
             class="take-back-button absolute right-1 top-1/2 transform -translate-y-1/2"
@@ -226,32 +247,32 @@ onUpdated(() => {
           </button>
         </div>
         <div v-else class="p-3"></div>
-        
+
         <!-- Black's move (right column) -->
-        <div 
-          v-if="moves.black" 
+        <div
+          v-if="moves.black"
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100': getBlackMoveIndex(moveNumber) === currentMoveIndex,
-            'text-red-600': moves.black.createsCheck
+            'text-red-600': moves.black.createsCheck,
           }"
           @click="selectMove(getBlackMoveIndex(moveNumber))"
         >
-          <img 
-            :src="moves.black.pieceImage" 
-            :alt="`${moves.black.color} ${moves.black.piece}`" 
-            class="w-5 h-5 mr-1" 
+          <img
+            :src="moves.black.pieceImage"
+            :alt="`${moves.black.color} ${moves.black.piece}`"
+            class="w-5 h-5 mr-1"
           />
-          
+
           <div class="flex-grow">
             <!-- Standard notation format only, which already includes e.p. notation -->
             <span class="text-sm">
               {{ moves.black.notation }}
             </span>
           </div>
-          
+
           <!-- Take back button - only show if this is the latest move -->
-          <button 
+          <button
             v-if="isLatestMove(getBlackMoveIndex(moveNumber))"
             @click.stop="handleTakeBackMove"
             class="take-back-button absolute right-1 top-1/2 transform -translate-y-1/2"
@@ -263,7 +284,7 @@ onUpdated(() => {
         <div v-else class="p-3"></div>
       </div>
     </div>
-    
+
     <!-- Reset Confirmation Modal -->
     <Modal
       :visible="resetModal.visible"
