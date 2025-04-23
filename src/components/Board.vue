@@ -255,6 +255,24 @@ const viewingPastMove = computed(
 );
 
 /**
+ * Returns a piece to its original position visually if a drag is cancelled or invalid.
+ * 
+ * @param {Object} piece - The piece object that needs to be returned.
+ */
+const returnPiece = (piece) => {
+  if (!piece) return;
+  const pieceElement = document.getElementById(`piece-${piece.id}`);
+  if (pieceElement) {
+    // Reset inline styles that were applied during drag
+    pieceElement.style.position = "";
+    pieceElement.style.left = "";
+    pieceElement.style.top = "";
+    pieceElement.style.zIndex = ""; // Reset z-index as well
+    console.log(`Returned piece ${piece.id} to its original square visually.`);
+  }
+};
+
+/**
  * Handle the MouseDown event
  *
  * @param piece - The piece that is being dragged
