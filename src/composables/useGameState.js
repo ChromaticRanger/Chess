@@ -1,8 +1,8 @@
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed } from "vue";
 
 /**
  * Manages chess game state including turns, move history, and game reset functionality
- * 
+ *
  * @param {Object} options - Optional configuration options
  * @param {Function} options.onTurnChanged - Callback when turn changes
  * @param {Function} options.onMoveHistoryUpdated - Callback when move history updates
@@ -11,24 +11,20 @@ import { ref, watch, computed } from 'vue';
  * @returns {Object} Game state and methods
  */
 export default function useGameState(options = {}) {
-  const { 
-    onTurnChanged,
-    onMoveHistoryUpdated,
-    onCheckmate,
-    onStalemate
-  } = options;
+  const { onTurnChanged, onMoveHistoryUpdated, onCheckmate, onStalemate } =
+    options;
 
   // Current turn state (White always moves first in chess)
   const currentTurn = ref("White");
-  
+
   // Move history to track all moves made in the game
   // Each entry contains: piece moved, color, origin, destination, captured piece (if any)
   const moveHistory = ref([]);
-  
+
   // Check state tracking
   const whiteInCheck = ref(false);
   const blackInCheck = ref(false);
-  
+
   // Track which kings and rooks have moved (to determine if castling is allowed)
   const movedPieces = ref({
     whiteKing: false,
@@ -38,13 +34,13 @@ export default function useGameState(options = {}) {
     blackRookA: false, // Queen-side rook (a8)
     blackRookH: false, // King-side rook (h8)
   });
-  
+
   // Track en passant - store the position of a pawn that just moved two squares
   // This will be cleared after one turn
-  const enPassantTarget = ref({ 
-    row: null, 
-    col: null, 
-    availableForColor: null 
+  const enPassantTarget = ref({
+    row: null,
+    col: null,
+    availableForColor: null,
   });
 
   // Watch for changes to currentTurn and emit events when it changes
@@ -55,25 +51,40 @@ export default function useGameState(options = {}) {
   });
 
   // Watch for changes to moveHistory and emit events when moves are added
-  watch(moveHistory, (newHistory) => {
-    console.log("Move history updated:", newHistory.length, "moves recorded");
-    if (onMoveHistoryUpdated) {
-      onMoveHistoryUpdated(newHistory);
-    }
-  }, { deep: true });
+  watch(
+    moveHistory,
+    (newHistory) => {
+      console.log("Move history updated:", newHistory.length, "moves recorded");
+      if (onMoveHistoryUpdated) {
+        onMoveHistoryUpdated(newHistory);
+      }
+    },
+    { deep: true }
+  );
 
   /**
    * Records a move in the move history
-   * 
+   *
    * @param {Object} moveDetails - Details of the move to record
    */
   const recordMove = (moveDetails) => {
+    // Log the details being received, specifically checking for SAN
+    console.log(
+      "recordMove received details:",
+      moveDetails,
+      "SAN:",
+      moveDetails?.san
+    );
+
     moveHistory.value.push({
       ...moveDetails,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
-    console.log("Move recorded:", moveHistory.value[moveHistory.value.length - 1]);
+
+    console.log(
+      "Move recorded:",
+      moveHistory.value[moveHistory.value.length - 1]
+    );
   };
 
   /**
@@ -82,24 +93,28 @@ export default function useGameState(options = {}) {
   const switchTurn = () => {
     currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
     console.log(`It's now ${currentTurn.value}'s turn`);
-    
+
     // Only clear the en passant target after the player who can capture had their turn
     // En passant should be available for exactly ONE turn after a pawn moves two squares
     if (enPassantTarget.value && enPassantTarget.value.availableForColor) {
       // If the current turn is NOT the color that can capture en passant,
       // it means the player who could have captured en passant already had their turn
       if (enPassantTarget.value.availableForColor !== currentTurn.value) {
-        console.log(`Clearing en passant target because ${enPassantTarget.value.availableForColor} had their turn`);
+        console.log(
+          `Clearing en passant target because ${enPassantTarget.value.availableForColor} had their turn`
+        );
         clearEnPassantTarget();
       } else {
-        console.log(`Keeping en passant target available for ${currentTurn.value}`);
+        console.log(
+          `Keeping en passant target available for ${currentTurn.value}`
+        );
       }
     }
   };
-  
+
   /**
    * Sets an en passant target when a pawn moves two squares
-   * 
+   *
    * @param {Number} row - The row of the pawn after moving
    * @param {Number} col - The column of the pawn
    * @param {String} color - The color of the pawn that moved
@@ -108,30 +123,32 @@ export default function useGameState(options = {}) {
     // For a white pawn moving from row 6 to 4, the en passant target is row 5, col unchanged
     // For a black pawn moving from row 1 to 3, the en passant target is row 2, col unchanged
     const targetRow = color === "White" ? row + 1 : row - 1;
-    
+
     enPassantTarget.value = {
       row: targetRow,
       col: col,
       // En passant is available to the opposite color
-      availableForColor: color === "White" ? "Black" : "White"
+      availableForColor: color === "White" ? "Black" : "White",
     };
-    console.log(`En passant target set at ${targetRow},${col} for ${enPassantTarget.value.availableForColor}`);
+    console.log(
+      `En passant target set at ${targetRow},${col} for ${enPassantTarget.value.availableForColor}`
+    );
   };
-  
+
   /**
    * Clears the en passant target
    */
   const clearEnPassantTarget = () => {
-    enPassantTarget.value = { 
-      row: null, 
-      col: null, 
-      availableForColor: null 
+    enPassantTarget.value = {
+      row: null,
+      col: null,
+      availableForColor: null,
     };
   };
 
   /**
    * Updates moved pieces tracking (for castling eligibility)
-   * 
+   *
    * @param {Object} piece - The piece that moved
    * @param {Number} fromRow - Original row
    * @param {Number} fromCol - Original column
@@ -145,15 +162,20 @@ export default function useGameState(options = {}) {
       }
     } else if (piece.type === "Rook") {
       if (piece.color === "White") {
-        if (fromCol === 0) { // a1 rook
+        if (fromCol === 0) {
+          // a1 rook
           movedPieces.value.whiteRookA = true;
-        } else if (fromCol === 7) { // h1 rook
+        } else if (fromCol === 7) {
+          // h1 rook
           movedPieces.value.whiteRookH = true;
         }
-      } else { // Black rook
-        if (fromCol === 0) { // a8 rook
+      } else {
+        // Black rook
+        if (fromCol === 0) {
+          // a8 rook
           movedPieces.value.blackRookA = true;
-        } else if (fromCol === 7) { // h8 rook
+        } else if (fromCol === 7) {
+          // h8 rook
           movedPieces.value.blackRookH = true;
         }
       }
@@ -162,26 +184,26 @@ export default function useGameState(options = {}) {
 
   /**
    * Handles checkmate, including calling the appropriate callback
-   * 
+   *
    * @param {String} losingColor - The color that is in checkmate
    */
   const handleCheckmate = (losingColor) => {
     const winner = losingColor === "White" ? "Black" : "White";
     console.log(`Checkmate! ${winner} has won the game`);
-    
+
     if (onCheckmate) {
       onCheckmate(winner);
     }
   };
-  
+
   /**
    * Handles stalemate, including calling the appropriate callback
-   * 
+   *
    * @param {String} stalematedColor - The color that is in stalemate
    */
   const handleStalemate = (stalematedColor) => {
     console.log(`Stalemate! The game is a draw`);
-    
+
     if (onStalemate) {
       onStalemate(stalematedColor);
     }
@@ -196,21 +218,27 @@ export default function useGameState(options = {}) {
     if (moveHistory.value.length > 0) {
       // Remove the last move from history
       const removedMove = moveHistory.value.pop();
-      
+
       // Switch the turn back
       currentTurn.value = currentTurn.value === "White" ? "Black" : "White";
-      
+
       // Reset check status if needed
       if (whiteInCheck.value || blackInCheck.value) {
         whiteInCheck.value = false;
         blackInCheck.value = false;
       }
-      
+
       // If this was a king or rook's first move, restore their unmoved status
       if (removedMove.piece.type === "King") {
-        if (removedMove.piece.color === "White" && !movedPieces.value.whiteKing) {
+        if (
+          removedMove.piece.color === "White" &&
+          !movedPieces.value.whiteKing
+        ) {
           movedPieces.value.whiteKing = false;
-        } else if (removedMove.piece.color === "Black" && !movedPieces.value.blackKing) {
+        } else if (
+          removedMove.piece.color === "Black" &&
+          !movedPieces.value.blackKing
+        ) {
           movedPieces.value.blackKing = false;
         }
       } else if (removedMove.piece.type === "Rook") {
@@ -223,17 +251,17 @@ export default function useGameState(options = {}) {
           if (fromCol === 7) movedPieces.value.blackRookH = false;
         }
       }
-      
+
       // Notify of turn change
       if (onTurnChanged) {
         onTurnChanged(currentTurn.value);
       }
-      
+
       // Notify of move history update
       if (onMoveHistoryUpdated) {
         onMoveHistoryUpdated(moveHistory.value);
       }
-      
+
       console.log("Move taken back:", removedMove);
       return removedMove;
     }
@@ -249,7 +277,7 @@ export default function useGameState(options = {}) {
     moveHistory.value = [];
     whiteInCheck.value = false;
     blackInCheck.value = false;
-    
+
     // Reset moved piece tracking for castling
     movedPieces.value = {
       whiteKing: false,
@@ -257,12 +285,12 @@ export default function useGameState(options = {}) {
       whiteRookH: false,
       blackKing: false,
       blackRookA: false,
-      blackRookH: false
+      blackRookH: false,
     };
-    
+
     // Clear en passant target
     clearEnPassantTarget();
-    
+
     // Notify of turn reset
     if (onTurnChanged) {
       onTurnChanged(currentTurn.value);
@@ -271,7 +299,7 @@ export default function useGameState(options = {}) {
 
   /**
    * Sets check status for a color
-   * 
+   *
    * @param {String} color - Color to set check status for ("White" or "Black")
    * @param {Boolean} inCheck - Whether the king is in check
    */
@@ -291,7 +319,7 @@ export default function useGameState(options = {}) {
     blackInCheck,
     movedPieces,
     enPassantTarget,
-    
+
     // Methods
     recordMove,
     switchTurn,
@@ -302,6 +330,6 @@ export default function useGameState(options = {}) {
     takeBackMove,
     setCheckStatus,
     setEnPassantTarget,
-    clearEnPassantTarget
+    clearEnPassantTarget,
   };
 }

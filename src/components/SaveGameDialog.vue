@@ -140,13 +140,13 @@
                 v-model="gameData.result" 
                 class="form-select w-full shadow-sm"
               >
-                <option value="In Progress">In Progress</option>
-                <option value="White Win">White Win</option>
-                <option value="Black Win">Black Win</option>
-                <option value="White Resigned">White Resigned</option>
-                <option value="Black Resigned">Black Resigned</option>
-                <option value="Draw Agreed">Draw Agreed</option>
-                <option value="Draw - By Stalemate">Draw - By Stalemate</option>
+                <option value="*">In Progress</option> 
+                <option value="1-0">White Win</option>
+                <option value="0-1">Black Win</option>
+                <option value="0-1">White Resigned</option> <!-- Black wins if White resigns -->
+                <option value="1-0">Black Resigned</option> <!-- White wins if Black resigns -->
+                <option value="1/2-1/2">Draw Agreed</option>
+                <option value="1/2-1/2">Draw - By Stalemate</option>
               </select>
             </div>
           </div>
@@ -201,7 +201,7 @@ const gameData = ref({
   blackPlayer: '',
   blackRating: '',
   description: '',
-  result: 'In Progress', // Default to In Progress
+  result: '*', // Default to '*' (In Progress)
   // The move history will be passed in from the parent component
 });
 
@@ -216,7 +216,7 @@ const props = defineProps({
   },
   result: {
     type: String,
-    default: 'In Progress'
+    default: '*' // Default prop value to '*'
   }
 });
 
@@ -234,8 +234,22 @@ const saveGame = () => {
 
 // Set up default values
 onMounted(() => {
-  // Set the result from props
-  gameData.value.result = props.result;
+  // Set the result from props if it's a standard code
+  if (['1-0', '0-1', '1/2-1/2', '*'].includes(props.result)) {
+      gameData.value.result = props.result;
+  } else {
+      // Map descriptive prop values (legacy) to standard codes if necessary
+      // This handles cases where the parent might still send old values initially
+      if (props.result === 'White Win' || props.result === 'Black Resigned') {
+          gameData.value.result = '1-0';
+      } else if (props.result === 'Black Win' || props.result === 'White Resigned') {
+          gameData.value.result = '0-1';
+      } else if (props.result.startsWith('Draw')) {
+          gameData.value.result = '1/2-1/2';
+      } else {
+          gameData.value.result = '*'; // Default fallback
+      }
+  }
 });
 </script>
 

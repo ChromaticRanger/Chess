@@ -34,6 +34,7 @@ model Game {
   // Game data
   moveHistory   Json
   result        String?   // "1-0", "0-1", "1/2-1/2", "*" (in progress)
+  pgn           String?   // Add this line to store the PGN string
   // Relationships
   userId        Int
   user          User      @relation(fields: [userId], references: [id])
