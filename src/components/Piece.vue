@@ -2,7 +2,7 @@
 import { ref } from "vue";
 
 const props = defineProps({
-  id: Number,
+  id: String, // Changed from Number to String
   type: String,
   color: String,
   image: String,

@@ -50,29 +50,16 @@ const formattedMoveHistoryByNumber = computed(() => {
       result[moveNumber].white = {
         piece: move.piece,
         color: move.color,
-        from: move.from.notation,
-        to: move.to.notation,
+        from: move.from, // Use the string directly
+        to: move.to, // Use the string directly
         pieceImage: getPieceImagePath(move.piece, move.color),
         createsCheck: move.createsCheck,
-        isCheckmate: move.isCheckmate || false,
-        isCastling: move.isCastling || false,
-        isEnPassant: move.isEnPassant || false,
-        castlingSide: move.castlingSide || null,
-        notation: chessNotation.formatMove(move),
-        capturedPiece: null,
+        isCheckmate: move.isCheckmate,
+        isCastling: move.isCastling,
+        isEnPassant: move.isEnPassant,
+        notation: chessNotation.formatMove(move), // Pass the whole move object
+        capturedPieceType: move.captured, // Store captured piece type (string)
       };
-
-      // Add captured piece data if applicable
-      if (move.capturedPiece) {
-        result[moveNumber].white.capturedPiece = {
-          piece: move.capturedPiece.type,
-          color: move.capturedPiece.color,
-          image: getPieceImagePath(
-            move.capturedPiece.type,
-            move.capturedPiece.color
-          ),
-        };
-      }
     }
 
     // Process black move if it exists
@@ -81,29 +68,16 @@ const formattedMoveHistoryByNumber = computed(() => {
       result[moveNumber].black = {
         piece: move.piece,
         color: move.color,
-        from: move.from.notation,
-        to: move.to.notation,
+        from: move.from, // Use the string directly
+        to: move.to, // Use the string directly
         pieceImage: getPieceImagePath(move.piece, move.color),
         createsCheck: move.createsCheck,
-        isCheckmate: move.isCheckmate || false,
-        isCastling: move.isCastling || false,
-        isEnPassant: move.isEnPassant || false,
-        castlingSide: move.castlingSide || null,
-        notation: chessNotation.formatMove(move),
-        capturedPiece: null,
+        isCheckmate: move.isCheckmate,
+        isCastling: move.isCastling,
+        isEnPassant: move.isEnPassant,
+        notation: chessNotation.formatMove(move), // Pass the whole move object
+        capturedPieceType: move.captured, // Store captured piece type (string)
       };
-
-      // Add captured piece data if applicable
-      if (move.capturedPiece) {
-        result[moveNumber].black.capturedPiece = {
-          piece: move.capturedPiece.type,
-          color: move.capturedPiece.color,
-          image: getPieceImagePath(
-            move.capturedPiece.type,
-            move.capturedPiece.color
-          ),
-        };
-      }
     }
   }
 
