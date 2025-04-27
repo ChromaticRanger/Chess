@@ -1,110 +1,92 @@
-import { ref, computed } from 'vue';
-import { createFullChessSet } from '../utils/PieceFactory';
+import { ref, watch } from "vue";
+import { createPiece } from "../utils/PieceFactory";
 
 /**
- * Manages chess pieces, their creation, movement, and capture
- * 
- * @param {Object} options - Configuration options
- * @returns {Object} Piece management state and methods
+ * Composable for managing the visual representation of pieces based on a FEN string.
  */
-export default function usePieceManagement() {
-  // Initial pieces configuration from PieceFactory
-  const initialPieces = createFullChessSet();
+export default function usePieceManagement(fenRef) {
+  const pieces = ref([]);
 
-  // Current pieces on the board
-  const pieces = ref(JSON.parse(JSON.stringify(initialPieces)));
+  const parseFen = (fen) => {
+    const newPieces = [];
+    const [piecePlacement, turn, ...restOfFen] = fen.split(" ");
+    const currentTurn = turn === "w" ? "White" : "Black";
 
-  /**
-   * Resets pieces to their initial positions
-   */
-  const resetPieces = () => {
-    pieces.value = JSON.parse(JSON.stringify(initialPieces));
+    console.log(`Parsing FEN: ${fen}`);
+    console.log(`Current turn from FEN: ${currentTurn}`);
+
+    const ranks = piecePlacement.split("/");
+    let idCounter = 0; // Simple ID generation for visual pieces
+
+    ranks.forEach((rank, rowIndex) => {
+      let colIndex = 0;
+      for (const char of rank) {
+        if (isNaN(parseInt(char))) {
+          // It's a piece
+          const color = char === char.toUpperCase() ? "White" : "Black";
+          const type = getTypeFromFenChar(char);
+          if (type) {
+            newPieces.push(
+              createPiece(`p${idCounter++}`, type, color, rowIndex, colIndex)
+            );
+          }
+          colIndex++;
+        } else {
+          // It's a number representing empty squares
+          colIndex += parseInt(char);
+        }
+      }
+    });
+
+    // Log count of pieces by color for debugging
+    const whitePieces = newPieces.filter((p) => p.color === "White").length;
+    const blackPieces = newPieces.filter((p) => p.color === "Black").length;
+    console.log(
+      `Pieces after FEN update - White: ${whitePieces}, Black: ${blackPieces}`
+    );
+
+    pieces.value = newPieces;
   };
 
-  /**
-   * Checks if a piece exists at the specified position
-   * 
-   * @param {Number} row - Row index
-   * @param {Number} col - Column index
-   * @returns {Object|null} - The piece at the position or null if empty
-   */
+  const getTypeFromFenChar = (char) => {
+    const lowerChar = char.toLowerCase();
+    switch (lowerChar) {
+      case "p":
+        return "Pawn";
+      case "n":
+        return "Knight";
+      case "b":
+        return "Bishop";
+      case "r":
+        return "Rook";
+      case "q":
+        return "Queen";
+      case "k":
+        return "King";
+      default:
+        return null;
+    }
+  };
+
+  // Watch the FEN ref passed from the store/component and update pieces
+  watch(
+    fenRef,
+    (newFen) => {
+      if (newFen) {
+        parseFen(newFen);
+      }
+    },
+    { immediate: true }
+  ); // Parse immediately on setup
+
+  // Simplified getPieceAtPosition based on the current visual state
   const getPieceAtPosition = (row, col) => {
-    return pieces.value.find((p) => p.row === row && p.col === col) || null;
-  };
-
-  /**
-   * Remove a piece from the board
-   * 
-   * @param {Object} piece - The piece to remove
-   * @returns {Object} - The captured piece
-   */
-  const capturePiece = (piece) => {
-    const index = pieces.value.findIndex((p) => p.id === piece.id);
-    if (index !== -1) {
-      const capturedPiece = {...pieces.value[index]};
-      pieces.value.splice(index, 1);
-      return capturedPiece;
-    }
-    return null;
-  };
-
-  /**
-   * Move a piece to a new position
-   * 
-   * @param {Object} piece - The piece to move
-   * @param {Number} row - Destination row
-   * @param {Number} col - Destination column
-   * @returns {Object} - Information about the move
-   */
-  const movePiece = (piece, row, col) => {
-    const index = pieces.value.findIndex((p) => p.id === piece.id);
-    if (index !== -1) {
-      // Store original position before updating
-      const fromRow = piece.row;
-      const fromCol = piece.col;
-      
-      // Update piece position
-      pieces.value[index].row = row;
-      pieces.value[index].col = col;
-      
-      return {
-        piece: pieces.value[index],
-        fromRow,
-        fromCol
-      };
-    }
-    return null;
-  };
-
-  /**
-   * Get all pieces of a specific color
-   * 
-   * @param {String} color - The color to filter by ("White" or "Black")
-   * @returns {Array} - Array of pieces matching the color
-   */
-  const getPiecesByColor = (color) => {
-    return pieces.value.filter((p) => p.color === color);
-  };
-
-  /**
-   * Find a specific piece type by color
-   * 
-   * @param {String} type - The piece type (King, Queen, etc.)
-   * @param {String} color - The piece color
-   * @returns {Object|null} - The matching piece or null
-   */
-  const findPiece = (type, color) => {
-    return pieces.value.find((p) => p.type === type && p.color === color) || null;
+    return pieces.value.find((p) => p.row === row && p.col === col);
   };
 
   return {
-    pieces,
-    initialPieces,
-    resetPieces,
-    getPieceAtPosition,
-    capturePiece,
-    movePiece,
-    getPiecesByColor,
-    findPiece
+    pieces, // The reactive array of piece objects for rendering
+    getPieceAtPosition, // Still useful for rendering logic
+    // Removed: initialPieces, resetPieces, capturePiece, movePiecePosition, getPiecesByColor
   };
 }
