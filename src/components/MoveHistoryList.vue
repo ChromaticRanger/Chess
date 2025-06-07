@@ -86,22 +86,57 @@ const formattedMoveHistoryByNumber = computed(() => {
 
 // Helper functions to calculate move indices
 const getWhiteMoveIndex = (moveNumber) => {
-  return (parseInt(moveNumber) - 1) * 2;
+  // White move is at (moveNumber-1)*2
+  const index = (parseInt(moveNumber) - 1) * 2;
+  console.log(`getWhiteMoveIndex for moveNumber ${moveNumber} = ${index}`);
+  return index;
 };
 
 const getBlackMoveIndex = (moveNumber) => {
-  return (parseInt(moveNumber) - 1) * 2 + 1;
+  // Black move is at (moveNumber-1)*2 + 1
+  const index = (parseInt(moveNumber) - 1) * 2 + 1;
+  console.log(`getBlackMoveIndex for moveNumber ${moveNumber} = ${index}`);
+  return index;
 };
 
 // Function to check if a move is the latest move
 const isLatestMove = (moveIndex) => {
-  return (
-    props.currentMoveIndex === -1 && moveIndex === props.moveHistory.length - 1
+  const result =
+    props.currentMoveIndex === -1 && moveIndex === props.moveHistory.length - 1;
+  console.log(
+    `isLatestMove check for moveIndex ${moveIndex}: currentMoveIndex=${props.currentMoveIndex}, moveHistory.length=${props.moveHistory.length}, result=${result}`
   );
+  return result;
+};
+
+// Function to check if a move can be taken back
+const canTakeBackMove = (moveIndex) => {
+  const result =
+    props.currentMoveIndex === -1 &&
+    moveIndex === props.moveHistory.length - 1 &&
+    props.moveHistory.length > 0;
+  console.log(
+    `canTakeBackMove check for moveIndex ${moveIndex}: currentMoveIndex=${props.currentMoveIndex}, moveHistory.length=${props.moveHistory.length}, result=${result}`
+  );
+  return result;
+};
+
+// Function to check if reset is allowed (only when not viewing past moves)
+const canResetBoard = () => {
+  // Can only reset when at the current position (not viewing past moves)
+  return props.currentMoveIndex === -1;
 };
 
 // Function to handle move selection
 const selectMove = (moveIndex) => {
+  // Special case: If the moveIndex equals props.moveHistory.length,
+  // it refers to the position after the last move
+  if (moveIndex === props.moveHistory.length) {
+    // Simply go to the current position (-1)
+    emit("move-selected", -1);
+    return;
+  }
+
   if (moveIndex >= 0 && moveIndex < props.moveHistory.length) {
     // Emit Vue event
     emit("move-selected", moveIndex);
@@ -157,6 +192,8 @@ onUpdated(() => {
       <button
         @click="confirmResetBoard"
         class="reset-button"
+        :disabled="!canResetBoard()"
+        :class="{ 'opacity-50 cursor-not-allowed': !canResetBoard() }"
         title="Reset board"
       >
         <img :src="resetSvg" alt="Reset Board" class="w-6 h-6 invert" />
@@ -191,7 +228,8 @@ onUpdated(() => {
           v-if="moves.white"
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
-            'bg-blue-100': getWhiteMoveIndex(moveNumber) === currentMoveIndex,
+            'bg-blue-100':
+              getWhiteMoveIndex(moveNumber) + 1 === currentMoveIndex,
             'text-red-600': moves.white.createsCheck,
           }"
           @click="selectMove(getWhiteMoveIndex(moveNumber))"
@@ -212,7 +250,7 @@ onUpdated(() => {
 
           <!-- Take back button - only show if this is the latest move and black didn't move yet -->
           <button
-            v-if="isLatestMove(getWhiteMoveIndex(moveNumber)) && !moves.black"
+            v-if="canTakeBackMove(getWhiteMoveIndex(moveNumber))"
             @click.stop="handleTakeBackMove"
             class="take-back-button absolute right-1 top-1/2 transform -translate-y-1/2"
             title="Take back move"
@@ -227,7 +265,8 @@ onUpdated(() => {
           v-if="moves.black"
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
-            'bg-blue-100': getBlackMoveIndex(moveNumber) === currentMoveIndex,
+            'bg-blue-100':
+              getBlackMoveIndex(moveNumber) + 1 === currentMoveIndex,
             'text-red-600': moves.black.createsCheck,
           }"
           @click="selectMove(getBlackMoveIndex(moveNumber))"
@@ -247,7 +286,7 @@ onUpdated(() => {
 
           <!-- Take back button - only show if this is the latest move -->
           <button
-            v-if="isLatestMove(getBlackMoveIndex(moveNumber))"
+            v-if="canTakeBackMove(getBlackMoveIndex(moveNumber))"
             @click.stop="handleTakeBackMove"
             class="take-back-button absolute right-1 top-1/2 transform -translate-y-1/2"
             title="Take back move"

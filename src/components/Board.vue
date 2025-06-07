@@ -18,7 +18,7 @@ import useChessNotation from "../composables/useChessNotation";
 
 const gameStore = useGameStore();
 const {
-  fen,
+  currentFen, // Use currentFen instead of fen to support viewing past moves
   currentTurn,
   whiteInCheck,
   blackInCheck,
@@ -26,8 +26,9 @@ const {
   blackKingInCheck,
   boardFlipped,
   isGameOver,
-  showCheckmateModal, // Get the checkmate modal state
-  checkmateModalMessage, // Get the checkmate modal message
+  showCheckmateModal,
+  checkmateModalMessage,
+  viewingMoveIndex, // Add the viewingMoveIndex to track which move is being viewed
 } = storeToRefs(gameStore);
 const {
   makeMove,
@@ -36,6 +37,7 @@ const {
   setBoardOrientation,
   getValidMoves,
   closeCheckmateModal, // Get the function to close the modal
+  viewMoveAtIndex, // Add the viewMoveAtIndex function
 } = gameStore;
 
 // Add a watcher to log when currentTurn changes
@@ -43,8 +45,8 @@ watch(currentTurn, (newTurn, oldTurn) => {
   console.log(`[BOARD COMPONENT] Turn changed from ${oldTurn} to ${newTurn}`);
 });
 
-// Also watch the fen to track when it changes
-watch(fen, (newFen) => {
+// Also watch the currentFen to track when it changes
+watch(currentFen, (newFen) => {
   console.log(`[BOARD COMPONENT] FEN changed to: ${newFen}`);
   console.log(
     `[BOARD COMPONENT] Current turn after FEN change: ${currentTurn.value}`
@@ -52,7 +54,7 @@ watch(fen, (newFen) => {
 });
 
 const { toChessNotation, fromChessNotation } = useChessNotation();
-const { pieces, getPieceAtPosition } = usePieceManagement(fen);
+const { pieces, getPieceAtPosition } = usePieceManagement(currentFen);
 
 const selectedSquare = ref({ row: null, col: null });
 const originalPosition = ref({ row: null, col: null });
@@ -292,6 +294,33 @@ const internalFlipBoard = () => {
   setBoardOrientation(!boardFlipped.value);
 };
 
+/**
+ * Restore the board to a specific move in the history
+ * @param {Number} index The index of the move to view (-1 for current position)
+ */
+const restoreBoardStateToMove = (index) => {
+  // Update the viewingPastMove flag
+  viewingPastMove.value = index !== -1;
+
+  // Tell the game store to update the board to the given move index
+  viewMoveAtIndex(index);
+
+  // Update the local tracking variables
+  currentMoveIndex.value = index;
+
+  // Clear any selections or dragging pieces
+  selectedSquare.value = { row: null, col: null };
+  draggingPiece.value = null;
+  validMoves.value = [];
+
+  // Notify parent components about the move change
+  emit("current-move-index-changed", index);
+
+  console.log(
+    `Board restored to move index: ${index}, viewingPastMove: ${viewingPastMove.value}`
+  );
+};
+
 onMounted(() => {
   window.addEventListener("mousemove", handleMouseMove);
 
@@ -370,6 +399,7 @@ defineExpose({
   resetBoard: internalResetBoard,
   handleTakeBackMove: internalTakeBackMove,
   flipBoard: internalFlipBoard,
+  restoreBoardStateToMove, // Expose the new method
 });
 </script>
 

@@ -73,9 +73,9 @@
                 :move-history="moveHistory"
                 :current-move-index="currentMoveIndex"
                 @move-to-first="handleMoveSelection(0)"
-                @move-to-previous="handleMoveSelection(currentMoveIndex - 1)"
-                @move-to-next="handleMoveSelection(currentMoveIndex + 1)"
-                @move-to-last="handleMoveSelection(moveHistory.length - 1)"
+                @move-to-previous="handlePreviousMove"
+                @move-to-next="handleNextMove"
+                @move-to-last="handleMoveSelection(-1)"
                 @take-back-move="handleTakeBackMove"
                 style="width: 352px"
               />
@@ -234,11 +234,65 @@ const handleTakeBackMove = () => {
 };
 
 const handleMoveSelection = (index) => {
-  console.warn("History navigation not fully implemented with Pinia yet.");
+  // Use the board component's new method to restore to the selected move
   if (boardComponent.value) {
-    // boardComponent.value.restoreBoardStateToMove(index);
+    boardComponent.value.restoreBoardStateToMove(index);
   }
   handleCurrentMoveIndexChange(index);
+};
+
+const handlePreviousMove = () => {
+  // If at the latest move and there are moves, go to the last move in history
+  if (currentMoveIndex.value === -1 && moveHistory.value.length > 0) {
+    handleMoveSelection(moveHistory.value.length - 1);
+  }
+  // If already at the first move (index 1), go to initial position (index 0)
+  else if (currentMoveIndex.value === 1) {
+    handleMoveSelection(0);
+  }
+  // If at the initial position (index 0), do nothing
+  else if (currentMoveIndex.value === 0) {
+    // Already at the initial position, no previous move
+    return;
+  }
+  // Otherwise go to the previous move
+  else if (currentMoveIndex.value > 1) {
+    handleMoveSelection(currentMoveIndex.value - 1);
+  }
+};
+
+const handleNextMove = () => {
+  console.log(
+    `handleNextMove called with currentMoveIndex: ${currentMoveIndex.value}, moveHistory.length: ${moveHistory.value.length}`
+  );
+
+  // If at the initial position (index 0), go to the first move (index 1)
+  if (currentMoveIndex.value === 0 && moveHistory.value.length > 0) {
+    console.log(`At initial position, going to first move (index 1)`);
+    handleMoveSelection(1);
+  }
+  // If viewing a past move and not at the end of the history
+  else if (
+    currentMoveIndex.value > 0 &&
+    currentMoveIndex.value < moveHistory.value.length
+  ) {
+    const nextIndex = currentMoveIndex.value + 1;
+    console.log(
+      `At move ${currentMoveIndex.value}, going to next move (index ${nextIndex})`
+    );
+    handleMoveSelection(nextIndex);
+  }
+  // If at the last move in history, return to current position
+  else if (currentMoveIndex.value === moveHistory.value.length) {
+    console.log(
+      `At last move in history, returning to current position (index -1)`
+    );
+    handleMoveSelection(-1);
+  } else {
+    console.log(
+      `No condition matched for navigation. CurrentMoveIndex: ${currentMoveIndex.value}, moveHistory.length: ${moveHistory.value.length}`
+    );
+  }
 };
 </script>
 

@@ -38,29 +38,54 @@ const playbackInterval = ref(null);
 
 // Computed properties for button states
 const canGoBack = () =>
-  props.currentMoveIndex >= 0 ||
+  // Only enable if:
+  // 1. We're at a move index > 0 (not at initial position)
+  // 2. OR we're at the current position with moves in history
+  props.currentMoveIndex > 0 ||
   (props.currentMoveIndex === -1 && props.moveHistory.length > 0);
+
 const canGoForward = () => {
-  // If at the starting position and there are moves
-  if (props.currentMoveIndex === -2 && props.moveHistory.length > 0) {
+  // If at the starting position (index 0) and there are moves
+  if (props.currentMoveIndex === 0 && props.moveHistory.length > 0) {
     return true;
   }
   // If viewing a past move and not the latest move
   if (
-    props.currentMoveIndex >= 0 &&
-    props.currentMoveIndex < props.moveHistory.length - 1
+    props.currentMoveIndex > 0 &&
+    props.currentMoveIndex <= props.moveHistory.length - 1
   ) {
     return true;
   }
   return false;
 };
 
+// New function to check if we can go to the first move
+const canGoToFirstMove = () => {
+  // Can only go to first move if:
+  // 1. There are moves in the history
+  // 2. We are not already at the first move (index 0)
+  return props.moveHistory.length > 0 && props.currentMoveIndex !== 0;
+};
+
+// New function to check if we can go to the last move
+const canGoToLastMove = () => {
+  // Can only go to last move if:
+  // 1. There are moves in the history
+  // 2. We are not already at the current position (index -1)
+  // 3. We are not already at the last move (moveHistory.length - 1)
+  return (
+    props.moveHistory.length > 0 &&
+    props.currentMoveIndex !== -1 &&
+    props.currentMoveIndex !== props.moveHistory.length
+  );
+};
+
 // Handler functions
 const goToFirstMove = () => {
   if (props.moveHistory.length > 0) {
     stopPlayback(); // Stop playback if running
-    // Use special index -2 to indicate starting position (before any moves)
-    emit("move-to-first", -2);
+    // Use index 0 to indicate starting position (before any moves)
+    emit("move-to-first", 0);
   }
 };
 
@@ -73,36 +98,54 @@ const goToPreviousMove = () => {
       emit("move-to-previous", props.moveHistory.length - 1);
     }
     // If at the first move, go to the starting position
-    else if (props.currentMoveIndex === 0) {
-      emit("move-to-previous", -2); // -2 represents the starting position
+    else if (props.currentMoveIndex === 1) {
+      emit("move-to-previous", 0); // 0 represents the starting position
     }
     // Otherwise go to the previous move
-    else if (props.currentMoveIndex > 0) {
+    else if (props.currentMoveIndex > 1) {
       emit("move-to-previous", props.currentMoveIndex - 1);
     }
   }
 };
 
 const goToNextMove = () => {
+  console.log(
+    `goToNextMove: currentMoveIndex=${props.currentMoveIndex}, moveHistory.length=${props.moveHistory.length}`
+  );
+
   if (canGoForward()) {
     stopPlayback(); // Stop playback if running
 
-    // If at the starting position (-2), go to the first move (0)
-    if (props.currentMoveIndex === -2) {
-      emit("move-to-next", 0);
+    // If at the starting position (index 0), go to the first move (index 1)
+    if (props.currentMoveIndex === 0) {
+      console.log(`At starting position, going to first move (index 1)`);
+      emit("move-to-next", 1);
     }
-    // If this will be the last move, go to the latest position (-1) to allow adding new moves
+    // If at the second-to-last move in history, go to the last move
     else if (props.currentMoveIndex === props.moveHistory.length - 2) {
+      console.log(
+        `At second-to-last move, going to last move (index ${
+          props.moveHistory.length - 1
+        })`
+      );
+      emit("move-to-next", props.moveHistory.length - 1);
+    }
+    // If at the last move in history, go to current position
+    else if (props.currentMoveIndex === props.moveHistory.length - 1) {
+      console.log(`At last move, going to current position (index -1)`);
       emit("move-to-last", -1);
     } else {
-      emit("move-to-next", props.currentMoveIndex + 1);
+      // Otherwise just increment the move index
+      const nextIndex = props.currentMoveIndex + 1;
+      console.log(`Going to next move index ${nextIndex}`);
+      emit("move-to-next", nextIndex);
     }
   }
 };
 
 const goToLastMove = () => {
   stopPlayback(); // Stop playback if running
-  emit("move-to-last", -1); // -1 indicates the latest move
+  emit("move-to-last", -1); // -1 indicates the current position (not viewing past moves)
 };
 
 // Toggle playback function
@@ -151,8 +194,8 @@ const startPlayback = () => {
       return;
     }
 
-    // If we're at the starting position (-2), move to the first move (0)
-    if (currentIndex === -2) {
+    // If we're at the starting position (index 0), move to the first move (0)
+    if (currentIndex === 0) {
       emit("move-to-next", 0);
     }
     // If the next move will be the last move, go to the latest position (-1)
@@ -218,7 +261,7 @@ onUnmounted(() => {
     <button
       @click="goToFirstMove"
       class="control-button"
-      :disabled="!props.moveHistory.length"
+      :disabled="!canGoToFirstMove()"
       title="Go to start"
     >
       <img :src="firstSvg" alt="First Move" class="w-6 h-6" />
@@ -258,7 +301,7 @@ onUnmounted(() => {
     <button
       @click="goToLastMove"
       class="control-button"
-      :disabled="props.currentMoveIndex === -1 || !props.moveHistory.length"
+      :disabled="!canGoToLastMove()"
       title="Go to last move"
     >
       <img :src="lastSvg" alt="Last Move" class="w-6 h-6" />

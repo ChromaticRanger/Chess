@@ -36,6 +36,10 @@ export const useGameStore = defineStore("game", () => {
   // Use a regular ref for currentTurn instead of a computed property to ensure reactivity
   const currentTurn = ref(chessInstance.turn() === "w" ? "White" : "Black");
 
+  // Add a temporary board state for viewing past moves without affecting the actual game
+  const tempBoardState = ref(null);
+  const viewingMoveIndex = ref(-1);
+
   // --- Getters ---
   const whiteInCheck = computed(() => {
     const isWhiteTurn = chessInstance.turn() === "w";
@@ -72,6 +76,11 @@ export const useGameStore = defineStore("game", () => {
   const hasUnsavedChanges = computed(
     () => moveHistory.value.length > 0 && !isGameSaved.value
   );
+
+  // Add a getter to determine which FEN to use (temp or actual)
+  const currentFen = computed(() => {
+    return tempBoardState.value || fen.value;
+  });
 
   // --- Actions ---
 
@@ -347,12 +356,29 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
-  function setHeaders(newHeaders) {
-    Object.entries(newHeaders).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        chessInstance.setHeader(key, String(value));
+  function setHeaders(...args) {
+    // Handle both object format and key-value pairs format
+    if (args.length === 1 && typeof args[0] === "object") {
+      // Object format
+      const newHeaders = args[0];
+      Object.entries(newHeaders).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          chessInstance.setHeader(key, String(value));
+        }
+      });
+    } else if (args.length >= 2) {
+      // Key-value pairs format (Event, "MyEvent", Site, "MySite", etc.)
+      for (let i = 0; i < args.length; i += 2) {
+        if (i + 1 < args.length) {
+          const key = args[i];
+          const value = args[i + 1];
+          if (value !== null && value !== undefined) {
+            chessInstance.setHeader(key, String(value));
+          }
+        }
       }
-    });
+    }
+
     headers.value = { ...chessInstance.getHeaders() };
   }
 
@@ -434,6 +460,95 @@ export const useGameStore = defineStore("game", () => {
     showCheckmateModal.value = false;
   }
 
+  /**
+   * View a specific move in the history without changing the actual game state
+   * @param {Number} index The index of the move to view (-1 for current, 0 for initial position)
+   */
+  function viewMoveAtIndex(index) {
+    console.log(
+      `Attempting to view move at index: ${index}, moveHistory length: ${moveHistory.value.length}`
+    );
+    console.log(`Current moveHistory:`, JSON.stringify(moveHistory.value));
+
+    // Check for valid index range
+    if (index < -1 || index > moveHistory.value.length) {
+      console.warn(`Invalid move index: ${index}`);
+      return;
+    }
+
+    // If viewing current position, clear the temporary state
+    if (index === -1) {
+      tempBoardState.value = null;
+      viewingMoveIndex.value = -1;
+      console.log("Viewing current position (latest)");
+      return;
+    }
+
+    // Create a temporary chess instance to replay the moves
+    const tempChess = new Chess();
+
+    // If index is 0, show the initial position (before any moves were made)
+    if (index === 0) {
+      tempBoardState.value = tempChess.fen();
+      viewingMoveIndex.value = 0;
+      console.log(
+        `Viewing initial position (before any moves), FEN: ${tempBoardState.value}`
+      );
+      return;
+    }
+
+    // For positions after moves, we need to replay moves up to the selected index
+    // Index 1 shows position after the first move (moveHistory[0])
+    let success = true;
+
+    console.log(
+      `Need to replay ${index} moves from moveHistory (indices 0 to ${
+        index - 1
+      })`
+    );
+
+    // Replay moves from the moveHistory array
+    for (let i = 0; i < index; i++) {
+      if (i >= moveHistory.value.length) {
+        console.warn(
+          `Trying to access move at index ${i} but moveHistory only has ${moveHistory.value.length} moves`
+        );
+        break;
+      }
+
+      const move = moveHistory.value[i];
+      console.log(`Replaying move ${i}: ${move.from}-${move.to}`, move);
+
+      const result = tempChess.move({
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion
+          ? move.promotion.toLowerCase().charAt(0)
+          : undefined,
+      });
+
+      if (!result) {
+        console.error(`Failed to replay move at index ${i}:`, move);
+        success = false;
+        break;
+      } else {
+        console.log(
+          `Successfully replayed move ${i}, new FEN: ${tempChess.fen()}`
+        );
+      }
+    }
+
+    if (success) {
+      tempBoardState.value = tempChess.fen();
+      viewingMoveIndex.value = index;
+      console.log(
+        `Viewing move at index ${index}, FEN: ${tempBoardState.value}`
+      );
+    } else {
+      console.error("Failed to replay moves");
+    }
+  }
+
   return {
     // State (Refs)
     fen,
@@ -448,6 +563,8 @@ export const useGameStore = defineStore("game", () => {
     checkmateModalMessage,
     whiteKingInCheck,
     blackKingInCheck,
+    tempBoardState,
+    viewingMoveIndex,
     // Getters (Computed)
     currentTurn,
     whiteInCheck,
@@ -457,6 +574,7 @@ export const useGameStore = defineStore("game", () => {
     isGameOver,
     pgn,
     hasUnsavedChanges,
+    currentFen,
     // Actions (Functions)
     makeMove,
     resetGame,
@@ -469,5 +587,6 @@ export const useGameStore = defineStore("game", () => {
     openLogoutConfirmModal,
     closeLogoutConfirmModal,
     closeCheckmateModal,
+    viewMoveAtIndex,
   };
 });
