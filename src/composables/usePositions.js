@@ -7,6 +7,12 @@ const currentGame = ref(null);
 const isLoading = ref(false);
 const error = ref('');
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export function usePositions() {
   // Fetch all games for the current user
   const fetchGames = async () => {
@@ -14,7 +20,9 @@ export function usePositions() {
     error.value = '';
     
     try {
-      const response = await axios.get(`${API_URL}/games`);
+      const response = await axios.get(`${API_URL}/games`, {
+        headers: getAuthHeaders()
+      });
       games.value = response.data.games;
       return { success: true, games: games.value };
     } catch (err) {
@@ -32,7 +40,9 @@ export function usePositions() {
     error.value = '';
     
     try {
-      const response = await axios.get(`${API_URL}/games/${id}`);
+      const response = await axios.get(`${API_URL}/games/${id}`, {
+        headers: getAuthHeaders()
+      });
       currentGame.value = response.data.game;
       return { success: true, game: currentGame.value };
     } catch (err) {
@@ -50,7 +60,9 @@ export function usePositions() {
     error.value = '';
     
     try {
-      const response = await axios.post(`${API_URL}/games`, gameData);
+      const response = await axios.post(`${API_URL}/games`, gameData, {
+        headers: getAuthHeaders()
+      });
       
       // Add to games array
       const newGame = response.data.game;
@@ -72,7 +84,9 @@ export function usePositions() {
     error.value = '';
     
     try {
-      const response = await axios.put(`${API_URL}/games/${id}`, gameData);
+      const response = await axios.put(`${API_URL}/games/${id}`, gameData, {
+        headers: getAuthHeaders()
+      });
       
       // Update in games array
       const updatedGame = response.data.game;
@@ -100,7 +114,9 @@ export function usePositions() {
     error.value = '';
     
     try {
-      await axios.delete(`${API_URL}/games/${id}`);
+      await axios.delete(`${API_URL}/games/${id}`, {
+        headers: getAuthHeaders()
+      });
       
       // Remove from games array
       games.value = games.value.filter(game => game.id !== id);
