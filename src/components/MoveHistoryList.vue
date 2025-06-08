@@ -86,14 +86,18 @@ const formattedMoveHistoryByNumber = computed(() => {
 
 // Helper functions to calculate move indices
 const getWhiteMoveIndex = (moveNumber) => {
-  // White move is at (moveNumber-1)*2
-  const index = (parseInt(moveNumber) - 1) * 2;
+  // Return index for viewMoveAtIndex to show position after white move
+  // White move N should show position after moveHistory[(moveNumber-1)*2]
+  // So we need to replay (moveNumber-1)*2 + 1 moves
+  const index = (parseInt(moveNumber) - 1) * 2 + 1;
   return index;
 };
 
 const getBlackMoveIndex = (moveNumber) => {
-  // Black move is at (moveNumber-1)*2 + 1
-  const index = (parseInt(moveNumber) - 1) * 2 + 1;
+  // Return index for viewMoveAtIndex to show position after black move
+  // Black move N should show position after moveHistory[(moveNumber-1)*2 + 1]
+  // So we need to replay (moveNumber-1)*2 + 2 moves
+  const index = (parseInt(moveNumber) - 1) * 2 + 2;
   return index;
 };
 
@@ -129,7 +133,7 @@ const selectMove = (moveIndex) => {
     return;
   }
 
-  if (moveIndex >= 0 && moveIndex < props.moveHistory.length) {
+  if (moveIndex >= 0 && moveIndex <= props.moveHistory.length) {
     // Emit Vue event
     emit("move-selected", moveIndex);
 
@@ -221,7 +225,7 @@ onUpdated(() => {
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100':
-              getWhiteMoveIndex(moveNumber) + 1 === currentMoveIndex,
+              getWhiteMoveIndex(moveNumber) === currentMoveIndex,
             'text-red-600': moves.white.createsCheck,
           }"
           @click="selectMove(getWhiteMoveIndex(moveNumber))"
@@ -258,7 +262,7 @@ onUpdated(() => {
           class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100':
-              getBlackMoveIndex(moveNumber) + 1 === currentMoveIndex,
+              getBlackMoveIndex(moveNumber) === currentMoveIndex,
             'text-red-600': moves.black.createsCheck,
           }"
           @click="selectMove(getBlackMoveIndex(moveNumber))"
