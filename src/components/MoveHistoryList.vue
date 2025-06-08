@@ -88,14 +88,6 @@ const formattedMoveHistoryByNumber = computed(() => {
 const getWhiteMoveIndex = (moveNumber) => {
   // White move is at (moveNumber-1)*2
   const index = (parseInt(moveNumber) - 1) * 2;
-  console.log(`getWhiteMoveIndex for moveNumber ${moveNumber} = ${index}`);
-  return index;
-};
-
-const getBlackMoveIndex = (moveNumber) => {
-  // Black move is at (moveNumber-1)*2 + 1
-  const index = (parseInt(moveNumber) - 1) * 2 + 1;
-  console.log(`getBlackMoveIndex for moveNumber ${moveNumber} = ${index}`);
   return index;
 };
 
@@ -103,9 +95,6 @@ const getBlackMoveIndex = (moveNumber) => {
 const isLatestMove = (moveIndex) => {
   const result =
     props.currentMoveIndex === -1 && moveIndex === props.moveHistory.length - 1;
-  console.log(
-    `isLatestMove check for moveIndex ${moveIndex}: currentMoveIndex=${props.currentMoveIndex}, moveHistory.length=${props.moveHistory.length}, result=${result}`
-  );
   return result;
 };
 
@@ -115,9 +104,6 @@ const canTakeBackMove = (moveIndex) => {
     props.currentMoveIndex === -1 &&
     moveIndex === props.moveHistory.length - 1 &&
     props.moveHistory.length > 0;
-  console.log(
-    `canTakeBackMove check for moveIndex ${moveIndex}: currentMoveIndex=${props.currentMoveIndex}, moveHistory.length=${props.moveHistory.length}, result=${result}`
-  );
   return result;
 };
 

@@ -42,15 +42,12 @@ const {
 
 // Add a watcher to log when currentTurn changes
 watch(currentTurn, (newTurn, oldTurn) => {
-  console.log(`[BOARD COMPONENT] Turn changed from ${oldTurn} to ${newTurn}`);
+  // Turn change tracking
 });
 
 // Also watch the currentFen to track when it changes
 watch(currentFen, (newFen) => {
-  console.log(`[BOARD COMPONENT] FEN changed to: ${newFen}`);
-  console.log(
-    `[BOARD COMPONENT] Current turn after FEN change: ${currentTurn.value}`
-  );
+  // FEN change tracking
 });
 
 const { toChessNotation, fromChessNotation } = useChessNotation();
@@ -84,26 +81,15 @@ const returnPiece = (piece) => {
     pieceElement.style.left = "";
     pieceElement.style.top = "";
     pieceElement.style.zIndex = "";
-    console.log(`Returned piece ${piece.id} to its original square visually.`);
+    // Piece returned to original position
   }
 };
 
 const handleMouseDown = (piece, event) => {
-  // Log detailed piece information to help debug
-  console.log(
-    `MouseDown attempt: ${piece.color} ${piece.type} at (${piece.row},${piece.col}), current turn: ${currentTurn.value}`
-  );
-
   if (showPromotion.value || viewingPastMove.value || isGameOver.value) {
-    console.log(
-      "Cannot move piece: Promotion active, viewing past, or game over."
-    );
     return;
   }
   if (piece.color !== currentTurn.value) {
-    console.log(
-      `It's ${currentTurn.value}'s turn to move, but tried to move ${piece.color} piece`
-    );
     return;
   }
 
@@ -111,23 +97,15 @@ const handleMouseDown = (piece, event) => {
   originalPosition.value = { row: piece.row, col: piece.col };
   const pieceElement = event.target;
   pieceElement.style.zIndex = 1000;
-  console.log(
-    `MouseDown on ${piece.color} ${piece.type} at (${piece.row},${piece.col}), piece ID: ${piece.id}`
-  );
 
   try {
     const sourceSquare = toChessNotation(piece.row, piece.col).toLowerCase();
-    console.log(
-      `Getting valid moves for ${piece.color} ${piece.type} at ${sourceSquare}`
-    );
     const movesFromChessJs = gameStore.getValidMoves(sourceSquare);
-    console.log(`Valid moves returned: ${movesFromChessJs.length}`);
 
     validMoves.value = movesFromChessJs.map((move) => {
       const { row, col } = fromChessNotation(move.to);
       return { row, col, san: move.san };
     });
-    console.log("Valid moves for", sourceSquare, validMoves.value);
   } catch (error) {
     console.error("Error getting valid moves from store action:", error);
     validMoves.value = [];
@@ -219,7 +197,7 @@ const handleMouseUp = async (event) => {
       showPromotion.value = true;
     } else {
       const moveObject = { from: fromSquare, to: toSquare };
-      console.log("Board.vue: Attempting move via store:", moveObject);
+      // Attempting move via store
       const moveResult = makeMove(moveObject);
 
       if (!moveResult) {
@@ -228,7 +206,7 @@ const handleMouseUp = async (event) => {
       }
     }
   } else {
-    console.log("Board.vue: Invalid move target or game state prevents move.");
+    // Invalid move target or game state prevents move
     returnPiece(movingPiece);
   }
 
@@ -250,7 +228,7 @@ const handlePromotion = (promotionChoice) => {
     promotion: promotionCode,
   };
 
-  console.log("Board.vue: Attempting promotion move via store:", moveObject);
+  // Attempting promotion move via store
   const moveResult = makeMove(moveObject);
 
   if (!moveResult) {
@@ -316,9 +294,7 @@ const restoreBoardStateToMove = (index) => {
   // Notify parent components about the move change
   emit("current-move-index-changed", index);
 
-  console.log(
-    `Board restored to move index: ${index}, viewingPastMove: ${viewingPastMove.value}`
-  );
+  // Board restored to move index
 };
 
 onMounted(() => {

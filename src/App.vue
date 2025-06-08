@@ -32,8 +32,7 @@ const hideModal = () => {
 };
 
 // Handler for authentication success
-const handleAuthSuccess = (authUser) => {
-  console.log("Authentication successful:", authUser);
+const handleAuthSuccess = () => {
   isAuthenticatedUser.value = true;
 };
 

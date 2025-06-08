@@ -126,7 +126,6 @@ export function useAuth() {
       user.value = null;
       // Optionally reset game state again just in case, though handled above
       // gameStore.resetGame();
-      console.log("Logged out, navigating to /auth");
       router.push("/auth"); // Redirect to login/signup page
     }
 

@@ -12,8 +12,6 @@ export default function usePieceManagement(fenRef) {
     const [piecePlacement, turn, ...restOfFen] = fen.split(" ");
     const currentTurn = turn === "w" ? "White" : "Black";
 
-    console.log(`Parsing FEN: ${fen}`);
-    console.log(`Current turn from FEN: ${currentTurn}`);
 
     const ranks = piecePlacement.split("/");
     let idCounter = 0; // Simple ID generation for visual pieces
@@ -38,12 +36,6 @@ export default function usePieceManagement(fenRef) {
       }
     });
 
-    // Log count of pieces by color for debugging
-    const whitePieces = newPieces.filter((p) => p.color === "White").length;
-    const blackPieces = newPieces.filter((p) => p.color === "Black").length;
-    console.log(
-      `Pieces after FEN update - White: ${whitePieces}, Black: ${blackPieces}`
-    );
 
     pieces.value = newPieces;
   };

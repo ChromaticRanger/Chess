@@ -109,36 +109,22 @@ const goToPreviousMove = () => {
 };
 
 const goToNextMove = () => {
-  console.log(
-    `goToNextMove: currentMoveIndex=${props.currentMoveIndex}, moveHistory.length=${props.moveHistory.length}`
-  );
 
   if (canGoForward()) {
     stopPlayback(); // Stop playback if running
 
     // If at the starting position (index 0), go to the first move (index 1)
     if (props.currentMoveIndex === 0) {
-      console.log(`At starting position, going to first move (index 1)`);
-      emit("move-to-next", 1);
     }
     // If at the second-to-last move in history, go to the last move
     else if (props.currentMoveIndex === props.moveHistory.length - 2) {
-      console.log(
-        `At second-to-last move, going to last move (index ${
-          props.moveHistory.length - 1
-        })`
-      );
       emit("move-to-next", props.moveHistory.length - 1);
     }
     // If at the last move in history, go to current position
     else if (props.currentMoveIndex === props.moveHistory.length - 1) {
-      console.log(`At last move, going to current position (index -1)`);
-      emit("move-to-last", -1);
     } else {
       // Otherwise just increment the move index
       const nextIndex = props.currentMoveIndex + 1;
-      console.log(`Going to next move index ${nextIndex}`);
-      emit("move-to-next", nextIndex);
     }
   }
 };

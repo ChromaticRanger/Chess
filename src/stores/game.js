@@ -44,14 +44,12 @@ export const useGameStore = defineStore("game", () => {
   const whiteInCheck = computed(() => {
     const isWhiteTurn = chessInstance.turn() === "w";
     const isInCheck = chessInstance.isCheck();
-    console.log(`White in check? Turn=${isWhiteTurn}, IsCheck=${isInCheck}`);
     return isWhiteTurn && isInCheck;
   });
 
   const blackInCheck = computed(() => {
     const isBlackTurn = chessInstance.turn() === "b";
     const isInCheck = chessInstance.isCheck();
-    console.log(`Black in check? Turn=${isBlackTurn}, IsCheck=${isInCheck}`);
     return isBlackTurn && isInCheck;
   });
 

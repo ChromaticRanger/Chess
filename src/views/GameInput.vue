@@ -139,9 +139,6 @@ const showSaveDialog = ref(false);
 const handleCurrentMoveIndexChange = (newIndex) => {
   currentMoveIndex.value = newIndex;
   viewingPastMove.value = newIndex !== -1;
-  console.log(
-    `Current move index changed to ${newIndex}, viewing past move: ${viewingPastMove.value}`
-  );
 };
 
 // Save Game Logic
@@ -150,10 +147,6 @@ const handleSaveGame = () => {
 };
 
 const saveGame = async (gameData) => {
-  console.log(
-    "Move history at start of saveGame:",
-    JSON.parse(JSON.stringify(moveHistory.value))
-  );
   try {
     setHeaders(
       "Event",
@@ -179,25 +172,6 @@ const saveGame = async (gameData) => {
     );
 
     const finalPgn = pgn.value;
-    console.log("Generated PGN:", finalPgn);
-
-    const gameToSave = {
-      name: gameData.name,
-      date: gameData.date ? new Date(gameData.date).toISOString() : null,
-      venue: gameData.venue,
-      event: gameData.event,
-      round: gameData.round,
-      whitePlayer: gameData.whitePlayer,
-      blackPlayer: gameData.blackPlayer,
-      whiteRating: gameData.whiteRating ? parseInt(gameData.whiteRating) : null,
-      blackRating: gameData.blackRating ? parseInt(gameData.blackRating) : null,
-      result: gameData.result,
-      description: gameData.description,
-      moveHistory: moveHistory.value,
-      pgn: finalPgn,
-    };
-
-    console.log("Saving game data:", gameToSave);
     const result = await createGame(gameToSave);
 
     if (!result || !result.success) {
@@ -262,14 +236,9 @@ const handlePreviousMove = () => {
 };
 
 const handleNextMove = () => {
-  console.log(
-    `handleNextMove called with currentMoveIndex: ${currentMoveIndex.value}, moveHistory.length: ${moveHistory.value.length}`
-  );
 
   // If at the initial position (index 0), go to the first move (index 1)
   if (currentMoveIndex.value === 0 && moveHistory.value.length > 0) {
-    console.log(`At initial position, going to first move (index 1)`);
-    handleMoveSelection(1);
   }
   // If viewing a past move and not at the end of the history
   else if (
@@ -277,21 +246,12 @@ const handleNextMove = () => {
     currentMoveIndex.value < moveHistory.value.length
   ) {
     const nextIndex = currentMoveIndex.value + 1;
-    console.log(
-      `At move ${currentMoveIndex.value}, going to next move (index ${nextIndex})`
-    );
     handleMoveSelection(nextIndex);
   }
   // If at the last move in history, return to current position
   else if (currentMoveIndex.value === moveHistory.value.length) {
-    console.log(
-      `At last move in history, returning to current position (index -1)`
-    );
     handleMoveSelection(-1);
   } else {
-    console.log(
-      `No condition matched for navigation. CurrentMoveIndex: ${currentMoveIndex.value}, moveHistory.length: ${moveHistory.value.length}`
-    );
   }
 };
 </script>
