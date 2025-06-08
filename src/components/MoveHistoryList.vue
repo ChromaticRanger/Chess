@@ -91,6 +91,12 @@ const getWhiteMoveIndex = (moveNumber) => {
   return index;
 };
 
+const getBlackMoveIndex = (moveNumber) => {
+  // Black move is at (moveNumber-1)*2 + 1
+  const index = (parseInt(moveNumber) - 1) * 2 + 1;
+  return index;
+};
+
 // Function to check if a move is the latest move
 const isLatestMove = (moveIndex) => {
   const result =
