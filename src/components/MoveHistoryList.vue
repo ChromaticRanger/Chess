@@ -110,9 +110,12 @@ const isLatestMove = (moveIndex) => {
 
 // Function to check if a move can be taken back
 const canTakeBackMove = (moveIndex) => {
+  // moveIndex is from getWhiteMoveIndex/getBlackMoveIndex (1, 2, 3, 4...)
+  // The last move in moveHistory has index moveHistory.length
+  // So we check if moveIndex equals moveHistory.length
   const result =
     props.currentMoveIndex === -1 &&
-    moveIndex === props.moveHistory.length - 1 &&
+    moveIndex === props.moveHistory.length &&
     props.moveHistory.length > 0;
   return result;
 };
