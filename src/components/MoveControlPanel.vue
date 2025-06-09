@@ -109,22 +109,21 @@ const goToPreviousMove = () => {
 };
 
 const goToNextMove = () => {
-
   if (canGoForward()) {
     stopPlayback(); // Stop playback if running
 
     // If at the starting position (index 0), go to the first move (index 1)
     if (props.currentMoveIndex === 0) {
+      emit("move-to-next", 1);
     }
-    // If at the second-to-last move in history, go to the last move
-    else if (props.currentMoveIndex === props.moveHistory.length - 2) {
-      emit("move-to-next", props.moveHistory.length - 1);
-    }
-    // If at the last move in history, go to current position
+    // If at the last move in history, go to current position (-1)
     else if (props.currentMoveIndex === props.moveHistory.length - 1) {
-    } else {
-      // Otherwise just increment the move index
+      emit("move-to-next", -1);
+    }
+    // Otherwise just increment the move index
+    else {
       const nextIndex = props.currentMoveIndex + 1;
+      emit("move-to-next", nextIndex);
     }
   }
 };
@@ -145,8 +144,13 @@ const togglePlayback = () => {
 
 // Start playback
 const startPlayback = () => {
-  // Don't start if we're already at the latest move or if there are no moves
-  if (props.currentMoveIndex === -1 || props.moveHistory.length === 0) {
+  // Don't start if there are no moves
+  if (props.moveHistory.length === 0) {
+    return;
+  }
+
+  // Don't start if we're already at the latest move
+  if (props.currentMoveIndex === -1) {
     return;
   }
 
@@ -180,9 +184,9 @@ const startPlayback = () => {
       return;
     }
 
-    // If we're at the starting position (index 0), move to the first move (0)
+    // If we're at the starting position (index 0), move to the first move (1)
     if (currentIndex === 0) {
-      emit("move-to-next", 0);
+      emit("move-to-next", 1);
     }
     // If the next move will be the last move, go to the latest position (-1)
     else if (currentIndex === props.moveHistory.length - 2) {

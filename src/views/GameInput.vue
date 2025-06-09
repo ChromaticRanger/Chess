@@ -236,22 +236,21 @@ const handlePreviousMove = () => {
 };
 
 const handleNextMove = () => {
-
   // If at the initial position (index 0), go to the first move (index 1)
   if (currentMoveIndex.value === 0 && moveHistory.value.length > 0) {
+    handleMoveSelection(1);
   }
   // If viewing a past move and not at the end of the history
   else if (
     currentMoveIndex.value > 0 &&
-    currentMoveIndex.value < moveHistory.value.length
+    currentMoveIndex.value < moveHistory.value.length - 1
   ) {
     const nextIndex = currentMoveIndex.value + 1;
     handleMoveSelection(nextIndex);
   }
-  // If at the last move in history, return to current position
-  else if (currentMoveIndex.value === moveHistory.value.length) {
+  // If at the second-to-last move, go to current position (-1) instead of last move index
+  else if (currentMoveIndex.value === moveHistory.value.length - 1) {
     handleMoveSelection(-1);
-  } else {
   }
 };
 </script>
