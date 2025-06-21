@@ -1,12 +1,39 @@
 <script setup>
-import { ref } from 'vue';
+/**
+ * LoginForm.vue - Authentication form with password reveal toggle
+ * 
+ * Features:
+ * - Standard email/password login form
+ * - Password visibility toggle with eye icon
+ * - Keyboard accessibility (Enter/Space key support)
+ * - ARIA labels for screen readers
+ * - Responsive design with 44px touch targets
+ * - Security: Password visibility resets on navigation/unmount
+ * 
+ * Password Reveal Implementation:
+ * - Eye icon positioned absolutely at right edge of password field
+ * - Toggle between 'password' and 'text' input types
+ * - Dynamic icon switching (open eye = show, closed eye = hide)
+ * - Uses eye-24-regular.svg and eye-off-24-regular.svg assets
+ */
+import { ref, onUnmounted } from 'vue';
 import { useAuth } from '../composables/useAuth';
+
+// Password reveal SVG imports
+import eyeShowSvg from '/src/assets/eye-24-regular.svg';
+import eyeHideSvg from '/src/assets/eye-off-24-regular.svg';
 
 const { login, isLoading, error } = useAuth();
 
 const email = ref('');
 const password = ref('');
 const localError = ref('');
+
+/**
+ * Reactive state for password field visibility toggle
+ * @type {Ref<boolean>} - true when password is visible as text, false when hidden
+ */
+const showPassword = ref(false);
 
 const emit = defineEmits(['login-success', 'show-signup']);
 
@@ -35,6 +62,25 @@ const handleLogin = async () => {
 const goToSignup = () => {
   emit('show-signup');
 };
+
+/**
+ * Toggles the visibility state of the password field
+ * Changes between password (hidden) and text (visible) input types
+ * Updates the eye icon to reflect current state
+ * @function
+ */
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+};
+
+/**
+ * Lifecycle hook to clean up password visibility state
+ * Resets password to hidden state when component is unmounted for security
+ * @function
+ */
+onUnmounted(() => {
+  showPassword.value = false;
+});
 </script>
 
 <template>
@@ -58,14 +104,26 @@ const goToSignup = () => {
       <!-- Password Field -->
       <div class="mb-6">
         <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          placeholder="Enter your password"
-          required
-        />
+        <div class="relative">
+          <input
+            id="password"
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            class="shadow appearance-none border rounded w-full py-2 px-3 pr-12 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            placeholder="Enter your password"
+            required
+          />
+          <button
+            type="button"
+            @click="togglePasswordVisibility"
+            @keydown.enter="togglePasswordVisibility"
+            @keydown.space.prevent="togglePasswordVisibility"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-11 h-11 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            :aria-label="showPassword ? 'Hide password' : 'Show password'"
+          >
+            <img :src="showPassword ? eyeHideSvg : eyeShowSvg" alt="" class="w-6 h-6" />
+          </button>
+        </div>
       </div>
       
       <!-- Error Message -->
