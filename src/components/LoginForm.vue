@@ -18,12 +18,29 @@
  */
 import { ref, onUnmounted } from 'vue';
 import { useAuth } from '../composables/useAuth';
+import { useGoogleAuth } from '../composables/useGoogleAuth';
+import { useFormValidation } from '../composables/useFormValidation';
+import GoogleSSOButton from './GoogleSSOButton.vue';
+import GoogleAuthModal from './GoogleAuthModal.vue';
+import AuthDivider from './AuthDivider.vue';
 
 // Password reveal SVG imports
 import eyeShowSvg from '/src/assets/eye-24-regular.svg';
 import eyeHideSvg from '/src/assets/eye-off-24-regular.svg';
 
 const { login, isLoading, error } = useAuth();
+const { 
+  googleLogin, 
+  isGoogleLoading, 
+  googleError, 
+  googleAuthModal, 
+  hideGoogleAuthModal 
+} = useGoogleAuth();
+const { 
+  validateLoginForm, 
+  hasFormContent, 
+  validateAuthStateConflict 
+} = useFormValidation();
 
 const email = ref('');
 const password = ref('');
@@ -38,29 +55,173 @@ const showPassword = ref(false);
 const emit = defineEmits(['login-success', 'show-signup']);
 
 const handleLogin = async () => {
-  // Input validation
-  if (!email.value || !password.value) {
-    localError.value = 'Please enter both email and password';
+  // Clear any existing errors
+  localError.value = '';
+  
+  // Comprehensive form validation
+  const validation = validateLoginForm(
+    { email: email.value, password: password.value },
+    { isTraditionalLoading: isLoading.value, isGoogleLoading: isGoogleLoading.value }
+  );
+  
+  if (!validation.isValid) {
+    localError.value = validation.error;
     return;
   }
   
-  const result = await login(email.value, password.value);
-  
-  if (result.success) {
-    // Reset form fields
-    email.value = '';
-    password.value = '';
-    localError.value = '';
+  try {
+    const result = await login(email.value, password.value);
     
-    // Emit success event
-    emit('login-success', result.user);
-  } else {
-    localError.value = result.error;
+    if (result.success) {
+      // Success callback handling
+      console.log('Traditional login successful:', result.user);
+      
+      // Reset form fields
+      email.value = '';
+      password.value = '';
+      localError.value = '';
+      
+      // Emit success event
+      emit('login-success', result.user);
+    } else {
+      // Failure callback handling
+      console.error('Traditional login failed:', result.error);
+      localError.value = result.error || 'Login failed. Please check your credentials.';
+    }
+  } catch (error) {
+    // Handle unexpected errors
+    console.error('Unexpected error during login:', error);
+    localError.value = 'An unexpected error occurred. Please try again.';
   }
 };
 
 const goToSignup = () => {
   emit('show-signup');
+};
+
+/**
+ * Handle Google SSO login with comprehensive success/failure handling
+ */
+const handleGoogleLogin = async () => {
+  // Mixed authentication validation
+  const authConflict = validateAuthStateConflict(isLoading.value, isGoogleLoading.value, 'google');
+  if (!authConflict.isValid) {
+    localError.value = authConflict.error;
+    return;
+  }
+  
+  // Validate that user hasn't partially filled the form
+  if (hasFormContent({ email: email.value, password: password.value })) {
+    const shouldProceed = window.confirm(
+      'You have entered some login information. Using Google sign-in will clear this form. Do you want to continue?'
+    );
+    if (!shouldProceed) {
+      return;
+    }
+    // Clear form data if user confirms
+    email.value = '';
+    password.value = '';
+  }
+  
+  // Clear any existing errors before starting
+  localError.value = '';
+  
+  try {
+    const result = await googleLogin();
+    
+    if (result.success) {
+      // Success callback handling
+      console.log('Google login successful:', result.user);
+      
+      // Reset form state on success
+      email.value = '';
+      password.value = '';
+      localError.value = '';
+      
+      // Emit success event with user data
+      emit('login-success', result.user);
+      
+      // Optional: Show success feedback (could be a toast notification)
+      // This could be enhanced with a toast/notification system
+      
+    } else {
+      // Failure callback handling
+      console.error('Google login failed:', result.error);
+      
+      // Set error message for user feedback
+      localError.value = result.error || 'Google sign-in failed. Please try again.';
+      
+      // Optional: Analytics/logging for failed attempts
+      // trackAuthEvent('google_login_failed', { error: result.error });
+    }
+  } catch (error) {
+    // Handle unexpected errors during the OAuth process
+    console.error('Unexpected error during Google login:', error);
+    localError.value = 'An unexpected error occurred during Google sign-in. Please try again.';
+    
+    // Optional: Report to error tracking service
+    // reportError('google_login_unexpected_error', error);
+  }
+};
+
+/**
+ * Handle successful Google authentication from native button
+ */
+const handleGoogleAuthSuccess = async (credential) => {
+  // Clear any existing errors
+  localError.value = '';
+  
+  try {
+    // Use the useGoogleAuth composable to authenticate with backend
+    const { authenticateWithGoogle } = useGoogleAuth();
+    const result = await authenticateWithGoogle(credential, false);
+    
+    if (result.success) {
+      console.log('Google login successful:', result.user);
+      
+      // Reset form state on success
+      email.value = '';
+      password.value = '';
+      localError.value = '';
+      
+      // Emit success event with user data
+      emit('login-success', result.user);
+    } else {
+      console.error('Google login failed:', result.error);
+      localError.value = result.error || 'Google sign-in failed. Please try again.';
+    }
+  } catch (error) {
+    console.error('Unexpected error during Google login:', error);
+    localError.value = 'An unexpected error occurred during Google sign-in. Please try again.';
+  }
+};
+
+/**
+ * Handle Google authentication errors from native button
+ */
+const handleGoogleAuthError = (error) => {
+  console.error('Google auth error:', error);
+  localError.value = error.message || 'Google sign-in failed. Please try again.';
+};
+
+/**
+ * Handle Google Auth Modal close event
+ * Provides cleanup and logging for modal closure
+ */
+const handleGoogleModalClose = () => {
+  console.log('Google auth modal closed');
+  
+  // Clear any pending Google errors when modal is closed
+  // This ensures a clean state for the next authentication attempt
+  if (googleError.value) {
+    console.log('Clearing Google auth error on modal close');
+  }
+  
+  // Call the hide function from useGoogleAuth
+  hideGoogleAuthModal();
+  
+  // Optional: Track modal closure for analytics
+  // trackAuthEvent('google_modal_closed', { had_error: !!googleError.value });
 };
 
 /**
@@ -127,19 +288,36 @@ onUnmounted(() => {
       </div>
       
       <!-- Error Message -->
-      <div v-if="localError || error" class="mb-4 text-red-500 text-sm">
-        {{ localError || error }}
+      <div v-if="localError || error || googleError" class="mb-4 text-red-500 text-sm">
+        {{ localError || error || googleError }}
       </div>
       
       <!-- Submit Button -->
       <div class="flex items-center justify-between">
         <button
           type="submit"
-          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-          :disabled="isLoading"
+          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full min-h-[44px] transition-colors"
+          :disabled="isLoading || isGoogleLoading"
         >
           {{ isLoading ? 'Logging in...' : 'Log In' }}
         </button>
+      </div>
+      
+      <!-- Authentication Method Divider -->
+      <AuthDivider 
+        text="OR" 
+        aria-label="Choose between email/password login or Google sign-in"
+      />
+      
+      <!-- Google SSO Button -->
+      <div class="mb-4">
+        <GoogleSSOButton 
+          :is-loading="isGoogleLoading"
+          :disabled="isLoading"
+          @google-auth-success="handleGoogleAuthSuccess"
+          @google-auth-error="handleGoogleAuthError"
+          @google-auth-clicked="handleGoogleLogin"
+        />
       </div>
       
       <!-- Sign Up Link -->
@@ -155,6 +333,15 @@ onUnmounted(() => {
         </p>
       </div>
     </form>
+    
+    <!-- Google Auth Modal -->
+    <GoogleAuthModal 
+      :visible="googleAuthModal"
+      title="Sign in with Google"
+      :is-loading="isGoogleLoading"
+      :error="googleError"
+      @close="handleGoogleModalClose"
+    />
   </div>
 </template>
 

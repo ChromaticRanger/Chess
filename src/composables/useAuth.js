@@ -1,7 +1,5 @@
 import { ref, computed } from "vue";
 import axios from "axios";
-import { useRouter } from "vue-router";
-import { useGameStore } from "@/stores/game"; // Import the game store
 
 const API_URL = "http://localhost:3000/api";
 const user = ref(null);
@@ -22,8 +20,6 @@ const setAuthHeader = (token) => {
 setAuthHeader(token.value);
 
 export function useAuth() {
-  const router = useRouter();
-  const gameStore = useGameStore(); // Get the game store instance
   const isAuthenticated = computed(() => !!token.value && !!user.value);
 
   // Register a new user
@@ -83,8 +79,7 @@ export function useAuth() {
       // Set auth header for future requests
       setAuthHeader(authToken);
 
-      // Redirect to the game input view
-      router.push({ name: 'GameInput' });
+      // Success - navigation will be handled by component
 
       return { success: true, user: userData };
     } catch (err) {
@@ -100,38 +95,17 @@ export function useAuth() {
   const logout = async () => {
     error.value = null;
     isLoading.value = true;
-    let proceedToLogout = true;
-    let showSaveDialog = false;
-
-    // Check if there's an active game
-    if (gameStore.moveHistory.length > 0) {
-      if (
-        window.confirm(
-          "You have an unsaved game in progress. Do you want to save it before logging out?"
-        )
-      ) {
-        // User wants to save
-        proceedToLogout = false; // Don't log out immediately
-        showSaveDialog = true; // Signal UI to show save dialog
-      } else {
-        // User does not want to save, reset the game state
-        gameStore.resetGame();
-      }
-    }
-
-    if (proceedToLogout) {
-      // Clear local storage and state
-      localStorage.removeItem("token");
-      token.value = null;
-      user.value = null;
-      // Optionally reset game state again just in case, though handled above
-      // gameStore.resetGame();
-      router.push("/auth"); // Redirect to login/signup page
-    }
-
+    
+    // Simple logout - game state management will be handled by components
+    localStorage.removeItem("token");
+    token.value = null;
+    user.value = null;
+    
+    // Clear auth header
+    setAuthHeader(null);
+    
     isLoading.value = false;
-    // Return an indicator if the save dialog should be shown
-    return { loggedOut: proceedToLogout, showSaveDialog: showSaveDialog };
+    return { loggedOut: true, showSaveDialog: false };
   };
 
   // Get current user
@@ -160,6 +134,89 @@ export function useAuth() {
     }
   };
 
+  // Google OAuth login
+  const googleLogin = async (credential) => {
+    isLoading.value = true;
+    error.value = "";
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/google/login`, {}, {
+        headers: {
+          'Authorization': `Bearer ${credential}`
+        }
+      });
+
+      const { user: userData, token: authToken } = response.data;
+
+      // Update state
+      user.value = userData;
+      token.value = authToken;
+
+      // Store token in localStorage
+      localStorage.setItem("token", authToken);
+
+      // Set auth header for future requests
+      setAuthHeader(authToken);
+
+      // Success - navigation will be handled by component
+
+      return { success: true, user: userData };
+    } catch (err) {
+      console.error("Google login error:", err);
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : "Google login failed";
+      error.value = errorMessage;
+      return { success: false, error: errorMessage };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // Google OAuth signup
+  const googleSignup = async (credential) => {
+    isLoading.value = true;
+    error.value = "";
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/google/signup`, {}, {
+        headers: {
+          'Authorization': `Bearer ${credential}`
+        }
+      });
+
+      const { user: userData, token: authToken } = response.data;
+
+      // Update state
+      user.value = userData;
+      token.value = authToken;
+
+      // Store token in localStorage
+      localStorage.setItem("token", authToken);
+
+      // Set auth header for future requests
+      setAuthHeader(authToken);
+
+      // Success - navigation will be handled by component
+
+      return { success: true, user: userData };
+    } catch (err) {
+      console.error("Google signup error:", err);
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : "Google signup failed";
+      error.value = errorMessage;
+      return { success: false, error: errorMessage };
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // Authenticate with Google credential (unified method)
+  const authenticateWithGoogle = async (credential, isSignup = false) => {
+    return isSignup ? googleSignup(credential) : googleLogin(credential);
+  };
+
   return {
     user,
     token,
@@ -170,5 +227,8 @@ export function useAuth() {
     login,
     logout,
     fetchCurrentUser,
+    googleLogin,
+    googleSignup,
+    authenticateWithGoogle,
   };
 }
