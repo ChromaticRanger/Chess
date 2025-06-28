@@ -9,7 +9,8 @@ To guide Claude Code in creating a detailed Product Requirements Document (PRD) 
 1. **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
 2. **Ask Clarifying Questions:** Before writing the PRD, Claude Code *must* ask clarifying questions to gather sufficient detail. The goal is to understand the "what" and "why" of the feature, not necessarily the "how" (which the developer will figure out).
 3. **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
-4. **Save PRD:** Save the generated document as `tasks/prd-[feature-name].md`.
+4. **Create Feature Directory:** Create a subdirectory within tasks for the feature: `tasks/[feature-name]/`
+5. **Save PRD:** Save the generated document as `tasks/[feature-name]/prd-[feature-name].md`.
 
 ## Tech Stack Context
 
@@ -81,13 +82,14 @@ Assume the primary reader is a developer familiar with the Vue/Hono/PostgreSQL s
 ## Output Instructions
 
 - **Format:** Markdown (`.md`)
-- **Location:** `tasks/`
+- **Location:** `tasks/[feature-name]/`
 - **Filename:** `prd-[feature-name].md`
-- **File Creation:** Claude Code should create the tasks directory if it doesn't exist and save the file directly
+- **Directory Creation:** Claude Code should create the feature subdirectory if it doesn't exist (`tasks/[feature-name]/`)
+- **File Creation:** Save the PRD file directly in the feature-specific subdirectory
 
 ## Final Instructions
 
 1. Do NOT start implementing the PRD
 2. Make sure to ask the user clarifying questions
 3. Take the user's answers to the clarifying questions and improve the PRD
-4. Create the tasks directory and save the PRD file when complete
+4. Create the feature subdirectory within tasks and save the PRD file when complete

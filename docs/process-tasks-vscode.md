@@ -106,8 +106,8 @@ CREATE INDEX idx_[table]_[column] ON [table_name]([column]);
 When working with task lists, Claude Code must:
 
 1. **File Management:**
-   - Read the current task list file before starting work
-   - Update the task list file after completing each sub-task
+   - Read the current task list file from the feature subdirectory before starting work
+   - Update the task list file in the feature subdirectory after completing each sub-task
    - Create new files as specified in the "Relevant Files" section
 
 2. **Progress Tracking:**
@@ -146,8 +146,9 @@ Maintain this project structure:
 ```
 /
 ├── tasks/
-│   ├── prd-[feature].md
-│   └── tasks-prd-[feature].md
+│   └── [feature-name]/
+│       ├── prd-[feature-name].md
+│       └── tasks-prd-[feature-name].md
 ├── src/
 │   ├── components/[Feature]/
 │   ├── views/

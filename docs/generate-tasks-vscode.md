@@ -14,13 +14,13 @@ All task lists should be structured around this technology stack:
 
 ## Process
 
-1. **Receive PRD Reference:** The user points Claude Code to a specific PRD file in the tasks directory
+1. **Receive PRD Reference:** The user points Claude Code to a specific PRD file in the feature subdirectory within tasks
 2. **Analyze PRD:** Read and analyze the functional requirements, technical architecture, and user stories from the specified PRD
 3. **Phase 1: Generate Parent Tasks:** Create high-level tasks (typically 5-7) covering the full implementation. Present these to the user and inform: "I have generated the high-level tasks based on the PRD. Ready to generate the sub-tasks? Respond with 'Go' to proceed."
 4. **Wait for Confirmation:** Pause and wait for the user to respond with "Go"
 5. **Phase 2: Generate Sub-Tasks:** Break down each parent task into smaller, actionable sub-tasks with specific technical details
 6. **Identify Relevant Files:** List all files that will need to be created or modified
-7. **Save Task List:** Create and save the task list file in the tasks directory
+7. **Save Task List:** Create and save the task list file in the same feature subdirectory as the PRD
 
 ## Task Categories (Typical Structure)
 
@@ -111,9 +111,9 @@ Parent tasks should generally follow this pattern:
 ## File Creation Instructions
 
 Claude Code should:
-1. Create the `tasks/tasks-[prd-filename].md` file directly
+1. Create the task list file in the same feature subdirectory as the PRD: `tasks/[feature-name]/tasks-[prd-filename].md`
 2. Use the exact filename format: if PRD is `prd-user-dashboard.md`, create `tasks-prd-user-dashboard.md`
-3. Ensure the tasks directory exists before creating the file
+3. Place the task list in the same subdirectory as its corresponding PRD for organizational consistency
 
 ## Interaction Model
 

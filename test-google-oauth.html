@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Google OAuth</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <h1>Test Google OAuth for Chess App</h1>
+    
+    <div id="g_id_onload"
+         data-client_id="931431493801-9cahc902hogu1joc2ot9hlvuh0hdj4gd.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+    
+    <script>
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            
+            // Decode the JWT token to see user info
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            document.getElementById('result').innerHTML = `
+                <h3>Google User Info:</h3>
+                <p><strong>Email:</strong> ${payload.email}</p>
+                <p><strong>Name:</strong> ${payload.name}</p>
+                <p><strong>Picture:</strong> <img src="${payload.picture}" width="50"></p>
+                <p><strong>JWT Token:</strong> ${response.credential}</p>
+                <button onclick="testBackend('${response.credential}')">Test Backend Signup</button>
+                <button onclick="testBackendLogin('${response.credential}')">Test Backend Login</button>
+            `;
+        }
+        
+        async function testBackend(token) {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/google/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                console.log('Backend signup result:', result);
+                alert('Signup result: ' + JSON.stringify(result, null, 2));
+            } catch (error) {
+                console.error('Backend test error:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        async function testBackendLogin(token) {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/google/login', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                console.log('Backend login result:', result);
+                alert('Login result: ' + JSON.stringify(result, null, 2));
+            } catch (error) {
+                console.error('Backend test error:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

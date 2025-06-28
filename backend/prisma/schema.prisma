@@ -7,14 +7,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  BOTH
+}
+
 model User {
-  id        Int     @id @default(autoincrement())
-  email     String  @unique
-  username  String  @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  games     Game[]
+  id                 Int          @id @default(autoincrement())
+  email              String       @unique
+  username           String       @unique
+  password           String?      // Optional for Google SSO users
+  
+  // Google OAuth fields
+  googleId           String?      @unique
+  authProvider       AuthProvider @default(EMAIL)
+  profilePictureUrl  String?
+  googleProfileData  Json?
+  
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  games              Game[]
+
+  // Indexes for Google authentication performance
+  @@index([googleId])
+  @@index([email, authProvider])
 }
 
 model Game {

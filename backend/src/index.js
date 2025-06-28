@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
+import { serveStatic } from 'hono/serve-static';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.js';
 import gameRoutes from './routes/games.js';
@@ -27,6 +28,9 @@ app.get('/api/test', (c) => {
   console.log('Test endpoint accessed');
   return c.json({ success: true, message: 'API is working properly' });
 });
+
+// Static file serving for profile pictures
+app.use('/uploads/*', serveStatic({ root: './' }));
 
 // Routes
 app.route('/api/auth', authRoutes);
