@@ -63,7 +63,7 @@ class AccountLinkingService {
         data: {
           googleId: googleUser.googleId,
           authProvider: newAuthProvider,
-          profilePictureUrl: profilePictureResult?.pictureUrl || googleUser.picture,
+          profilePictureUrl: profilePictureResult?.success ? profilePictureResult.pictureUrl : googleUser.picture,
           googleProfileData: {
             name: googleUser.name,
             givenName: googleUser.givenName,
@@ -89,10 +89,7 @@ class AccountLinkingService {
         }
       });
 
-      // Clean up old profile pictures
-      if (profilePictureResult?.localCopy) {
-        await profilePictureService.cleanupOldProfilePictures(existingUser.id);
-      }
+      // Note: No cleanup needed - using external URLs now
 
       return {
         user: updatedUser,

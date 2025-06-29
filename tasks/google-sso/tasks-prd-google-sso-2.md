@@ -98,14 +98,14 @@
   - [x] 5.6 Ensure consistent styling with existing form elements
   - [x] 5.7 Implement proper form validation for mixed authentication types
 
-- [ ] 6.0 Account Linking & User Management
-  - [ ] 6.1 Implement automatic account linking for existing email addresses
-  - [ ] 6.2 Create username auto-assignment logic using email addresses
-  - [ ] 6.3 Add Google profile picture download and storage functionality
-  - [ ] 6.4 Implement Google profile data storage and management
-  - [ ] 6.5 Add authentication provider tracking and management
-  - [ ] 6.6 Create user account type detection and routing logic
-  - [ ] 6.7 Implement profile picture URL generation and serving
+- [x] 6.0 Account Linking & User Management
+  - [x] 6.1 Implement automatic account linking for existing email addresses
+  - [x] 6.2 Create username auto-assignment logic using email addresses
+  - [x] 6.3 Add Google profile picture download and storage functionality (implemented as URL-based strategy)
+  - [x] 6.4 Implement Google profile data storage and management
+  - [x] 6.5 Add authentication provider tracking and management
+  - [x] 6.6 Create user account type detection and routing logic
+  - [x] 6.7 Implement profile picture URL generation and serving
 
 - [ ] 7.0 Error Handling & Security
   - [ ] 7.1 Implement comprehensive OAuth error handling with user-friendly messages

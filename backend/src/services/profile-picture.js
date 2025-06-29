@@ -1,96 +1,51 @@
-import fetch from 'node-fetch';
-import { createWriteStream, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { prisma } from '../index.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 class ProfilePictureService {
   constructor() {
-    // Define storage paths
-    this.uploadsDir = join(__dirname, '../../uploads/profile-pictures');
-    this.publicPath = '/uploads/profile-pictures';
+    // Default avatar settings
+    this.defaultAvatarSize = 200;
+    this.gravatarBaseUrl = 'https://www.gravatar.com/avatar/';
+    this.fallbackAvatarService = 'https://ui-avatars.com/api/';
+  }
+
+  /**
+   * Generate MD5 hash for Gravatar
+   * @param {string} email - Email address
+   * @returns {string} MD5 hash
+   */
+  generateEmailHash(email) {
+    return crypto
+      .createHash('md5')
+      .update(email.toLowerCase().trim())
+      .digest('hex');
+  }
+
+  /**
+   * Generate Gravatar URL
+   * @param {string} email - Email address
+   * @param {number} size - Image size (default 200)
+   * @param {string} defaultImage - Default image type (identicon, retro, etc.)
+   * @returns {string} Gravatar URL
+   */
+  generateGravatarUrl(email, size = this.defaultAvatarSize, defaultImage = 'identicon') {
+    const hash = this.generateEmailHash(email);
+    return `${this.gravatarBaseUrl}${hash}?s=${size}&d=${defaultImage}&r=pg`;
+  }
+
+  /**
+   * Generate initials-based avatar URL
+   * @param {Object} user - User object
+   * @param {number} size - Image size (default 200)
+   * @returns {string} Avatar URL
+   */
+  generateInitialsAvatar(user, size = this.defaultAvatarSize) {
+    const initials = this.getUserInitials(user);
+    const colors = ['007bff', '28a745', 'dc3545', 'ffc107', '17a2b8', '6c757d', 'e83e8c'];
+    const colorIndex = user.id ? user.id % colors.length : 0;
+    const backgroundColor = colors[colorIndex];
     
-    // Ensure uploads directory exists
-    this.ensureUploadsDirectory();
-  }
-
-  /**
-   * Ensure uploads directory exists
-   */
-  ensureUploadsDirectory() {
-    if (!existsSync(this.uploadsDir)) {
-      mkdirSync(this.uploadsDir, { recursive: true });
-    }
-  }
-
-  /**
-   * Download and store Google profile picture
-   * @param {string} googlePictureUrl - URL of Google profile picture
-   * @param {string} userId - User ID for filename
-   * @returns {Promise<Object>} Storage result
-   */
-  async downloadGoogleProfilePicture(googlePictureUrl, userId) {
-    try {
-      if (!googlePictureUrl) {
-        return {
-          success: false,
-          error: 'No profile picture URL provided'
-        };
-      }
-
-      // Generate filename
-      const filename = `user-${userId}-${Date.now()}.jpg`;
-      const filePath = join(this.uploadsDir, filename);
-      const publicUrl = `${this.publicPath}/${filename}`;
-
-      // Download image from Google
-      const response = await fetch(googlePictureUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
-      }
-
-      // Check content type
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.startsWith('image/')) {
-        throw new Error(`Invalid content type: ${contentType}`);
-      }
-
-      // Save image to local storage
-      const fileStream = createWriteStream(filePath);
-      
-      return new Promise((resolve, reject) => {
-        response.body.pipe(fileStream);
-        
-        response.body.on('error', (error) => {
-          reject(new Error(`Download stream error: ${error.message}`));
-        });
-        
-        fileStream.on('finish', () => {
-          resolve({
-            success: true,
-            localPath: filePath,
-            publicUrl: publicUrl,
-            filename: filename,
-            originalUrl: googlePictureUrl
-          });
-        });
-        
-        fileStream.on('error', (error) => {
-          reject(new Error(`File write error: ${error.message}`));
-        });
-      });
-    } catch (error) {
-      console.error('Profile picture download error:', error);
-      return {
-        success: false,
-        error: error.message,
-        fallbackUrl: googlePictureUrl
-      };
-    }
+    return `${this.fallbackAvatarService}?name=${encodeURIComponent(initials)}&background=${backgroundColor}&color=ffffff&size=${size}&bold=true`;
   }
 
   /**
@@ -138,7 +93,7 @@ class ProfilePictureService {
   }
 
   /**
-   * Process Google profile picture (download and store)
+   * Process Google profile picture (store URL only)
    * @param {number} userId - User ID
    * @param {string} googlePictureUrl - Google profile picture URL
    * @param {Object} googleProfileData - Additional Google profile data
@@ -146,36 +101,35 @@ class ProfilePictureService {
    */
   async processGoogleProfilePicture(userId, googlePictureUrl, googleProfileData = {}) {
     try {
-      // Try to download and store locally
-      const downloadResult = await this.downloadGoogleProfilePicture(googlePictureUrl, userId);
-      
-      let finalPictureUrl;
-      let metadata = {
-        googleProfileData,
+      if (!googlePictureUrl) {
+        return {
+          success: false,
+          error: 'No profile picture URL provided'
+        };
+      }
+
+      // Store Google URL directly (no downloading)
+      const metadata = {
+        googleProfileData: {
+          ...googleProfileData,
+          picture: googlePictureUrl,
+          profilePictureMetadata: {
+            lastUpdated: new Date().toISOString(),
+            source: 'google',
+            storageType: 'external_url'
+          }
+        },
         source: 'google'
       };
 
-      if (downloadResult.success) {
-        // Use local copy
-        finalPictureUrl = downloadResult.publicUrl;
-        metadata.localCopy = true;
-        metadata.originalGoogleUrl = googlePictureUrl;
-      } else {
-        // Fall back to Google URL
-        finalPictureUrl = googlePictureUrl;
-        metadata.localCopy = false;
-        metadata.downloadError = downloadResult.error;
-      }
-
-      // Update user in database
-      const updateResult = await this.updateUserProfilePicture(userId, finalPictureUrl, metadata);
+      // Update user in database with Google URL
+      const updateResult = await this.updateUserProfilePicture(userId, googlePictureUrl, metadata);
       
       return {
         success: updateResult.success,
         user: updateResult.user,
-        pictureUrl: finalPictureUrl,
-        localCopy: downloadResult.success,
-        downloadResult,
+        pictureUrl: googlePictureUrl,
+        storageType: 'external_url',
         error: updateResult.error
       };
     } catch (error) {
@@ -231,9 +185,13 @@ class ProfilePictureService {
    * @returns {string} Default avatar URL
    */
   generateDefaultAvatar(user) {
-    // Use a service like Gravatar or generate initials-based avatar
-    const initials = this.getUserInitials(user);
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=random&size=200`;
+    // Try Gravatar first (for email users), then fallback to initials
+    if (user.email && user.authProvider !== 'GOOGLE') {
+      return this.generateGravatarUrl(user.email);
+    }
+    
+    // Fallback to initials-based avatar
+    return this.generateInitialsAvatar(user);
   }
 
   /**
@@ -259,77 +217,121 @@ class ProfilePictureService {
    * @returns {string} Profile picture URL
    */
   getProfilePictureWithFallback(user) {
+    // 1. If user has a profile picture URL, use it
     if (user.profilePictureUrl) {
       return user.profilePictureUrl;
     }
     
-    return this.generateDefaultAvatar(user);
-  }
-
-  /**
-   * Remove local profile picture file
-   * @param {string} filename - Filename to remove
-   * @returns {Promise<boolean>} Success status
-   */
-  async removeLocalProfilePicture(filename) {
-    try {
-      const { unlink } = await import('fs/promises');
-      const filePath = join(this.uploadsDir, filename);
-      
-      if (existsSync(filePath)) {
-        await unlink(filePath);
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('File removal error:', error);
-      return false;
+    // 2. For Google users, check if there's a picture in profile data
+    if (user.authProvider?.includes('GOOGLE') && user.googleProfileData?.picture) {
+      return user.googleProfileData.picture;
     }
+    
+    // 3. For email users, use Gravatar
+    if (user.email && user.authProvider === 'EMAIL') {
+      return this.generateGravatarUrl(user.email);
+    }
+    
+    // 4. Final fallback to initials avatar
+    return this.generateInitialsAvatar(user);
   }
 
   /**
-   * Clean up old profile pictures for user
-   * @param {number} userId - User ID
-   * @returns {Promise<Object>} Cleanup result
+   * Get comprehensive profile picture info
+   * @param {Object} user - User object
+   * @returns {Object} Profile picture information
    */
-  async cleanupOldProfilePictures(userId) {
+  getProfilePictureInfo(user) {
+    const url = this.getProfilePictureWithFallback(user);
+    
+    let source = 'default';
+    let storageType = 'external_url';
+    
+    if (user.profilePictureUrl) {
+      if (user.profilePictureUrl.includes('googleusercontent.com')) {
+        source = 'google';
+      } else if (user.profilePictureUrl.includes('gravatar.com')) {
+        source = 'gravatar';
+      } else if (user.profilePictureUrl.includes('ui-avatars.com')) {
+        source = 'initials';
+      } else if (user.profilePictureUrl.startsWith('/uploads/')) {
+        source = 'uploaded';
+        storageType = 'local';
+      }
+    } else if (user.authProvider?.includes('GOOGLE')) {
+      source = 'google';
+    } else if (user.email) {
+      source = 'gravatar';
+    } else {
+      source = 'initials';
+    }
+    
+    return {
+      url,
+      source,
+      storageType,
+      hasCustomPicture: !!user.profilePictureUrl
+    };
+  }
+
+  /**
+   * Migrate user from local storage to URL-based storage
+   * @param {number} userId - User ID
+   * @returns {Promise<Object>} Migration result
+   */
+  async migrateUserToUrlStorage(userId) {
     try {
-      const { readdir } = await import('fs/promises');
-      const files = await readdir(this.uploadsDir);
-      
-      // Find files for this user (excluding current one)
-      const userFiles = files.filter(file => 
-        file.startsWith(`user-${userId}-`) && 
-        file.endsWith('.jpg')
-      );
-      
-      // Keep only the most recent file, remove others
-      if (userFiles.length > 1) {
-        const sortedFiles = userFiles.sort().reverse(); // Most recent first
-        const filesToRemove = sortedFiles.slice(1); // Remove all except first
-        
-        let removedCount = 0;
-        for (const file of filesToRemove) {
-          if (await this.removeLocalProfilePicture(file)) {
-            removedCount++;
-          }
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          profilePictureUrl: true,
+          authProvider: true,
+          googleProfileData: true
         }
+      });
+
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // If user has local profile picture, migrate to appropriate URL
+      if (user.profilePictureUrl?.startsWith('/uploads/')) {
+        let newUrl;
         
+        if (user.authProvider?.includes('GOOGLE') && user.googleProfileData?.picture) {
+          // Use Google URL
+          newUrl = user.googleProfileData.picture;
+        } else if (user.email) {
+          // Use Gravatar
+          newUrl = this.generateGravatarUrl(user.email);
+        } else {
+          // Use initials avatar
+          newUrl = this.generateInitialsAvatar(user);
+        }
+
+        // Update user with new URL
+        await prisma.user.update({
+          where: { id: userId },
+          data: { profilePictureUrl: newUrl }
+        });
+
         return {
           success: true,
-          removedFiles: removedCount,
-          keptFile: sortedFiles[0]
+          oldUrl: user.profilePictureUrl,
+          newUrl,
+          migrationType: user.authProvider?.includes('GOOGLE') ? 'google' : 'gravatar'
         };
       }
-      
+
       return {
         success: true,
-        removedFiles: 0,
-        message: 'No old files to clean up'
+        message: 'User already using URL-based storage'
       };
     } catch (error) {
-      console.error('Cleanup error:', error);
+      console.error('Migration error:', error);
       return {
         success: false,
         error: error.message
