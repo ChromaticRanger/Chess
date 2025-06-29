@@ -172,6 +172,24 @@ const saveGame = async (gameData) => {
     );
 
     const finalPgn = pgn.value;
+    
+    // Create the game object to send to the API
+    const gameToSave = {
+      name: gameData.name,
+      description: gameData.description || "",
+      date: gameData.date,
+      venue: gameData.venue,
+      event: gameData.event,
+      round: gameData.round,
+      whitePlayer: gameData.whitePlayer,
+      whiteRating: gameData.whiteRating,
+      blackPlayer: gameData.blackPlayer,
+      blackRating: gameData.blackRating,
+      result: gameData.result,
+      moveHistory: moveHistory.value,
+      pgn: finalPgn
+    };
+    
     const result = await createGame(gameToSave);
 
     if (!result || !result.success) {
