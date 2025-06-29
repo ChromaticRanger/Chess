@@ -1,11 +1,13 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import Modal from "./components/Modal.vue";
 import AuthPage from "./components/AuthPage.vue";
 import SaveGameDialog from "./components/SaveGameDialog.vue"; // Import SaveGameDialog
 import { useAuth } from "./composables/useAuth";
 
-// Auth state
+// Router and Auth state
+const router = useRouter();
 const { isAuthenticated, user, logout } = useAuth();
 const isAuthenticatedUser = ref(isAuthenticated.value);
 
@@ -34,6 +36,8 @@ const hideModal = () => {
 // Handler for authentication success
 const handleAuthSuccess = () => {
   isAuthenticatedUser.value = true;
+  // Navigate to the game input page after successful authentication
+  router.push('/game-input');
 };
 
 // Handler for logout
