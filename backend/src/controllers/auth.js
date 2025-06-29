@@ -40,17 +40,24 @@ export const register = async (c) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
+    // Generate Gravatar URL for new email user
+    const gravatarUrl = profilePictureService.generateGravatarUrl(email);
+    
     // Create user
     const user = await prisma.user.create({
       data: {
         email,
         username,
-        password: hashedPassword
+        password: hashedPassword,
+        profilePictureUrl: gravatarUrl,
+        authProvider: 'EMAIL'
       },
       select: {
         id: true,
         email: true,
         username: true,
+        profilePictureUrl: true,
+        authProvider: true,
         createdAt: true
       }
     });
@@ -92,7 +99,9 @@ export const login = async (c) => {
       user: {
         id: user.id,
         email: user.email,
-        username: user.username
+        username: user.username,
+        profilePictureUrl: user.profilePictureUrl,
+        authProvider: user.authProvider
       },
       token
     });
@@ -268,7 +277,9 @@ export const googleSignup = async (c) => {
     });
 
     // Process and store profile picture after user creation
+    let finalUser = newUser;
     let profilePictureResult = null;
+    
     if (googleUser.picture) {
       profilePictureResult = await profilePictureService.processGoogleProfilePicture(
         newUser.id,
@@ -282,26 +293,20 @@ export const googleSignup = async (c) => {
         }
       );
 
-      // Update user with profile picture URL if processing succeeded
-      if (profilePictureResult?.success) {
-        await prisma.user.update({
-          where: { id: newUser.id },
-          data: {
-            profilePictureUrl: profilePictureResult.pictureUrl
-          }
-        });
-        newUser.profilePictureUrl = profilePictureResult.pictureUrl;
+      // Use updated user object if processing succeeded
+      if (profilePictureResult?.success && profilePictureResult.user) {
+        finalUser = profilePictureResult.user;
       }
     }
     
     // Generate JWT token for new Google account
-    const token = jwtTokenService.generateGoogleAuthToken(newUser, {
+    const token = jwtTokenService.generateGoogleAuthToken(finalUser, {
       accountLinked: false,
       newAccount: true
     });
     
     return c.json({
-      user: newUser,
+      user: finalUser,
       token,
       message: 'Account created successfully with Google authentication',
       profilePictureProcessed: !!profilePictureResult?.success

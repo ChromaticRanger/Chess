@@ -67,6 +67,18 @@ const handleSaveDialogClose = async (saved) => {
   // but the dialog is closed. Consider if additional error handling is needed here.
 };
 
+// Handle profile picture loading errors
+const handleImageError = (event) => {
+  // Fallback to initials-based avatar if image fails to load
+  const username = user.value?.username || user.value?.email || 'User';
+  const initials = username.charAt(0).toUpperCase();
+  const colors = ['007bff', '28a745', 'dc3545', 'ffc107', '17a2b8', '6c757d', 'e83e8c'];
+  const colorIndex = user.value?.id ? user.value.id % colors.length : 0;
+  const backgroundColor = colors[colorIndex];
+  
+  event.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${backgroundColor}&color=ffffff&size=200&bold=true`;
+};
+
 // Add debug info when component is mounted
 onMounted(() => {
   // Check if user is already authenticated
@@ -88,7 +100,16 @@ onMounted(() => {
 
         <!-- User info and logout on right -->
         <div class="flex items-center pr-2">
-          <span class="mr-2">{{ user?.username }}</span>
+          <!-- Profile Picture -->
+          <img 
+            :src="user?.profilePictureUrl || '/default-avatar.png'"
+            :alt="user?.username || 'User'"
+            class="w-8 h-8 rounded-full object-cover mr-2 border-2 border-white shadow-sm"
+            @error="handleImageError"
+          />
+          <!-- Username -->
+          <span class="mr-3">{{ user?.username }}</span>
+          <!-- Logout Button -->
           <button
             @click="handleLogout"
             class="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100 transition"
