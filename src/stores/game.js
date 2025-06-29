@@ -1,7 +1,7 @@
 // filepath: src/stores/game.js
 import { defineStore } from "pinia";
 import { Chess } from "chess.js";
-import { ref, computed, nextTick } from "vue";
+import { ref, computed } from "vue";
 
 // Add a mapping from chess.js piece codes to full names
 const pieceCodeToName = {
@@ -226,6 +226,19 @@ export const useGameStore = defineStore("game", () => {
     gameResult.value = "*";
     headers.value = chessInstance.getHeaders();
     isGameSaved.value = true; // Reset is saved
+    
+    // Clear check status indicators (at starting position, no one is in check)
+    whiteKingInCheck.value = false;
+    blackKingInCheck.value = false;
+    
+    // Clear checkmate modal if it was showing
+    showCheckmateModal.value = false;
+    checkmateModalMessage.value = "";
+    
+    // Clear temporary board state for viewing past moves
+    tempBoardState.value = null;
+    viewingMoveIndex.value = -1;
+    
     console.log("Pinia Store: Game reset");
   }
 
@@ -257,6 +270,20 @@ export const useGameStore = defineStore("game", () => {
             undoneMove
           );
         }
+      }
+
+      // Update check status after taking back a move
+      if (chessInstance.isCheck()) {
+        if (chessInstance.turn() === "w") {
+          whiteKingInCheck.value = true;
+          blackKingInCheck.value = false;
+        } else {
+          blackKingInCheck.value = true;
+          whiteKingInCheck.value = false;
+        }
+      } else {
+        whiteKingInCheck.value = false;
+        blackKingInCheck.value = false;
       }
 
       gameResult.value = "*";
