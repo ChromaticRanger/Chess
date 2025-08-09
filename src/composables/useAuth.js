@@ -1,5 +1,6 @@
 import { ref, computed } from "vue";
 import axios from "axios";
+import { useGameStore } from "../stores/game";
 
 const API_URL = "http://localhost:3000/api";
 const user = ref(null);
@@ -96,13 +97,17 @@ export function useAuth() {
     error.value = null;
     isLoading.value = true;
     
-    // Simple logout - game state management will be handled by components
+    // Clear authentication state
     localStorage.removeItem("token");
     token.value = null;
     user.value = null;
     
     // Clear auth header
     setAuthHeader(null);
+    
+    // Clear game state to prevent data leakage between users
+    const gameStore = useGameStore();
+    gameStore.resetGame();
     
     isLoading.value = false;
     return { loggedOut: true, showSaveDialog: false };

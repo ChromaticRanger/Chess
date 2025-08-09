@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed, onUpdated, reactive } from "vue";
+import { storeToRefs } from "pinia";
+import { useGameStore } from "../stores/game";
 import { getPieceImagePath } from "../utils/PieceFactory";
 import useChessNotation from "../composables/useChessNotation";
 import resetSvg from "/src/assets/reset.svg";
@@ -26,6 +28,10 @@ const moveHistoryPanel = ref(null);
 
 // Initialize the chess notation composable
 const chessNotation = useChessNotation();
+
+// Get analysis mode state from store
+const gameStore = useGameStore();
+const { isAnalysisMode } = storeToRefs(gameStore);
 
 // Reset confirmation modal state
 const resetModal = reactive({
@@ -110,6 +116,11 @@ const isLatestMove = (moveIndex) => {
 
 // Function to check if a move can be taken back
 const canTakeBackMove = (moveIndex) => {
+  // Disable take back in analysis mode
+  if (isAnalysisMode.value) {
+    return false;
+  }
+  
   // moveIndex is from getWhiteMoveIndex/getBlackMoveIndex (1, 2, 3, 4...)
   // The last move in moveHistory has index moveHistory.length
   // So we check if moveIndex equals moveHistory.length
@@ -202,9 +213,14 @@ onUpdated(() => {
     <!-- Column Headers - Sticky -->
     <div
       class="grid grid-cols-2 text-sm font-bold border-b border-gray-300 divide-x divide-gray-300 sticky top-12 z-10"
+      :class="{ 'bg-blue-50 border-blue-200': isAnalysisMode }"
     >
-      <div class="p-2 text-center bg-gray-100">White</div>
-      <div class="p-2 text-center bg-gray-100">Black</div>
+      <div class="p-2 text-center" :class="isAnalysisMode ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'">
+        White
+      </div>
+      <div class="p-2 text-center" :class="isAnalysisMode ? 'bg-blue-100 text-blue-800' : 'bg-gray-100'">
+        Black
+      </div>
     </div>
 
     <!-- Move History Content -->

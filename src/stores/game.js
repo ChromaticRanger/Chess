@@ -33,6 +33,10 @@ export const useGameStore = defineStore("game", () => {
   const showCheckmateModal = ref(false);
   const checkmateModalMessage = ref("");
 
+  // Add analysis mode state management
+  const isAnalysisMode = ref(false);
+  const loadedGameMetadata = ref(null);
+
   // Use a regular ref for currentTurn instead of a computed property to ensure reactivity
   const currentTurn = ref(chessInstance.turn() === "w" ? "White" : "Black");
 
@@ -80,9 +84,20 @@ export const useGameStore = defineStore("game", () => {
     return tempBoardState.value || fen.value;
   });
 
+  // Computed property to check if moves can be made (not in analysis mode)
+  const canMakeMove = computed(() => {
+    return !isAnalysisMode.value;
+  });
+
   // --- Actions ---
 
   function makeMove(move) {
+    // Prevent moves in analysis mode
+    if (isAnalysisMode.value) {
+      console.warn("Move attempted in analysis mode - blocked");
+      return null;
+    }
+
     try {
       // Log the current turn and FEN before the move
       console.log(
@@ -239,7 +254,11 @@ export const useGameStore = defineStore("game", () => {
     tempBoardState.value = null;
     viewingMoveIndex.value = -1;
     
-    console.log("Pinia Store: Game reset");
+    // Clear analysis mode and return to input mode
+    isAnalysisMode.value = false;
+    loadedGameMetadata.value = null;
+    
+    console.log("Pinia Store: Game reset - Analysis mode cleared");
   }
 
   function takeBackMove() {
@@ -431,6 +450,11 @@ export const useGameStore = defineStore("game", () => {
   }
 
   function getValidMoves(square) {
+    // Return empty array in analysis mode to prevent move input
+    if (isAnalysisMode.value) {
+      return [];
+    }
+
     console.log(
       "Pinia Store: Checking chessInstance in getValidMoves:",
       chessInstance
@@ -483,6 +507,103 @@ export const useGameStore = defineStore("game", () => {
 
   function closeCheckmateModal() {
     showCheckmateModal.value = false;
+  }
+
+  /**
+   * Load a game from complete game data into analysis mode
+   * @param {Object} gameData Complete game object from API
+   */
+  function loadGameFromData(gameData) {
+    try {
+      console.log("Loading game into analysis mode:", gameData.name);
+      
+      // First reset the current game state
+      resetGame();
+      
+      // Set analysis mode and store metadata
+      isAnalysisMode.value = true;
+      loadedGameMetadata.value = {
+        id: gameData.id,
+        name: gameData.name,
+        description: gameData.description,
+        date: gameData.date,
+        venue: gameData.venue,
+        event: gameData.event,
+        round: gameData.round,
+        whitePlayer: gameData.whitePlayer,
+        blackPlayer: gameData.blackPlayer,
+        whiteRating: gameData.whiteRating,
+        blackRating: gameData.blackRating,
+        result: gameData.result,
+        createdAt: gameData.createdAt
+      };
+      
+      // Set headers for the loaded game
+      const gameHeaders = {
+        Event: gameData.event || "?",
+        Site: gameData.venue || "?",
+        Date: gameData.date ? new Date(gameData.date).toISOString().split("T")[0].replace(/-/g, ".") : "????.??.??",
+        Round: gameData.round || "?",
+        White: gameData.whitePlayer || "?",
+        Black: gameData.blackPlayer || "?",
+        Result: gameData.result || "*",
+        WhiteElo: gameData.whiteRating ? gameData.whiteRating.toString() : "?",
+        BlackElo: gameData.blackRating ? gameData.blackRating.toString() : "?"
+      };
+      setHeaders(gameHeaders);
+      
+      // Load the game using PGN if available, otherwise rebuild from move history
+      if (gameData.pgn) {
+        loadPgn(gameData.pgn, gameHeaders);
+      } else if (gameData.moveHistory && gameData.moveHistory.length > 0) {
+        // If no PGN, rebuild from move history
+        // Reset first, then replay moves
+        chessInstance.reset();
+        fen.value = chessInstance.fen();
+        moveHistory.value = [];
+        
+        // Replay moves from moveHistory
+        gameData.moveHistory.forEach((move, index) => {
+          try {
+            const result = chessInstance.move({
+              from: move.from,
+              to: move.to,
+              promotion: move.promotion ? move.promotion.toLowerCase().charAt(0) : undefined
+            });
+            
+            if (result) {
+              moveHistory.value.push({
+                ...move,
+                timestamp: move.timestamp || new Date().toISOString()
+              });
+            } else {
+              console.warn(`Failed to replay move ${index}:`, move);
+            }
+          } catch (error) {
+            console.error(`Error replaying move ${index}:`, error, move);
+          }
+        });
+        
+        // Update final position
+        fen.value = chessInstance.fen();
+        currentTurn.value = chessInstance.turn() === "w" ? "White" : "Black";
+        rebuildCapturedPieces();
+        updateGameResult();
+      }
+      
+      // Mark as saved since it's a loaded game
+      isGameSaved.value = true;
+      
+      console.log("Game loaded successfully into analysis mode");
+      return true;
+      
+    } catch (error) {
+      console.error("Error loading game:", error);
+      // Reset analysis mode on error
+      isAnalysisMode.value = false;
+      loadedGameMetadata.value = null;
+      return false;
+    }
   }
 
   /**
@@ -590,6 +711,8 @@ export const useGameStore = defineStore("game", () => {
     blackKingInCheck,
     tempBoardState,
     viewingMoveIndex,
+    isAnalysisMode,
+    loadedGameMetadata,
     // Getters (Computed)
     currentTurn,
     whiteInCheck,
@@ -600,6 +723,7 @@ export const useGameStore = defineStore("game", () => {
     pgn,
     hasUnsavedChanges,
     currentFen,
+    canMakeMove,
     // Actions (Functions)
     makeMove,
     resetGame,
@@ -612,6 +736,7 @@ export const useGameStore = defineStore("game", () => {
     openLogoutConfirmModal,
     closeLogoutConfirmModal,
     closeCheckmateModal,
+    loadGameFromData,
     viewMoveAtIndex,
   };
 });

@@ -1,0 +1,248 @@
+# Task List: Game Loading Feature Implementation
+
+## Relevant Files
+
+### Backend (Hono)
+- `backend/src/controllers/games.js` - Enhanced with game loading endpoint
+- `backend/src/routes/games.js` - Updated to include game loading route
+- No new database schema changes required
+
+### Frontend (Vue)
+- `src/components/GameMetadataPanel.vue` - New component to display loaded game information
+- `src/components/Modal.vue` - Enhanced for game loading confirmation dialogs
+- `src/components/MoveHistoryList.vue` - Enhanced to disable move deletion in analysis mode
+- `src/components/GameSavePanel.vue` - Enhanced to hide during analysis mode
+- `src/views/GameInput.vue` - Enhanced to support analysis mode and loaded game display
+- `src/views/GameHistory.vue` - Enhanced loadGame function with confirmation and navigation
+- `src/stores/game.js` - Enhanced to support analysis mode and game loading state
+- `src/composables/usePositions.js` - Enhanced with game loading functionality
+
+### Configuration
+- No new configuration files needed
+
+### Testing
+- Manual testing across different game scenarios
+- Testing of confirmation dialogs and state management
+- Testing of analysis mode vs input mode behavior
+
+### Notes
+- Vue components should use Composition API with `<script setup>` syntax
+- Use Tailwind utility classes for all styling
+- Implement proper state management for analysis vs input modes
+- Follow existing patterns for modal dialogs and confirmation flows
+- Ensure read-only mode prevents any game modifications
+- Database changes not required - using existing Game table structure
+
+## Tasks
+
+- [ ] 1.0 Backend API Enhancement
+  - [ ] 1.1 Verify existing GET /api/games/:id endpoint supports complete game data retrieval
+    - Check that `backend/src/controllers/games.js` getUserGames function returns all fields
+    - Verify moveHistory, pgn, and all metadata fields are included in response
+    - Test with existing games to ensure data completeness
+  - [ ] 1.2 Ensure endpoint returns all required fields (moveHistory, pgn, metadata)
+    - Confirm game object includes: name, description, date, venue, event, round
+    - Verify player information: whitePlayer, blackPlayer, whiteRating, blackRating
+    - Ensure result, moveHistory array, and pgn string are present
+    - Add any missing fields to the select statement in the controller
+  - [ ] 1.3 Add proper error handling for game not found scenarios
+    - Return 404 status with clear error message when game doesn't exist
+    - Return 403 status when user tries to access game they don't own
+    - Add validation for malformed game IDs
+    - Test error responses match API specification in PRD
+  - [ ] 1.4 Test endpoint with various game data scenarios
+    - Test with games having complete metadata vs minimal metadata
+    - Test with games having long move histories (50+ moves)
+    - Test with games having special characters in names/descriptions
+    - Verify response time stays under 500ms as specified in success metrics
+
+- [ ] 2.0 Game Store Enhancement for Analysis Mode
+  - [ ] 2.1 Add analysis mode state management to game store
+    - Add `isAnalysisMode` ref(false) to track current mode
+    - Add `loadedGameMetadata` ref(null) to store loaded game information
+    - Export isAnalysisMode and loadedGameMetadata in store return object
+    - Create computed property `canMakeMove` that returns !isAnalysisMode.value
+  - [ ] 2.2 Create loadGameFromData function to populate store with loaded game
+    - Accept complete game object as parameter
+    - Call resetGame() first to clear current state
+    - Set isAnalysisMode.value = true
+    - Store metadata in loadedGameMetadata.value
+    - Use existing loadPgn() function to populate board and move history
+    - Set appropriate headers using setHeaders() function
+  - [ ] 2.3 Add loaded game metadata state (name, players, event, etc.)
+    - Define loadedGameMetadata structure to match game object from API
+    - Include all fields: name, description, players, ratings, event, venue, date, result
+    - Add helper computed properties for formatted display (e.g., formattedDate)
+    - Ensure metadata persists during move navigation but clears on reset
+  - [ ] 2.4 Implement analysis mode checks to prevent move input
+    - Modify makeMove function to return early if isAnalysisMode.value is true
+    - Add console.log warning when move attempted in analysis mode
+    - Ensure getValidMoves returns empty array in analysis mode
+    - Update Board component to disable piece dragging when in analysis mode
+  - [ ] 2.5 Update reset function to clear analysis mode and return to input mode
+    - Set isAnalysisMode.value = false in resetGame function
+    - Clear loadedGameMetadata.value = null
+    - Add console.log to confirm mode switch
+    - Ensure all existing reset functionality still works correctly
+
+- [ ] 3.0 Game Metadata Display Component
+  - [ ] 3.1 Create GameMetadataPanel.vue component
+    - Create new file `src/components/GameMetadataPanel.vue`
+    - Use `<script setup>` Composition API syntax
+    - Import storeToRefs for reactive store access
+    - Define props interface if needed for customization
+    - Set up basic component structure with template, script, and style sections
+  - [ ] 3.2 Design responsive layout with Tailwind CSS
+    - Use bg-white rounded-lg shadow-lg for main container
+    - Create grid layout for metadata fields using CSS Grid
+    - Use responsive breakpoints: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+    - Add proper spacing with p-4 and gap-4 classes
+    - Ensure consistent typography with existing design system
+  - [ ] 3.3 Display game name, description, players, ratings, event details
+    - Show game name as h2 with text-xl font-bold
+    - Display description in text-gray-600 with proper line-clamp if long
+    - Create player section with white/black player info and ratings
+    - Show event, venue, round information with proper labels
+    - Display game date in user-friendly format
+    - Show game result with appropriate styling based on outcome
+  - [ ] 3.4 Add analysis mode indicator with distinct styling
+    - Add prominent "Analysis Mode" badge with bg-blue-100 text-blue-800
+    - Include icon or visual indicator for analysis mode
+    - Add explanatory text: "Viewing saved game - Read only mode"
+    - Use consistent styling with existing mode indicators in app
+    - Position indicator prominently at top of metadata panel
+  - [ ] 3.5 Implement mobile-responsive design
+    - Stack metadata fields vertically on mobile (grid-cols-1)
+    - Adjust text sizes for mobile readability
+    - Ensure touch-friendly spacing and sizing
+    - Test on various screen sizes to ensure readability
+    - Hide less critical information on very small screens if needed
+
+- [ ] 4.0 GameInput View Enhancement
+  - [ ] 4.1 Integrate GameMetadataPanel above existing panels
+    - Import GameMetadataPanel component
+    - Add conditional rendering: v-if="isAnalysisMode"
+    - Position above BoardStatusPanel and GameSavePanel
+    - Maintain existing layout structure and spacing
+    - Ensure proper responsive behavior across screen sizes
+  - [ ] 4.2 Add analysis mode detection and UI state management
+    - Import isAnalysisMode from game store using storeToRefs
+    - Create computed properties for UI state based on analysis mode
+    - Add reactive classes for different visual states
+    - Update existing component behavior based on analysis mode
+    - Add watchers if needed for mode transitions
+  - [ ] 4.3 Implement game loading confirmation dialog
+    - Create confirmation modal for potential data loss warning
+    - Use existing Modal component with appropriate props
+    - Show warning when hasUnsavedChanges.value is true
+    - Include game name in confirmation message
+    - Provide "Load Game" and "Cancel" action buttons
+    - Store pending game data while awaiting user confirmation
+  - [ ] 4.4 Hide/disable save game functionality during analysis mode
+    - Add v-if="!isAnalysisMode" to GameSavePanel component
+    - Disable any save-related buttons or functions in analysis mode
+    - Show informational message about save being disabled in analysis mode
+    - Ensure save functionality re-enables when returning to input mode
+    - Test that save state is properly maintained through mode transitions
+  - [ ] 4.5 Update layout to accommodate metadata panel
+    - Adjust vertical spacing to accommodate new metadata panel
+    - Ensure all panels remain visible and accessible
+    - Test layout on various screen sizes and orientations
+    - Maintain board prominence while showing metadata
+    - Update any fixed heights or positioning that might conflict
+
+- [ ] 5.0 Move History and Controls Enhancement
+  - [ ] 5.1 Disable move deletion functionality in analysis mode
+    - Modify MoveHistoryList.vue to accept analysis mode prop or read from store
+    - Hide or disable "take back move" buttons when in analysis mode
+    - Remove delete/edit icons from move history items in analysis mode
+    - Add visual indicators (grayed out, disabled styling) for read-only state
+    - Ensure reset board button remains functional (to exit analysis mode)
+  - [ ] 5.2 Maintain move navigation capabilities (first, previous, next, last)
+    - Ensure all existing move navigation buttons work in analysis mode
+    - Test viewMoveAtIndex function works correctly with loaded games
+    - Verify move selection from history list functions properly
+    - Maintain all existing keyboard shortcuts for navigation if any
+    - Ensure smooth transitions between moves in analysis mode
+  - [ ] 5.3 Update move history styling to indicate read-only state
+    - Add visual indicators for read-only mode (border, background color)
+    - Use muted colors or disabled styling for non-interactive elements
+    - Add tooltips or help text explaining read-only behavior
+    - Maintain good contrast and readability in read-only state
+    - Use consistent styling with other read-only elements in the app
+  - [ ] 5.4 Ensure move selection and viewing works correctly in analysis mode
+    - Test clicking on moves in history list navigates correctly
+    - Verify board updates properly when selecting different moves
+    - Ensure current move highlighting works in analysis mode
+    - Test that captured pieces display correctly for selected moves
+    - Verify board orientation controls work during analysis
+
+- [ ] 6.0 Game History Integration
+  - [ ] 6.1 Update loadGame function in GameHistory.vue
+    - Import useGameStore to check for unsaved changes
+    - Add loading state management during game loading process
+    - Import useRouter for navigation after successful loading
+    - Add error handling for failed game loading attempts
+    - Create proper data flow from game card to analysis mode
+  - [ ] 6.2 Implement unsaved work detection and confirmation dialog
+    - Check hasUnsavedChanges computed property from game store
+    - Show confirmation modal when unsaved work exists
+    - Allow user to cancel loading operation
+    - Store selected game data while awaiting confirmation
+    - Clear confirmation state after user decision
+  - [ ] 6.3 Add game loading API call and error handling
+    - Use existing fetchGameById from usePositions composable
+    - Add proper error handling for network failures
+    - Show user-friendly error messages for different failure scenarios
+    - Implement loading indicators during API call
+    - Add retry mechanism for transient failures
+  - [ ] 6.4 Navigate to GameInput view with loaded game state
+    - Call router.push('/game-input') after successful game loading
+    - Ensure game store is populated before navigation
+    - Pass any necessary route parameters or state
+    - Handle navigation errors gracefully
+    - Ensure back button behavior works correctly
+  - [ ] 6.5 Handle loading states and user feedback
+    - Show loading spinner or skeleton UI during game loading
+    - Display progress indicators for longer operations
+    - Show success confirmation when game loads successfully
+    - Handle and display network errors appropriately
+    - Provide clear feedback about analysis mode activation
+
+- [ ] 7.0 Testing & Quality Assurance
+  - [ ] 7.1 Test game loading with various game sizes and complexities
+    - Test loading games with 10, 50, 100+ moves
+    - Test games with complete vs minimal metadata
+    - Test games with special characters in names/descriptions
+    - Test games with different result types (1-0, 0-1, 1/2-1/2, *)
+    - Verify performance stays within 2-second loading requirement
+  - [ ] 7.2 Test confirmation dialogs and cancellation flows
+    - Test loading game with unsaved work triggers confirmation
+    - Test canceling game loading preserves current game state
+    - Test confirming game loading properly replaces current state
+    - Test loading game with no unsaved work skips confirmation
+    - Verify modal closes properly in all scenarios
+  - [ ] 7.3 Test analysis mode restrictions (no move input, no saving)
+    - Verify pieces cannot be moved in analysis mode
+    - Test that move input attempts are properly blocked
+    - Confirm save game panel is hidden/disabled
+    - Test that takeback/delete move functions are disabled
+    - Verify analysis mode indicators are clearly visible
+  - [ ] 7.4 Test reset functionality and return to input mode
+    - Test reset board clears loaded game and exits analysis mode
+    - Verify all game state returns to initial empty state
+    - Test that save functionality re-enables after reset
+    - Confirm move input becomes available after reset
+    - Test metadata panel disappears after reset
+  - [ ] 7.5 Test responsive design on mobile and desktop
+    - Test metadata panel layout on various screen sizes
+    - Verify touch interactions work properly on mobile
+    - Test that all text remains readable on small screens
+    - Confirm navigation controls remain accessible
+    - Test layout doesn't break on very wide or narrow screens
+  - [ ] 7.6 Test navigation between analysis and input modes
+    - Test loading game from history activates analysis mode correctly
+    - Test reset returns to input mode with clean state
+    - Test multiple load/reset cycles maintain proper state
+    - Verify browser back/forward buttons work correctly
+    - Test deep linking and URL behavior during mode changes

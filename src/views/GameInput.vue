@@ -6,7 +6,12 @@
     >
       <div class="flex flex-col">
         <div class="flex flex-col items-center">
-          <!-- Top Row: Board Status Panel + Game Save Panel -->
+          <!-- Game Metadata Panel (shown only in analysis mode) -->
+          <div v-if="isAnalysisMode" class="w-full mb-4" style="max-width: 1188px">
+            <GameMetadataPanel />
+          </div>
+
+          <!-- Top Row: Board Status Panel + Game Save Panel / Analysis Mode Label -->
           <div class="flex justify-center w-full mb-2">
             <!-- Left: Board Status Panel - aligned with chess board width -->
             <div class="mr-6" style="width: 820px">
@@ -21,9 +26,17 @@
               />
             </div>
 
-            <!-- Right: Game Save Panel - aligned with Move History width -->
+            <!-- Right: Game Save Panel (hidden in analysis mode) or Analysis Mode Label -->
             <div style="width: 352px">
-              <GameSavePanel @save-game="handleSaveGame" />
+              <div v-if="!isAnalysisMode">
+                <GameSavePanel @save-game="handleSaveGame" />
+              </div>
+              <div v-else>
+                <!-- Analysis Mode Label (positioned above where Move History will be) -->
+                <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium w-fit">
+                  📖 Analysis Mode
+                </div>
+              </div>
             </div>
           </div>
 
@@ -93,6 +106,21 @@
       @cancel="cancelSave"
       :result="gameResult"
     />
+
+    <!-- Game Loading Confirmation Modal -->
+    <Modal
+      v-if="showLoadGameConfirmation"
+      :visible="showLoadGameConfirmation"
+      title="Load Game"
+      :message="`Loading '${pendingGameData?.name}' will replace your current game. Any unsaved changes will be lost. Do you want to continue?`"
+      icon="/src/assets/swap.svg"
+      :showActions="true"
+      confirmText="Load Game"
+      confirmClass="bg-blue-600 hover:bg-blue-700"
+      cancelText="Cancel"
+      @close="closeLoadGameConfirmation"
+      @confirm="handleLoadGameConfirm"
+    />
   </div>
 </template>
 
@@ -105,7 +133,9 @@ import MoveHistoryList from "../components/MoveHistoryList.vue";
 import MoveControlPanel from "../components/MoveControlPanel.vue";
 import BoardStatusPanel from "../components/BoardStatusPanel.vue";
 import GameSavePanel from "../components/GameSavePanel.vue";
+import GameMetadataPanel from "../components/GameMetadataPanel.vue";
 import SaveGameDialog from "../components/SaveGameDialog.vue";
+import Modal from "../components/Modal.vue";
 import { usePositions } from "../composables/usePositions";
 
 // Emits
@@ -123,8 +153,10 @@ const {
   isGameOver,
   isCheckmate,
   isStalemate,
+  isAnalysisMode,
+  hasUnsavedChanges,
 } = storeToRefs(gameStore);
-const { setHeaders, resetGame, takeBackMove } = gameStore;
+const { setHeaders, resetGame, takeBackMove, loadGameFromData } = gameStore;
 
 // Get functions from composables
 const { createGame, error: saveError } = usePositions();
@@ -134,6 +166,10 @@ const currentMoveIndex = ref(-1);
 const viewingPastMove = ref(false);
 const boardComponent = ref(null);
 const showSaveDialog = ref(false);
+
+// Game Loading Confirmation State
+const showLoadGameConfirmation = ref(false);
+const pendingGameData = ref(null);
 
 // Event Handlers
 const handleCurrentMoveIndexChange = (newIndex) => {
@@ -210,6 +246,46 @@ const saveGame = async (gameData) => {
 
 const cancelSave = () => {
   showSaveDialog.value = false;
+};
+
+// Game Loading Logic
+const confirmLoadGame = (gameData) => {
+  // Check if there are unsaved changes
+  if (hasUnsavedChanges.value) {
+    // Store the game data and show confirmation dialog
+    pendingGameData.value = gameData;
+    showLoadGameConfirmation.value = true;
+  } else {
+    // No unsaved changes, load immediately
+    loadGame(gameData);
+  }
+};
+
+const loadGame = (gameData) => {
+  try {
+    console.log("Loading game:", gameData.name);
+    const success = loadGameFromData(gameData);
+    if (success) {
+      emit("show-modal", "Success", `Game "${gameData.name}" loaded successfully!`);
+    } else {
+      emit("show-modal", "Error", "Failed to load game. Please try again.");
+    }
+  } catch (error) {
+    console.error("Error loading game:", error);
+    emit("show-modal", "Error", "An error occurred while loading the game.");
+  }
+};
+
+const handleLoadGameConfirm = () => {
+  if (pendingGameData.value) {
+    loadGame(pendingGameData.value);
+  }
+  closeLoadGameConfirmation();
+};
+
+const closeLoadGameConfirmation = () => {
+  showLoadGameConfirmation.value = false;
+  pendingGameData.value = null;
 };
 
 // Actions passed to children
