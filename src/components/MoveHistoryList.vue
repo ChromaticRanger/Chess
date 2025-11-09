@@ -31,7 +31,7 @@ const chessNotation = useChessNotation();
 const resetModal = reactive({
   visible: false,
   message:
-    "Are you sure you want to reset the board? All move history will be lost.",
+    "Are you sure you want to reset the board? All move history will be lost, and a New Game will be started.",
 });
 
 // Create a formatted move history grouped by move number

@@ -40,6 +40,10 @@ export const useGameStore = defineStore("game", () => {
   const tempBoardState = ref(null);
   const viewingMoveIndex = ref(-1);
 
+  // Track the currently loaded/saved game for incremental updates
+  const currentGameId = ref(null);
+  const currentGameMetadata = ref(null);
+
   // --- Getters ---
   const whiteInCheck = computed(() => {
     const isWhiteTurn = chessInstance.turn() === "w";
@@ -79,6 +83,9 @@ export const useGameStore = defineStore("game", () => {
   const currentFen = computed(() => {
     return tempBoardState.value || fen.value;
   });
+
+  // Check if the current game is a loaded/saved game (for incremental updates)
+  const isLoadedGame = computed(() => currentGameId.value !== null);
 
   // --- Actions ---
 
@@ -226,19 +233,23 @@ export const useGameStore = defineStore("game", () => {
     gameResult.value = "*";
     headers.value = chessInstance.getHeaders();
     isGameSaved.value = true; // Reset is saved
-    
+
     // Clear check status indicators (at starting position, no one is in check)
     whiteKingInCheck.value = false;
     blackKingInCheck.value = false;
-    
+
     // Clear checkmate modal if it was showing
     showCheckmateModal.value = false;
     checkmateModalMessage.value = "";
-    
+
     // Clear temporary board state for viewing past moves
     tempBoardState.value = null;
     viewingMoveIndex.value = -1;
-    
+
+    // Clear saved game tracking (new game, not a loaded one)
+    currentGameId.value = null;
+    currentGameMetadata.value = null;
+
     console.log("Pinia Store: Game reset");
   }
 
@@ -299,7 +310,7 @@ export const useGameStore = defineStore("game", () => {
     boardFlipped.value = flipped;
   }
 
-  function loadPgn(pgnString, initialHeaders = {}) {
+  function loadPgn(pgnString, gameId = null, gameMetadata = null, initialHeaders = {}) {
     try {
       chessInstance.reset();
       chessInstance.loadPgn(pgnString);
@@ -313,6 +324,10 @@ export const useGameStore = defineStore("game", () => {
           chessInstance.setHeader(key, value);
         }
       });
+
+      // Store the game ID and metadata if provided (for incremental updates)
+      currentGameId.value = gameId;
+      currentGameMetadata.value = gameMetadata;
 
       fen.value = chessInstance.fen();
       // Explicitly update the turn after loading a PGN
@@ -590,6 +605,8 @@ export const useGameStore = defineStore("game", () => {
     blackKingInCheck,
     tempBoardState,
     viewingMoveIndex,
+    currentGameId,
+    currentGameMetadata,
     // Getters (Computed)
     currentTurn,
     whiteInCheck,
@@ -600,6 +617,7 @@ export const useGameStore = defineStore("game", () => {
     pgn,
     hasUnsavedChanges,
     currentFen,
+    isLoadedGame,
     // Actions (Functions)
     makeMove,
     resetGame,

@@ -89,6 +89,7 @@
     <SaveGameDialog
       v-if="showSaveDialog"
       :move-history="moveHistory"
+      :existing-game-data="gameStore.currentGameMetadata"
       @save="saveGame"
       @cancel="cancelSave"
       :result="gameResult"
@@ -124,10 +125,11 @@ const {
   isCheckmate,
   isStalemate,
 } = storeToRefs(gameStore);
-const { setHeaders, resetGame, takeBackMove } = gameStore;
+const { setHeaders } = gameStore;
+// Don't destructure resetGame and takeBackMove - call on store directly for proper reactivity
 
 // Get functions from composables
-const { createGame, error: saveError } = usePositions();
+const { createGame, updateGame, error: saveError } = usePositions();
 
 // Local State
 const currentMoveIndex = ref(-1);
@@ -172,7 +174,7 @@ const saveGame = async (gameData) => {
     );
 
     const finalPgn = pgn.value;
-    
+
     // Create the game object to send to the API
     const gameToSave = {
       name: gameData.name,
@@ -189,17 +191,34 @@ const saveGame = async (gameData) => {
       moveHistory: moveHistory.value,
       pgn: finalPgn
     };
-    
-    const result = await createGame(gameToSave);
+
+    let result;
+    const isUpdate = typeof gameStore.currentGameId === 'number' && gameStore.currentGameId > 0;
+
+    if (isUpdate) {
+      // Update existing game
+      result = await updateGame(gameStore.currentGameId, gameToSave);
+      // Update the metadata to reflect the latest saved data
+      gameStore.currentGameMetadata = gameToSave;
+    } else {
+      // Create new game
+      result = await createGame(gameToSave);
+
+      // Store the game ID and metadata for future incremental saves
+      if (result && result.success && result.game && result.game.id) {
+        gameStore.currentGameId = result.game.id;
+        gameStore.currentGameMetadata = gameToSave;
+      }
+    }
 
     if (!result || !result.success) {
       throw new Error(
-        result?.error || saveError.value || "Failed to save game"
+        result?.error || saveError.value || `Failed to ${isUpdate ? 'update' : 'save'} game`
       );
     }
 
     showSaveDialog.value = false;
-    emit("show-modal", "Success", "Game saved successfully!");
+    emit("show-modal", "Success", isUpdate ? "Game updated successfully!" : "Game saved successfully!");
   } catch (error) {
     console.error("Error saving game:", error);
     const errorMessage =
@@ -214,13 +233,13 @@ const cancelSave = () => {
 
 // Actions passed to children
 const handleResetBoard = () => {
-  resetGame();
+  gameStore.resetGame();
   currentMoveIndex.value = -1;
   viewingPastMove.value = false;
 };
 
 const handleTakeBackMove = () => {
-  takeBackMove();
+  gameStore.takeBackMove();
   currentMoveIndex.value = -1;
   viewingPastMove.value = false;
 };

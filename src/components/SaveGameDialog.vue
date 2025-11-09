@@ -3,7 +3,7 @@
     <div class="bg-white rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
       <!-- Header -->
       <div class="flex justify-between items-center p-4 bg-blue-600 text-white rounded-t-md">
-        <h3 class="font-semibold text-lg">Save Game</h3>
+        <h3 class="font-semibold text-lg">{{ isUpdate ? 'Update Game' : 'Save Game' }}</h3>
         <button class="text-2xl leading-none hover:text-gray-300" @click="$emit('cancel')">×</button>
       </div>
       
@@ -178,7 +178,7 @@
             type="submit"
             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
           >
-            Save Game
+            {{ isUpdate ? 'Update Game' : 'Save Game' }}
           </button>
         </div>
       </form>
@@ -187,23 +187,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-
-// Game data model
-const gameData = ref({
-  name: '',
-  date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
-  venue: '',
-  event: '',
-  round: '',
-  whitePlayer: '',
-  whiteRating: '',
-  blackPlayer: '',
-  blackRating: '',
-  description: '',
-  result: '*', // Default to '*' (In Progress)
-  // The move history will be passed in from the parent component
-});
+import { ref, onMounted, computed } from 'vue';
 
 // Emit events for parent component
 const emit = defineEmits(['save', 'cancel']);
@@ -217,7 +201,33 @@ const props = defineProps({
   result: {
     type: String,
     default: '*' // Default prop value to '*'
+  },
+  existingGameData: {
+    type: Object,
+    default: null
   }
+});
+
+// Check if this is an update or new save
+const isUpdate = computed(() => props.existingGameData !== null);
+
+// Game data model - initialize with existing data if available
+const gameData = ref({
+  name: props.existingGameData?.name || '',
+  date: props.existingGameData?.date
+    ? (typeof props.existingGameData.date === 'string'
+        ? props.existingGameData.date.split('T')[0]
+        : new Date(props.existingGameData.date).toISOString().split('T')[0])
+    : new Date().toISOString().split('T')[0],
+  venue: props.existingGameData?.venue || '',
+  event: props.existingGameData?.event || '',
+  round: props.existingGameData?.round || '',
+  whitePlayer: props.existingGameData?.whitePlayer || '',
+  whiteRating: props.existingGameData?.whiteRating || '',
+  blackPlayer: props.existingGameData?.blackPlayer || '',
+  blackRating: props.existingGameData?.blackRating || '',
+  description: props.existingGameData?.description || '',
+  result: props.existingGameData?.result || '*',
 });
 
 // Save the game
@@ -234,21 +244,24 @@ const saveGame = () => {
 
 // Set up default values
 onMounted(() => {
-  // Set the result from props if it's a standard code
-  if (['1-0', '0-1', '1/2-1/2', '*'].includes(props.result)) {
-      gameData.value.result = props.result;
-  } else {
-      // Map descriptive prop values (legacy) to standard codes if necessary
-      // This handles cases where the parent might still send old values initially
-      if (props.result === 'White Win' || props.result === 'Black Resigned') {
-          gameData.value.result = '1-0';
-      } else if (props.result === 'Black Win' || props.result === 'White Resigned') {
-          gameData.value.result = '0-1';
-      } else if (props.result.startsWith('Draw')) {
-          gameData.value.result = '1/2-1/2';
-      } else {
-          gameData.value.result = '*'; // Default fallback
-      }
+  // Only update result from props if not already set from existingGameData
+  if (!props.existingGameData) {
+    // Set the result from props if it's a standard code
+    if (['1-0', '0-1', '1/2-1/2', '*'].includes(props.result)) {
+        gameData.value.result = props.result;
+    } else {
+        // Map descriptive prop values (legacy) to standard codes if necessary
+        // This handles cases where the parent might still send old values initially
+        if (props.result === 'White Win' || props.result === 'Black Resigned') {
+            gameData.value.result = '1-0';
+        } else if (props.result === 'Black Win' || props.result === 'White Resigned') {
+            gameData.value.result = '0-1';
+        } else if (props.result.startsWith('Draw')) {
+            gameData.value.result = '1/2-1/2';
+        } else {
+            gameData.value.result = '*'; // Default fallback
+        }
+    }
   }
 });
 </script>

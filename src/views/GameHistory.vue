@@ -198,9 +198,24 @@ const loadGame = (game) => {
       BlackElo: game.blackRating || '',
     };
 
-    // Load the PGN into the game store
+    // Prepare game metadata for incremental updates
+    const gameMetadata = {
+      name: game.name,
+      description: game.description,
+      event: game.event,
+      venue: game.venue,
+      date: game.date,
+      round: game.round,
+      whitePlayer: game.whitePlayer,
+      whiteRating: game.whiteRating,
+      blackPlayer: game.blackPlayer,
+      blackRating: game.blackRating,
+      result: game.result,
+    };
+
+    // Load the PGN into the game store with game ID and metadata
     if (game.pgn) {
-      gameStore.loadPgn(game.pgn, headers);
+      gameStore.loadPgn(game.pgn, game.id, gameMetadata, headers);
     } else {
       // If no PGN is available, reset the game and just set headers
       gameStore.resetGame();
