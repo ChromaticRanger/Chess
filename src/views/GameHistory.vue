@@ -143,10 +143,12 @@
 import { ref, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePositions } from '../composables/usePositions';
+import { useGameStore } from '../stores/game';
 import Modal from '../components/Modal.vue';
 
 const router = useRouter();
 const { games, isLoading, fetchGames, deleteGame } = usePositions();
+const gameStore = useGameStore();
 
 // Delete confirmation modal state
 const deleteModal = reactive({
@@ -181,8 +183,37 @@ const formatDate = (dateString, dateOnly = false) => {
 // Load a game
 const loadGame = (game) => {
   console.log('Loading game:', game);
-  // TODO: Implement game loading logic
-  router.push('/game-input');
+
+  try {
+    // Prepare headers from game metadata
+    const headers = {
+      Event: game.event || '',
+      Site: game.venue || '',
+      Date: game.date ? new Date(game.date).toISOString().split('T')[0].replace(/-/g, '.') : '',
+      Round: game.round || '',
+      White: game.whitePlayer || '',
+      Black: game.blackPlayer || '',
+      Result: game.result || '*',
+      WhiteElo: game.whiteRating || '',
+      BlackElo: game.blackRating || '',
+    };
+
+    // Load the PGN into the game store
+    if (game.pgn) {
+      gameStore.loadPgn(game.pgn, headers);
+    } else {
+      // If no PGN is available, reset the game and just set headers
+      gameStore.resetGame();
+      gameStore.setHeaders(headers);
+    }
+
+    // Navigate to the game board
+    router.push('/game-input');
+  } catch (error) {
+    console.error('Error loading game:', error);
+    // Still navigate to the board even if loading fails
+    router.push('/game-input');
+  }
 };
 
 // Open delete confirmation modal
