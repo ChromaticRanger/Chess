@@ -1,10 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" @click.self="$emit('cancel')">
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
     <div class="bg-white rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
       <!-- Header -->
       <div class="flex justify-between items-center p-4 bg-blue-600 text-white rounded-t-md">
         <h3 class="font-semibold text-lg">{{ isUpdate ? 'Update Game' : 'Save Game' }}</h3>
-        <button class="text-2xl leading-none hover:text-gray-300" @click="$emit('cancel')">×</button>
       </div>
       
       <!-- Form content -->

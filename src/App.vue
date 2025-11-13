@@ -5,11 +5,15 @@ import Modal from "./components/Modal.vue";
 import AuthPage from "./components/AuthPage.vue";
 import SaveGameDialog from "./components/SaveGameDialog.vue"; // Import SaveGameDialog
 import { useAuth } from "./composables/useAuth";
+import { useGameStore } from "./stores/game"; // Import game store
+import { usePositions } from "./composables/usePositions"; // Import usePositions for game saving
 
 // Router and Auth state
 const router = useRouter();
 const { isAuthenticated, user, logout } = useAuth();
 const isAuthenticatedUser = ref(isAuthenticated.value);
+const gameStore = useGameStore(); // Initialize game store
+const { createGame, updateGame } = usePositions(); // Initialize positions API
 
 // Modal state
 const modalVisible = ref(false);
@@ -36,35 +40,116 @@ const hideModal = () => {
 // Handler for authentication success
 const handleAuthSuccess = () => {
   isAuthenticatedUser.value = true;
+  // Clear any previous game state to ensure clean board for new user
+  gameStore.resetGame();
   // Navigate to the game input page after successful authentication
   router.push('/game-input');
 };
 
 // Handler for logout
 const handleLogout = async () => {
-  const result = await logout(); // Call the modified logout function
-
-  if (result.showSaveDialog) {
-    // If the logout function indicates the save dialog should be shown
+  // Check if there are unsaved changes in the game
+  if (gameStore.hasUnsavedChanges) {
+    // Show save dialog if there are unsaved changes
     showSaveGameDialog.value = true;
-  } else if (result.loggedOut) {
-    // If logout proceeded (no game or user chose not to save)
-    isAuthenticatedUser.value = false;
-    // Navigation is handled within useAuth's logout
+  } else {
+    // No unsaved changes, proceed with logout
+    gameStore.resetGame(); // Clear game state
+    const result = await logout();
+    if (result.loggedOut) {
+      isAuthenticatedUser.value = false;
+    }
   }
 };
 
-// Handler for when the Save Game Dialog is closed
-const handleSaveDialogClose = async (saved) => {
+// Handler for saving game before logout
+const handleSaveBeforeLogout = async (gameData) => {
+  try {
+    // Set headers in the game store
+    gameStore.setHeaders(
+      "Event",
+      gameData.event || "?",
+      "Site",
+      gameData.venue || "?",
+      "Date",
+      gameData.date
+        ? new Date(gameData.date).toISOString().split("T")[0].replace(/-/g, ".")
+        : "????.??.??",
+      "Round",
+      gameData.round || "?",
+      "White",
+      gameData.whitePlayer || "?",
+      "Black",
+      gameData.blackPlayer || "?",
+      "Result",
+      gameData.result || "*",
+      "WhiteElo",
+      gameData.whiteRating || "?",
+      "BlackElo",
+      gameData.blackRating || "?"
+    );
+
+    // Create the game object to send to the API
+    const gameToSave = {
+      name: gameData.name,
+      description: gameData.description || "",
+      date: gameData.date,
+      venue: gameData.venue,
+      event: gameData.event,
+      round: gameData.round,
+      whitePlayer: gameData.whitePlayer,
+      whiteRating: gameData.whiteRating,
+      blackPlayer: gameData.blackPlayer,
+      blackRating: gameData.blackRating,
+      result: gameData.result,
+      moveHistory: gameStore.moveHistory,
+      pgn: gameStore.pgn
+    };
+
+    // Determine if this is an update or new save
+    const isUpdate = typeof gameStore.currentGameId === 'number' && gameStore.currentGameId > 0;
+
+    let result;
+    if (isUpdate) {
+      result = await updateGame(gameStore.currentGameId, gameToSave);
+      gameStore.currentGameMetadata = gameToSave;
+    } else {
+      result = await createGame(gameToSave);
+      if (result && result.success && result.game && result.game.id) {
+        gameStore.currentGameId = result.game.id;
+        gameStore.currentGameMetadata = gameToSave;
+      }
+    }
+
+    if (result && result.success) {
+      gameStore.markGameAsSaved();
+      showModal("Success", "Game saved successfully!");
+    } else {
+      showModal("Error", result?.error || "Failed to save game");
+    }
+  } catch (error) {
+    console.error("Error saving game before logout:", error);
+    showModal("Error", "An error occurred while saving the game");
+  } finally {
+    // Close dialog and proceed with logout regardless of save result
+    showSaveGameDialog.value = false;
+    gameStore.resetGame();
+    const logoutResult = await logout();
+    if (logoutResult.loggedOut) {
+      isAuthenticatedUser.value = false;
+    }
+  }
+};
+
+// Handler for canceling save before logout
+const handleCancelSave = async () => {
   showSaveGameDialog.value = false;
-  // Whether saved or cancelled, proceed with the actual logout process now
-  // The game state should be handled (saved or reset) by now.
-  const result = await logout(); // Call logout again to finalize
+  // User chose not to save, clear the game state and proceed with logout
+  gameStore.resetGame();
+  const result = await logout();
   if (result.loggedOut) {
     isAuthenticatedUser.value = false;
   }
-  // If saving failed within the dialog, the user might still be logged in,
-  // but the dialog is closed. Consider if additional error handling is needed here.
 };
 
 // Handle profile picture loading errors
@@ -168,7 +253,14 @@ onMounted(() => {
     />
 
     <!-- Save Game Dialog Component -->
-    <SaveGameDialog v-if="showSaveGameDialog" @close="handleSaveDialogClose" />
+    <SaveGameDialog
+      v-if="showSaveGameDialog"
+      :move-history="gameStore.moveHistory"
+      :existing-game-data="gameStore.currentGameMetadata"
+      :result="gameStore.gameResult"
+      @save="handleSaveBeforeLogout"
+      @cancel="handleCancelSave"
+    />
   </div>
 </template>
 
