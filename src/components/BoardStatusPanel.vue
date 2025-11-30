@@ -134,7 +134,7 @@ const materialAdvantage = computed(() => {
             <img
               :src="getPieceImagePath(piece.type, piece.color)"
               :alt="`${piece.color} ${piece.type}`"
-              class="w-7 h-7 -mr-1"
+              class="captured-piece-img -mr-1"
             />
           </div>
         </div>
@@ -217,6 +217,17 @@ const materialAdvantage = computed(() => {
 </template>
 
 <style scoped>
+/* Mobile-first: Compact layout */
+.board-status-panel {
+  padding: 0.5rem;
+  min-height: 40px;
+}
+
+.captured-piece-img {
+  width: 24px;
+  height: 24px;
+}
+
 .control-button {
   @apply p-2 rounded-md bg-gray-200 hover:bg-gray-300 transition-colors;
 }
@@ -225,7 +236,16 @@ const materialAdvantage = computed(() => {
   @apply opacity-50 cursor-not-allowed hover:bg-gray-200;
 }
 
-.chess-width {
-  width: 820px; /* 800px for the board + 20px for the borders */
+/* Desktop (≥ 1000px) */
+@media (min-width: 1000px) {
+  .board-status-panel {
+    padding: 0.5rem;
+    min-height: 58px;
+  }
+
+  .captured-piece-img {
+    width: 28px;
+    height: 28px;
+  }
 }
 </style>

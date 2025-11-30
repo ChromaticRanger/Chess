@@ -57,23 +57,24 @@ const squareClasses = computed(() => {
 
 <style scoped>
 .square {
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
   position: relative;
 }
 .label {
   position: absolute;
-  font-size: 14px;
+  font-size: clamp(10px, 1.4vw, 14px);
   color: rgba(0, 0, 0, 1);
   pointer-events: none;
 }
 .top-left {
-  top: 3px;
-  left: 3px;
+  top: 0.3em;
+  left: 0.3em;
 }
 .bottom-right {
-  bottom: 0px;
-  right: 3px;
+  bottom: 0;
+  right: 0.3em;
 }
 .black {
   background-color: #769656;
@@ -82,20 +83,21 @@ const squareClasses = computed(() => {
   background-color: #eeeed2;
 }
 .selected {
-  border: 4px solid yellow; /* Highlight the selected square */
+  border: clamp(2px, 0.4vw, 4px) solid yellow; /* Highlight the selected square */
 }
 .valid-move-circle {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 20px;
-  height: 20px;
+  width: min(20px, 20%);
+  height: min(20px, 20%);
+  aspect-ratio: 1;
   background-color: rgba(0, 255, 0, 0.8); /* Green color with transparency */
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none; /* Ensure the circle does not interfere with mouse events */
 }
 .inCheck {
-  border: 4px solid red; /* Highlight the square if it is in check */
+  border: clamp(2px, 0.4vw, 4px) solid red; /* Highlight the square if it is in check */
 }
 </style>

@@ -149,8 +149,9 @@ const handleMouseUp = async (event) => {
   const boardRect = boardElement.getBoundingClientRect();
   offsetX.value = boardRect.left;
   offsetY.value = boardRect.top;
-  let visualRow = Math.floor((event.clientY - offsetY.value) / 100);
-  let visualCol = Math.floor((event.clientX - offsetX.value) / 100);
+  const squareSize = boardRect.width / 8;
+  let visualRow = Math.floor((event.clientY - offsetY.value) / squareSize);
+  let visualCol = Math.floor((event.clientX - offsetX.value) / squareSize);
 
   visualRow = Math.max(0, Math.min(7, visualRow));
   visualCol = Math.max(0, Math.min(7, visualCol));
@@ -442,25 +443,29 @@ defineExpose({
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(8, 1fr);
-  width: 800px;
-  height: 800px;
+  aspect-ratio: 1;
+  /* Mobile-first: Fill container, let parent control sizing */
+  width: 100%;
+  max-width: 500px;
+  max-height: 500px;
 }
 
 .flip-board-button {
   position: absolute;
-  left: -60px;
-  top: 50%;
-  transform: translateY(-50%);
   background-color: transparent;
   border-radius: 5px;
-  width: 50px;
-  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: transform 0.2s;
   z-index: 10;
+  /* Always position on left edge of board with fixed gap */
+  left: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
 }
 
 .flip-board-button:hover {
@@ -468,7 +473,27 @@ defineExpose({
 }
 
 .flip-board-button img {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
+}
+
+/* Tablet and Desktop (≥ 1000px) */
+@media (min-width: 1000px) {
+  .chessboard {
+    width: min(800px, 90vh, calc(100vw - 450px));
+    height: min(800px, 90vh, calc(100vw - 450px));
+    max-width: none;
+    max-height: none;
+  }
+
+  .flip-board-button {
+    width: clamp(40px, 5vw, 50px);
+    height: clamp(40px, 5vw, 50px);
+  }
+
+  .flip-board-button img {
+    width: 32px;
+    height: 32px;
+  }
 }
 </style>
