@@ -383,14 +383,6 @@ defineExpose({
 <template>
   <div>
     <div class="chessboard-container">
-      <div
-        class="flip-board-button"
-        @click="internalFlipBoard"
-        title="Flip board orientation"
-      >
-        <img src="/src/assets/swap.svg" alt="Flip Board" />
-      </div>
-
       <div class="chessboard" @mouseup="handleMouseUp">
         <Square
           v-for="(square, index) in squares"
@@ -450,33 +442,6 @@ defineExpose({
   max-height: 500px;
 }
 
-.flip-board-button {
-  position: absolute;
-  background-color: transparent;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s;
-  z-index: 10;
-  /* Always position on left edge of board with fixed gap */
-  left: -60px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
-}
-
-.flip-board-button:hover {
-  transform: translateY(-50%) scale(1.1);
-}
-
-.flip-board-button img {
-  width: 28px;
-  height: 28px;
-}
-
 /* Tablet and Desktop (≥ 1000px) */
 @media (min-width: 1000px) {
   .chessboard {
@@ -484,16 +449,6 @@ defineExpose({
     height: min(800px, 90vh, calc(100vw - 450px));
     max-width: none;
     max-height: none;
-  }
-
-  .flip-board-button {
-    width: clamp(40px, 5vw, 50px);
-    height: clamp(40px, 5vw, 50px);
-  }
-
-  .flip-board-button img {
-    width: 32px;
-    height: 32px;
   }
 }
 </style>
