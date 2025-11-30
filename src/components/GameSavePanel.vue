@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import disketteSvg from '/src/assets/diskette.svg';
+import swapSvg from '/src/assets/swap.svg';
 import { useAuth } from '../composables/useAuth';
 
 // Get auth state
@@ -12,18 +13,32 @@ const props = defineProps({
 });
 
 // Define emits
-const emit = defineEmits(['save-game']);
+const emit = defineEmits(['save-game', 'flip-board']);
 
 // Handle save game button click
 const handleSaveGame = () => {
   emit('save-game');
+};
+
+// Handle flip board button click
+const handleFlipBoard = () => {
+  emit('flip-board');
 };
 </script>
 
 <template>
   <div class="game-save-panel">
     <div class="save-panel-container">
-      <div class="text-lg font-semibold ml-2"></div>
+      <div class="flex">
+        <!-- Flip board button -->
+        <button
+          @click="handleFlipBoard"
+          class="control-button"
+          title="Flip board orientation"
+        >
+          <img :src="swapSvg" alt="Flip Board" class="control-icon" />
+        </button>
+      </div>
 
       <div class="flex">
         <!-- Save button -->
@@ -32,7 +47,7 @@ const handleSaveGame = () => {
           class="control-button"
           title="Save game"
         >
-          <img :src="disketteSvg" alt="Save Game" class="save-icon" />
+          <img :src="disketteSvg" alt="Save Game" class="control-icon" />
         </button>
       </div>
     </div>
@@ -60,7 +75,7 @@ const handleSaveGame = () => {
   @apply opacity-50 cursor-not-allowed hover:bg-gray-200;
 }
 
-.save-icon {
+.control-icon {
   width: 24px;
   height: 24px;
 }
@@ -77,7 +92,7 @@ const handleSaveGame = () => {
     min-height: auto;
   }
 
-  .save-icon {
+  .control-icon {
     width: 24px;
     height: 24px;
   }

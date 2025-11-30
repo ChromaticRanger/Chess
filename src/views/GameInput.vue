@@ -8,7 +8,7 @@
         <div class="game-container game-layout">
           <!-- Game Save Panel -->
           <div class="panel-save">
-            <GameSavePanel @save-game="handleSaveGame" />
+            <GameSavePanel @save-game="handleSaveGame" @flip-board="handleFlipBoard" />
           </div>
 
           <!-- Top Board Status Panel (black side) -->
@@ -231,6 +231,12 @@ const handleTakeBackMove = () => {
   gameStore.takeBackMove();
   currentMoveIndex.value = -1;
   viewingPastMove.value = false;
+};
+
+const handleFlipBoard = () => {
+  if (boardComponent.value) {
+    boardComponent.value.flipBoard();
+  }
 };
 
 const handleMoveSelection = (index) => {
