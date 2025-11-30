@@ -182,7 +182,7 @@ onUpdated(() => {
 <template>
   <div
     ref="moveHistoryPanel"
-    class="w-88 h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md"
+    class="w-full h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md"
   >
     <div
       class="flex justify-between items-center p-3 bg-blue-600 text-white font-semibold sticky top-0 z-20"
@@ -314,8 +314,11 @@ onUpdated(() => {
 </template>
 
 <style scoped>
+/* Mobile-first: Flexible height */
 .h-chess-board {
-  height: 820px; /* Match chessboard height + border (800px + 20px) */
+  height: auto;
+  max-height: 40vh;
+  min-height: 200px;
 }
 
 .reset-button {
@@ -328,5 +331,14 @@ onUpdated(() => {
 
 .invert {
   filter: invert(1);
+}
+
+/* Desktop (≥ 1000px) */
+@media (min-width: 1000px) {
+  .h-chess-board {
+    height: calc(min(800px, 90vh, calc(100vw - 450px)) + 20px);
+    max-height: none;
+    min-height: auto;
+  }
 }
 </style>

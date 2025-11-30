@@ -123,9 +123,10 @@ export function useAuth() {
       return { success: true, user: user.value };
     } catch (err) {
       console.error("Fetch user error:", err);
-      // If unauthorized, clear token
+      // If unauthorized, clear token silently (don't show error to user)
       if (err.response?.status === 401) {
         logout();
+        return { success: false };
       }
       error.value = err.response?.data?.error || "Failed to fetch user data";
       return { success: false, error: error.value };

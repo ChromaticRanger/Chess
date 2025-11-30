@@ -274,4 +274,39 @@ onMounted(() => {
 .w-120 {
   width: 30rem; /* 480px */
 }
+
+/* Mobile-responsive header and navigation */
+@media (max-width: 999px) {
+  header {
+    padding: 0.75rem;
+  }
+
+  header h1 {
+    font-size: 0.875rem;
+    padding-left: 0.25rem;
+  }
+
+  header img {
+    width: 28px;
+    height: 28px;
+  }
+
+  header span {
+    font-size: 0.875rem;
+    margin-right: 0.5rem;
+  }
+
+  header button {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  nav {
+    font-size: 0.875rem;
+  }
+
+  nav a {
+    padding: 0.5rem 0.75rem;
+  }
+}
 </style>

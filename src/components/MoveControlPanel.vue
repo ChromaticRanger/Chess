@@ -245,8 +245,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="move-control-panel flex justify-between items-center bg-gray-100 border border-gray-300 p-2 rounded-md"
-    style="height: 58px"
+    class="move-control-panel flex justify-between items-center bg-gray-100 border border-gray-300 p-2 rounded-md w-full"
   >
     <button
       @click="goToFirstMove"
@@ -254,7 +253,7 @@ onUnmounted(() => {
       :disabled="!canGoToFirstMove()"
       title="Go to start"
     >
-      <img :src="firstSvg" alt="First Move" class="w-6 h-6" />
+      <img :src="firstSvg" alt="First Move" />
     </button>
 
     <button
@@ -263,7 +262,7 @@ onUnmounted(() => {
       :disabled="!canGoBack()"
       title="Go to previous move"
     >
-      <img :src="previousSvg" alt="Previous Move" class="w-6 h-6" />
+      <img :src="previousSvg" alt="Previous Move" />
     </button>
 
     <button
@@ -275,7 +274,6 @@ onUnmounted(() => {
       <img
         :src="isPlaying ? pauseSvg : playSvg"
         :alt="isPlaying ? 'Pause' : 'Play'"
-        class="w-6 h-6"
       />
     </button>
 
@@ -285,7 +283,7 @@ onUnmounted(() => {
       :disabled="!canGoForward()"
       title="Go to next move"
     >
-      <img :src="nextSvg" alt="Next Move" class="w-6 h-6" />
+      <img :src="nextSvg" alt="Next Move" />
     </button>
 
     <button
@@ -294,22 +292,51 @@ onUnmounted(() => {
       :disabled="!canGoToLastMove()"
       title="Go to last move"
     >
-      <img :src="lastSvg" alt="Last Move" class="w-6 h-6" />
+      <img :src="lastSvg" alt="Last Move" />
     </button>
   </div>
 </template>
 
 <style scoped>
+.move-control-panel {
+  gap: 0.25rem;
+}
+
+/* Mobile-first: Touch-friendly buttons */
 .control-button {
-  @apply p-2 rounded-md bg-gray-200 hover:bg-gray-300 transition-colors;
+  @apply rounded-md bg-gray-200 hover:bg-gray-300 transition-colors;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .control-button:disabled {
   @apply opacity-50 cursor-not-allowed hover:bg-gray-200;
 }
 
-/* Match the width of the MoveHistoryList component */
-.w-88 {
-  width: 22rem; /* 352px */
+.control-button img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Desktop (≥ 1000px) */
+@media (min-width: 1000px) {
+  .move-control-panel {
+    gap: 0;
+  }
+
+  .control-button {
+    min-width: auto;
+    min-height: auto;
+    padding: 0.5rem;
+  }
+
+  .control-button img {
+    width: clamp(20px, 2vw, 24px);
+    height: clamp(20px, 2vw, 24px);
+  }
 }
 </style>

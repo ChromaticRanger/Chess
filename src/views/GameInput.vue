@@ -5,81 +5,70 @@
       style="min-height: calc(100vh - 160px)"
     >
       <div class="flex flex-col">
-        <div class="flex flex-col items-center">
-          <!-- Top Row: Board Status Panel + Game Save Panel -->
-          <div class="flex justify-center w-full mb-2">
-            <!-- Left: Board Status Panel - aligned with chess board width -->
-            <div class="mr-6" style="width: 820px">
-              <BoardStatusPanel
-                :current-turn="currentTurn"
-                :viewing-past-move="viewingPastMove"
-                :captured-pieces="capturedPieces"
-                :current-move-index="currentMoveIndex"
-                :board-flipped="boardFlipped"
-                position="top"
-                class="w-full"
-              />
-            </div>
+        <div class="game-container game-layout">
+          <!-- Game Save Panel -->
+          <div class="panel-save">
+            <GameSavePanel @save-game="handleSaveGame" />
+          </div>
 
-            <!-- Right: Game Save Panel - aligned with Move History width -->
-            <div style="width: 352px">
-              <GameSavePanel @save-game="handleSaveGame" />
+          <!-- Top Board Status Panel (black side) -->
+          <div class="panel-status-top">
+            <BoardStatusPanel
+              :current-turn="currentTurn"
+              :viewing-past-move="viewingPastMove"
+              :captured-pieces="capturedPieces"
+              :current-move-index="currentMoveIndex"
+              :board-flipped="boardFlipped"
+              position="top"
+              class="w-full"
+            />
+          </div>
+
+          <!-- Chess Board -->
+          <div class="panel-board">
+            <div class="board-border">
+              <Board
+                ref="boardComponent"
+                @current-move-index-changed="handleCurrentMoveIndexChange"
+              />
             </div>
           </div>
 
-          <!-- Middle Row: Game Board + Move History -->
-          <div class="flex justify-center w-full">
-            <div class="flex">
-              <!-- Chess Board Section -->
-              <div class="mr-6" style="width: 820px">
-                <div class="border-blue-600 border-10 rounded shadow-md">
-                  <Board
-                    ref="boardComponent"
-                    @current-move-index-changed="handleCurrentMoveIndexChange"
-                  />
-                </div>
-              </div>
-
-              <!-- Move History Component -->
-              <div style="width: 352px">
-                <MoveHistoryList
-                  :move-history="moveHistory"
-                  :current-move-index="currentMoveIndex"
-                  @move-selected="handleMoveSelection"
-                  @reset-board="handleResetBoard"
-                  @take-back-move="handleTakeBackMove"
-                />
-              </div>
-            </div>
+          <!-- Bottom Board Status Panel (white side) -->
+          <div class="panel-status-bottom">
+            <BoardStatusPanel
+              :current-turn="currentTurn"
+              :viewing-past-move="viewingPastMove"
+              :captured-pieces="capturedPieces"
+              :current-move-index="currentMoveIndex"
+              :board-flipped="boardFlipped"
+              position="bottom"
+              class="w-full"
+            />
           </div>
 
-          <!-- Bottom Row: Board Status Panel + Move Control Panel -->
-          <div class="flex justify-center w-full mt-2">
-            <div class="flex">
-              <!-- Bottom Board Status Panel - aligned with chess board width -->
-              <BoardStatusPanel
-                :current-turn="currentTurn"
-                :viewing-past-move="viewingPastMove"
-                :captured-pieces="capturedPieces"
-                :current-move-index="currentMoveIndex"
-                :board-flipped="boardFlipped"
-                position="bottom"
-                style="width: 820px"
-                class="mr-6"
-              />
+          <!-- Move History -->
+          <div class="panel-history">
+            <MoveHistoryList
+              :move-history="moveHistory"
+              :current-move-index="currentMoveIndex"
+              @move-selected="handleMoveSelection"
+              @reset-board="handleResetBoard"
+              @take-back-move="handleTakeBackMove"
+            />
+          </div>
 
-              <!-- Move Control Panel - aligned with Move History List width -->
-              <MoveControlPanel
-                :move-history="moveHistory"
-                :current-move-index="currentMoveIndex"
-                @move-to-first="handleMoveSelection(0)"
-                @move-to-previous="handlePreviousMove"
-                @move-to-next="handleNextMove"
-                @move-to-last="handleMoveSelection(-1)"
-                @take-back-move="handleTakeBackMove"
-                style="width: 352px"
-              />
-            </div>
+          <!-- Move Control Panel -->
+          <div class="panel-controls">
+            <MoveControlPanel
+              :move-history="moveHistory"
+              :current-move-index="currentMoveIndex"
+              @move-to-first="handleMoveSelection(0)"
+              @move-to-previous="handlePreviousMove"
+              @move-to-next="handleNextMove"
+              @move-to-last="handleMoveSelection(-1)"
+              @take-back-move="handleTakeBackMove"
+            />
           </div>
         </div>
       </div>
@@ -293,17 +282,109 @@ const handleNextMove = () => {
 </script>
 
 <style scoped>
-.border-blue-600 {
-  border: 10px solid #2563eb; /* TailwindCSS blue-600 */
+/* Mobile-first approach */
+.game-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 8px;
 }
-.border-10 {
-  border-width: 10px;
+
+/* Mobile: Flexbox column layout with order */
+.game-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
-.w-120 {
-  width: 30rem; /* 480px */
+
+/* Mobile order - DOM order is: save, status-top, board, status-bottom, history, controls */
+/* Desired mobile order: save(1), status-top(2), board(3), status-bottom(4), history(5), controls(6) */
+.panel-save { order: 1; }
+.panel-status-top { order: 2; }
+.panel-board { order: 3; }
+.panel-status-bottom { order: 4; }
+.panel-history { order: 5; }
+.panel-controls { order: 6; }
+
+/* Mobile: Viewport-based width with padding, max 508px */
+.panel-save,
+.panel-status-top,
+.panel-status-bottom,
+.panel-history,
+.panel-controls {
+  width: calc(100vw - 24px);  /* 12px padding each side */
+  max-width: 508px;
+}
+
+.panel-board {
+  width: calc(100vw - 24px);  /* 12px padding each side */
+  max-width: 508px;
+}
+
+.board-border {
+  border: 4px solid #2563eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .game-input-view {
-  padding-top: 2rem;
+  padding-top: 0.5rem;
+}
+
+/* Tablet and Desktop (≥ 1000px) */
+@media (min-width: 1000px) {
+  .game-container {
+    padding: 0 1rem;
+  }
+
+  /* Desktop: CSS Grid with 2 columns, 3 rows */
+  .game-layout {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto auto;
+    gap: 1.5rem 1.5rem;
+    justify-content: center;
+  }
+
+  /* Reset order for grid placement */
+  .panel-save,
+  .panel-status-top,
+  .panel-board,
+  .panel-status-bottom,
+  .panel-history,
+  .panel-controls {
+    order: 0;
+  }
+
+  /* Grid placement: Left column = board-related, Right column = side panels */
+  .panel-status-top { grid-column: 1; grid-row: 1; }
+  .panel-save { grid-column: 2; grid-row: 1; }
+  .panel-board { grid-column: 1; grid-row: 2; }
+  .panel-history { grid-column: 2; grid-row: 2; }
+  .panel-status-bottom { grid-column: 1; grid-row: 3; }
+  .panel-controls { grid-column: 2; grid-row: 3; }
+
+  /* Desktop widths */
+  .panel-status-top,
+  .panel-board,
+  .panel-status-bottom {
+    width: calc(min(800px, 90vh, calc(100vw - 450px)) + 20px);
+    max-width: none;
+  }
+
+  .panel-save,
+  .panel-history,
+  .panel-controls {
+    width: calc(min(800px, 90vh, calc(100vw - 450px)) * 0.43);
+    max-width: none;
+  }
+
+  .board-border {
+    border: clamp(6px, 1vw, 10px) solid #2563eb;
+  }
+
+  .game-input-view {
+    padding-top: 2rem;
+  }
 }
 </style>
