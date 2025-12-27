@@ -213,9 +213,9 @@ const loadGame = (game) => {
       result: game.result,
     };
 
-    // Load the PGN into the game store with game ID and metadata
+    // Load the PGN into the game store with game ID and metadata (including saved moveHistory for annotations)
     if (game.pgn) {
-      gameStore.loadPgn(game.pgn, game.id, gameMetadata, headers);
+      gameStore.loadPgn(game.pgn, game.id, gameMetadata, headers, game.moveHistory);
     } else {
       // If no PGN is available, reset the game and just set headers
       gameStore.resetGame();

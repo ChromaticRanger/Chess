@@ -86,6 +86,12 @@ const returnPiece = (piece) => {
 };
 
 const handleMouseDown = (piece, event) => {
+  event.preventDefault();
+
+  // Initialize mouse position for accurate drag delta calculation
+  mouseX.value = event.clientX;
+  mouseY.value = event.clientY;
+
   if (showPromotion.value || viewingPastMove.value || isGameOver.value) {
     return;
   }
@@ -299,7 +305,7 @@ const restoreBoardStateToMove = (index) => {
 };
 
 onMounted(() => {
-  window.addEventListener("mousemove", handleMouseMove);
+  window.addEventListener("pointermove", handleMouseMove);
 
   nextTick(() => {
     const boardElement = document.querySelector(".chessboard");
@@ -312,7 +318,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("mousemove", handleMouseMove);
+  window.removeEventListener("pointermove", handleMouseMove);
 });
 
 const flipCoordinate = (coord) => {
@@ -383,7 +389,7 @@ defineExpose({
 <template>
   <div>
     <div class="chessboard-container">
-      <div class="chessboard" @mouseup="handleMouseUp">
+      <div class="chessboard" @pointerup="handleMouseUp" @contextmenu.prevent>
         <Square
           v-for="(square, index) in squares"
           :key="`${square.row}-${square.col}`"
@@ -396,7 +402,7 @@ defineExpose({
           :selected="square.selected"
           :validMove="square.validMove && !viewingPastMove && !isGameOver"
           :inCheck="square.inCheck"
-          @mousedown="square.piece && handleMouseDown(square.piece, $event)"
+          @pointerdown="square.piece && handleMouseDown(square.piece, $event)"
         />
       </div>
 
@@ -440,6 +446,7 @@ defineExpose({
   width: 100%;
   max-width: 500px;
   max-height: 500px;
+  touch-action: none;
 }
 
 /* Tablet and Desktop (≥ 1000px) */

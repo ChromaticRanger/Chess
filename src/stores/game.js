@@ -310,7 +310,7 @@ export const useGameStore = defineStore("game", () => {
     boardFlipped.value = flipped;
   }
 
-  function loadPgn(pgnString, gameId = null, gameMetadata = null, initialHeaders = {}) {
+  function loadPgn(pgnString, gameId = null, gameMetadata = null, initialHeaders = {}, savedMoveHistory = null) {
     try {
       chessInstance.reset();
       chessInstance.loadPgn(pgnString);
@@ -383,6 +383,16 @@ export const useGameStore = defineStore("game", () => {
           );
         }
       });
+
+      // Merge annotations from savedMoveHistory if provided
+      if (savedMoveHistory && Array.isArray(savedMoveHistory)) {
+        rebuiltHistory.forEach((move, index) => {
+          if (savedMoveHistory[index]?.annotation) {
+            move.annotation = savedMoveHistory[index].annotation;
+          }
+        });
+      }
+
       moveHistory.value = rebuiltHistory;
 
       rebuildCapturedPieces();
@@ -589,6 +599,23 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
+  /**
+   * Update the annotation for a specific move
+   * @param {Number} moveIndex The 1-based move index (matches getWhiteMoveIndex/getBlackMoveIndex)
+   * @param {String} annotation The annotation text to save
+   */
+  function updateMoveAnnotation(moveIndex, annotation) {
+    // Convert from 1-based index to 0-based array index
+    const arrayIndex = moveIndex - 1;
+    if (arrayIndex >= 0 && arrayIndex < moveHistory.value.length) {
+      moveHistory.value[arrayIndex].annotation = annotation;
+      isGameSaved.value = false; // Mark as unsaved since annotation changed
+      console.log(`Updated annotation for move ${moveIndex}:`, annotation);
+    } else {
+      console.warn(`Invalid move index for annotation: ${moveIndex}`);
+    }
+  }
+
   return {
     // State (Refs)
     fen,
@@ -631,5 +658,6 @@ export const useGameStore = defineStore("game", () => {
     closeLogoutConfirmModal,
     closeCheckmateModal,
     viewMoveAtIndex,
+    updateMoveAnnotation,
   };
 });
