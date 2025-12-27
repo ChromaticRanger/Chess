@@ -4,6 +4,7 @@ import { getPieceImagePath } from "../utils/PieceFactory";
 import useChessNotation from "../composables/useChessNotation";
 import resetSvg from "/src/assets/reset.svg";
 import deleteSvg from "/src/assets/delete.svg";
+import noteSvg from "/src/assets/note.svg";
 import Modal from "./Modal.vue";
 
 const props = defineProps({
@@ -18,8 +19,8 @@ const props = defineProps({
   },
 });
 
-// Define emits for when a move is selected, reset is requested, or a move is taken back
-const emit = defineEmits(["move-selected", "reset-board", "take-back-move"]);
+// Define emits for when a move is selected, reset is requested, move is taken back, or annotation editor opened
+const emit = defineEmits(["move-selected", "reset-board", "take-back-move", "open-annotation"]);
 
 // Reference to the move history panel
 const moveHistoryPanel = ref(null);
@@ -59,6 +60,7 @@ const formattedMoveHistoryByNumber = computed(() => {
         isEnPassant: move.isEnPassant,
         notation: chessNotation.formatMove(move), // Pass the whole move object
         capturedPieceType: move.captured, // Store captured piece type (string)
+        annotation: move.annotation || "", // Include annotation
       };
     }
 
@@ -77,6 +79,7 @@ const formattedMoveHistoryByNumber = computed(() => {
         isEnPassant: move.isEnPassant,
         notation: chessNotation.formatMove(move), // Pass the whole move object
         capturedPieceType: move.captured, // Store captured piece type (string)
+        annotation: move.annotation || "", // Include annotation
       };
     }
   }
@@ -170,6 +173,17 @@ const handleTakeBackMove = () => {
   emit("take-back-move");
 };
 
+// Handler for opening annotation editor
+const openAnnotationEditor = (moveIndex, moveNumber, notation, color, existingNote) => {
+  emit("open-annotation", {
+    moveIndex,
+    moveNumber,
+    notation,
+    color,
+    existingNote,
+  });
+};
+
 // Scroll to the bottom when move history updates
 onUpdated(() => {
   if (moveHistoryPanel.value && props.currentMoveIndex === -1) {
@@ -247,6 +261,17 @@ onUpdated(() => {
             </span>
           </div>
 
+          <!-- Note button -->
+          <button
+            @click.stop="openAnnotationEditor(getWhiteMoveIndex(moveNumber), parseInt(moveNumber), moves.white.notation, 'White', moves.white.annotation)"
+            class="note-button mr-6"
+            :class="{ 'has-note': moves.white.annotation }"
+            :title="moves.white.annotation ? 'Edit note' : 'Add note'"
+          >
+            <img v-if="moves.white.annotation" :src="noteSvg" alt="Edit Note" class="w-4 h-4" />
+            <span v-else class="text-black text-xs font-bold">+</span>
+          </button>
+
           <!-- Take back button - only show if this is the latest move and black didn't move yet -->
           <button
             v-if="canTakeBackMove(getWhiteMoveIndex(moveNumber))"
@@ -282,6 +307,17 @@ onUpdated(() => {
               {{ moves.black.notation }}
             </span>
           </div>
+
+          <!-- Note button -->
+          <button
+            @click.stop="openAnnotationEditor(getBlackMoveIndex(moveNumber), parseInt(moveNumber), moves.black.notation, 'Black', moves.black.annotation)"
+            class="note-button mr-6"
+            :class="{ 'has-note': moves.black.annotation }"
+            :title="moves.black.annotation ? 'Edit note' : 'Add note'"
+          >
+            <img v-if="moves.black.annotation" :src="noteSvg" alt="Edit Note" class="w-4 h-4" />
+            <span v-else class="text-black text-xs font-bold">+</span>
+          </button>
 
           <!-- Take back button - only show if this is the latest move -->
           <button
@@ -327,6 +363,24 @@ onUpdated(() => {
 
 .take-back-button {
   @apply p-1 rounded-md bg-red-100 hover:bg-red-200 transition-colors opacity-80 hover:opacity-100;
+}
+
+.note-button {
+  @apply p-1 rounded-md hover:bg-gray-200 transition-colors opacity-60 hover:opacity-100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+}
+
+.note-button.has-note {
+  opacity: 1;
+  background-color: #dbeafe;
+}
+
+.note-button.has-note:hover {
+  background-color: #bfdbfe;
 }
 
 .invert {

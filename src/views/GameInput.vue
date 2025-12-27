@@ -26,10 +26,21 @@
 
           <!-- Chess Board -->
           <div class="panel-board">
-            <div class="board-border">
+            <div class="board-border relative">
               <Board
                 ref="boardComponent"
                 @current-move-index-changed="handleCurrentMoveIndexChange"
+              />
+              <!-- Annotation Editor Overlay -->
+              <MoveAnnotationEditor
+                :visible="annotationEditor.visible"
+                :move-index="annotationEditor.moveIndex"
+                :move-number="annotationEditor.moveNumber"
+                :move-notation="annotationEditor.notation"
+                :move-color="annotationEditor.color"
+                :existing-note="annotationEditor.existingNote"
+                @save="handleSaveAnnotation"
+                @close="handleCloseAnnotation"
               />
             </div>
           </div>
@@ -55,6 +66,7 @@
               @move-selected="handleMoveSelection"
               @reset-board="handleResetBoard"
               @take-back-move="handleTakeBackMove"
+              @open-annotation="handleOpenAnnotation"
             />
           </div>
 
@@ -96,6 +108,7 @@ import MoveControlPanel from "../components/MoveControlPanel.vue";
 import BoardStatusPanel from "../components/BoardStatusPanel.vue";
 import GameSavePanel from "../components/GameSavePanel.vue";
 import SaveGameDialog from "../components/SaveGameDialog.vue";
+import MoveAnnotationEditor from "../components/MoveAnnotationEditor.vue";
 import { usePositions } from "../composables/usePositions";
 
 // Emits
@@ -125,6 +138,16 @@ const currentMoveIndex = ref(-1);
 const viewingPastMove = ref(false);
 const boardComponent = ref(null);
 const showSaveDialog = ref(false);
+
+// Annotation editor state
+const annotationEditor = ref({
+  visible: false,
+  moveIndex: 0,
+  moveNumber: 0,
+  notation: "",
+  color: "White",
+  existingNote: "",
+});
 
 // Event Handlers
 const handleCurrentMoveIndexChange = (newIndex) => {
@@ -284,6 +307,27 @@ const handleNextMove = () => {
   else if (currentMoveIndex.value === moveHistory.value.length - 1) {
     handleMoveSelection(-1);
   }
+};
+
+// Annotation editor handlers
+const handleOpenAnnotation = (data) => {
+  annotationEditor.value = {
+    visible: true,
+    moveIndex: data.moveIndex,
+    moveNumber: data.moveNumber,
+    notation: data.notation,
+    color: data.color,
+    existingNote: data.existingNote || "",
+  };
+};
+
+const handleSaveAnnotation = (data) => {
+  gameStore.updateMoveAnnotation(data.moveIndex, data.annotation);
+  annotationEditor.value.visible = false;
+};
+
+const handleCloseAnnotation = () => {
+  annotationEditor.value.visible = false;
 };
 </script>
 
