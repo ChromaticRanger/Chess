@@ -11,6 +11,11 @@
             <GameSavePanel @save-game="handleSaveGame" @flip-board="handleFlipBoard" />
           </div>
 
+          <!-- Game Summary Panel (shown when game is saved/loaded) -->
+          <div v-if="currentGameMetadata" class="panel-summary">
+            <GameSummaryPanel :game-metadata="currentGameMetadata" />
+          </div>
+
           <!-- Top Board Status Panel (black side) -->
           <div class="panel-status-top">
             <BoardStatusPanel
@@ -109,6 +114,7 @@ import BoardStatusPanel from "../components/BoardStatusPanel.vue";
 import GameSavePanel from "../components/GameSavePanel.vue";
 import SaveGameDialog from "../components/SaveGameDialog.vue";
 import MoveAnnotationEditor from "../components/MoveAnnotationEditor.vue";
+import GameSummaryPanel from "../components/GameSummaryPanel.vue";
 import { usePositions } from "../composables/usePositions";
 
 // Emits
@@ -126,6 +132,7 @@ const {
   isGameOver,
   isCheckmate,
   isStalemate,
+  currentGameMetadata,
 } = storeToRefs(gameStore);
 const { setHeaders } = gameStore;
 // Don't destructure resetGame and takeBackMove - call on store directly for proper reactivity
@@ -347,17 +354,19 @@ const handleCloseAnnotation = () => {
   gap: 0.5rem;
 }
 
-/* Mobile order - DOM order is: save, status-top, board, status-bottom, history, controls */
-/* Desired mobile order: save(1), status-top(2), board(3), status-bottom(4), history(5), controls(6) */
+/* Mobile order - DOM order is: save, summary, status-top, board, status-bottom, history, controls */
+/* Desired mobile order: save(1), summary(2), status-top(3), board(4), status-bottom(5), history(6), controls(7) */
 .panel-save { order: 1; }
-.panel-status-top { order: 2; }
-.panel-board { order: 3; }
-.panel-status-bottom { order: 4; }
-.panel-history { order: 5; }
-.panel-controls { order: 6; }
+.panel-summary { order: 2; }
+.panel-status-top { order: 3; }
+.panel-board { order: 4; }
+.panel-status-bottom { order: 5; }
+.panel-history { order: 6; }
+.panel-controls { order: 7; }
 
 /* Mobile: Viewport-based width with padding, max 508px */
 .panel-save,
+.panel-summary,
 .panel-status-top,
 .panel-status-bottom,
 .panel-history,
@@ -387,17 +396,18 @@ const handleCloseAnnotation = () => {
     padding: 0 1rem;
   }
 
-  /* Desktop: CSS Grid with 2 columns, 3 rows */
+  /* Desktop: CSS Grid with 2 columns, 4 rows (summary spans full width) */
   .game-layout {
     display: grid;
     grid-template-columns: auto auto;
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto auto auto;
     gap: 1.5rem 1.5rem;
     justify-content: center;
   }
 
   /* Reset order for grid placement */
   .panel-save,
+  .panel-summary,
   .panel-status-top,
   .panel-board,
   .panel-status-bottom,
@@ -406,13 +416,14 @@ const handleCloseAnnotation = () => {
     order: 0;
   }
 
-  /* Grid placement: Left column = board-related, Right column = side panels */
-  .panel-status-top { grid-column: 1; grid-row: 1; }
-  .panel-save { grid-column: 2; grid-row: 1; }
-  .panel-board { grid-column: 1; grid-row: 2; }
-  .panel-history { grid-column: 2; grid-row: 2; }
-  .panel-status-bottom { grid-column: 1; grid-row: 3; }
-  .panel-controls { grid-column: 2; grid-row: 3; }
+  /* Grid placement: Summary spans full width at top, then 2-column layout */
+  .panel-summary { grid-column: 1 / -1; grid-row: 1; }
+  .panel-status-top { grid-column: 1; grid-row: 2; }
+  .panel-save { grid-column: 2; grid-row: 2; }
+  .panel-board { grid-column: 1; grid-row: 3; }
+  .panel-history { grid-column: 2; grid-row: 3; }
+  .panel-status-bottom { grid-column: 1; grid-row: 4; }
+  .panel-controls { grid-column: 2; grid-row: 4; }
 
   /* Desktop widths */
   .panel-status-top,
@@ -426,6 +437,11 @@ const handleCloseAnnotation = () => {
   .panel-history,
   .panel-controls {
     width: calc(min(800px, 90vh, calc(100vw - 450px)) * 0.43);
+    max-width: none;
+  }
+
+  .panel-summary {
+    width: 100%;
     max-width: none;
   }
 

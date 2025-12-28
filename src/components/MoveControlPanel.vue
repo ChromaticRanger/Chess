@@ -245,7 +245,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="move-control-panel flex justify-between items-center bg-gray-100 border border-gray-300 p-2 rounded-md w-full"
+    class="move-control-panel flex justify-between items-center bg-gray-100 border border-gray-300 rounded-md w-full"
   >
     <button
       @click="goToFirstMove"
@@ -300,14 +300,16 @@ onUnmounted(() => {
 <style scoped>
 .move-control-panel {
   gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  height: 36px;
 }
 
-/* Mobile-first: Touch-friendly buttons */
+/* Mobile-first: Compact buttons */
 .control-button {
-  @apply rounded-md bg-gray-200 hover:bg-gray-300 transition-colors;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 10px;
+  @apply rounded-md transition-colors;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -318,25 +320,27 @@ onUnmounted(() => {
 }
 
 .control-button img {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Desktop (≥ 1000px) */
 @media (min-width: 1000px) {
   .move-control-panel {
     gap: 0;
+    padding: 0.25rem 0.5rem;
+    height: 40px;
   }
 
   .control-button {
     min-width: auto;
     min-height: auto;
-    padding: 0.5rem;
+    padding: 6px;
   }
 
   .control-button img {
-    width: clamp(20px, 2vw, 24px);
-    height: clamp(20px, 2vw, 24px);
+    width: 20px;
+    height: 20px;
   }
 }
 </style>

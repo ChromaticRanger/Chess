@@ -57,15 +57,16 @@ const handleFlipBoard = () => {
 <style scoped>
 /* Mobile-first */
 .save-panel-container {
-  @apply flex justify-between items-center bg-gray-100 border border-gray-300 p-2 rounded-md w-full;
-  min-height: 44px;
+  @apply flex justify-between items-center bg-gray-100 border border-gray-300 rounded-md w-full;
+  padding: 0.25rem 0.5rem;
+  height: 36px;
 }
 
 .control-button {
-  @apply rounded-md bg-gray-200 hover:bg-gray-300 transition-colors;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 10px;
+  @apply rounded-md transition-colors;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,25 +77,26 @@ const handleFlipBoard = () => {
 }
 
 .control-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Desktop (≥ 1000px) */
 @media (min-width: 1000px) {
   .save-panel-container {
-    height: 58px;
+    padding: 0.25rem 0.5rem;
+    height: 40px;
   }
 
   .control-button {
-    padding: 0.5rem;
+    padding: 6px;
     min-width: auto;
     min-height: auto;
   }
 
   .control-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
 }
 </style>
