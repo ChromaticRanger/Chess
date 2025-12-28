@@ -239,7 +239,7 @@ onUpdated(() => {
         <!-- White's move (left column) -->
         <div
           v-if="moves.white"
-          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
+          class="p-2 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100':
               getWhiteMoveIndex(moveNumber) === currentMoveIndex,
@@ -282,12 +282,12 @@ onUpdated(() => {
             <img :src="deleteSvg" alt="Take Back" class="w-4 h-4" />
           </button>
         </div>
-        <div v-else class="p-3"></div>
+        <div v-else class="p-2"></div>
 
         <!-- Black's move (right column) -->
         <div
           v-if="moves.black"
-          class="p-3 flex items-center hover:bg-blue-50 cursor-pointer relative"
+          class="p-2 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100':
               getBlackMoveIndex(moveNumber) === currentMoveIndex,
@@ -329,7 +329,7 @@ onUpdated(() => {
             <img :src="deleteSvg" alt="Take Back" class="w-4 h-4" />
           </button>
         </div>
-        <div v-else class="p-3"></div>
+        <div v-else class="p-2"></div>
       </div>
     </div>
 

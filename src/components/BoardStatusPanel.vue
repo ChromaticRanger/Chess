@@ -118,10 +118,10 @@ const materialAdvantage = computed(() => {
 
 <template>
   <div
-    class="board-status-panel flex items-center justify-between bg-gray-100 border border-gray-300 p-2 rounded-md w-full"
+    class="board-status-panel flex items-center justify-between bg-gray-100 border border-gray-300 rounded-md w-full"
   >
     <!-- Left Side Content -->
-    <div class="flex items-center h-10">
+    <div class="flex items-center h-8">
       <!-- Captured Pieces Display -->
       <div class="flex items-center mr-4">
         <div class="flex items-center overflow-x-auto">
@@ -219,13 +219,13 @@ const materialAdvantage = computed(() => {
 <style scoped>
 /* Mobile-first: Compact layout */
 .board-status-panel {
-  padding: 0.5rem;
-  min-height: 40px;
+  padding: 0.25rem 0.5rem;
+  height: 36px;
 }
 
 .captured-piece-img {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .control-button {
@@ -239,13 +239,13 @@ const materialAdvantage = computed(() => {
 /* Desktop (≥ 1000px) */
 @media (min-width: 1000px) {
   .board-status-panel {
-    padding: 0.5rem;
-    min-height: 58px;
+    padding: 0.25rem 0.5rem;
+    height: 40px;
   }
 
   .captured-piece-img {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 }
 </style>
