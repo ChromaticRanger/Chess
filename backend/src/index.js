@@ -5,6 +5,7 @@ import { serveStatic } from 'hono/serve-static';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.js';
 import gameRoutes from './routes/games.js';
+import settingsRoutes from './routes/settings.js';
 
 // Initialize Prisma client
 export const prisma = new PrismaClient();
@@ -35,6 +36,7 @@ app.use('/uploads/*', serveStatic({ root: './' }));
 // Routes
 app.route('/api/auth', authRoutes);
 app.route('/api/games', gameRoutes);
+app.route('/api/settings', settingsRoutes);
 
 // Error handling
 app.onError((err, c) => {

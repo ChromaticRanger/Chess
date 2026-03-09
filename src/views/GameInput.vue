@@ -29,24 +29,32 @@
             />
           </div>
 
-          <!-- Chess Board -->
+          <!-- Chess Board with Evaluation Bar -->
           <div class="panel-board">
-            <div class="board-border relative">
-              <Board
-                ref="boardComponent"
-                @current-move-index-changed="handleCurrentMoveIndexChange"
+            <div class="board-with-eval">
+              <!-- Evaluation Bar (left of board) -->
+              <EvaluationBar
+                :evaluation="currentEvaluation"
+                :is-analyzing="isAnalyzing"
+                class="eval-bar"
               />
-              <!-- Annotation Editor Overlay -->
-              <MoveAnnotationEditor
-                :visible="annotationEditor.visible"
-                :move-index="annotationEditor.moveIndex"
-                :move-number="annotationEditor.moveNumber"
-                :move-notation="annotationEditor.notation"
-                :move-color="annotationEditor.color"
-                :existing-note="annotationEditor.existingNote"
-                @save="handleSaveAnnotation"
-                @close="handleCloseAnnotation"
-              />
+              <div class="board-border relative">
+                <Board
+                  ref="boardComponent"
+                  @current-move-index-changed="handleCurrentMoveIndexChange"
+                />
+                <!-- Annotation Editor Overlay -->
+                <MoveAnnotationEditor
+                  :visible="annotationEditor.visible"
+                  :move-index="annotationEditor.moveIndex"
+                  :move-number="annotationEditor.moveNumber"
+                  :move-notation="annotationEditor.notation"
+                  :move-color="annotationEditor.color"
+                  :existing-note="annotationEditor.existingNote"
+                  @save="handleSaveAnnotation"
+                  @close="handleCloseAnnotation"
+                />
+              </div>
             </div>
           </div>
 
@@ -68,6 +76,8 @@
             <MoveHistoryList
               :move-history="moveHistory"
               :current-move-index="currentMoveIndex"
+              :opening-name="currentOpening?.name"
+              :opening-eco="currentOpening?.eco"
               @move-selected="handleMoveSelection"
               @reset-board="handleResetBoard"
               @take-back-move="handleTakeBackMove"
@@ -115,6 +125,7 @@ import GameSavePanel from "../components/GameSavePanel.vue";
 import SaveGameDialog from "../components/SaveGameDialog.vue";
 import MoveAnnotationEditor from "../components/MoveAnnotationEditor.vue";
 import GameSummaryPanel from "../components/GameSummaryPanel.vue";
+import EvaluationBar from "../components/EvaluationBar.vue";
 import { usePositions } from "../composables/usePositions";
 
 // Emits
@@ -133,7 +144,11 @@ const {
   isCheckmate,
   isStalemate,
   currentGameMetadata,
+  currentOpening,
+  currentEvaluation,
+  isAnalyzing,
 } = storeToRefs(gameStore);
+
 const { setHeaders } = gameStore;
 // Don't destructure resetGame and takeBackMove - call on store directly for proper reactivity
 
@@ -380,6 +395,20 @@ const handleCloseAnnotation = () => {
   max-width: 508px;
 }
 
+.board-with-eval {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.eval-bar {
+  width: 32px;
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
 .board-border {
   border: 4px solid #2563eb;
   border-radius: 0.5rem;
@@ -388,6 +417,28 @@ const handleCloseAnnotation = () => {
 
 .game-input-view {
   padding-top: 0.5rem;
+}
+
+/* Mobile: Stack evaluation bar above board */
+@media (max-width: 999px) {
+  .board-with-eval {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .eval-bar {
+    display: block;
+    width: 100%;
+    height: 24px;
+    flex-direction: unset;
+    align-self: unset;
+    order: -1; /* Place above board on mobile */
+  }
+
+  .board-border {
+    flex-shrink: 0;
+    width: 100%;
+  }
 }
 
 /* Tablet and Desktop (≥ 1000px) */
@@ -427,10 +478,18 @@ const handleCloseAnnotation = () => {
 
   /* Desktop widths */
   .panel-status-top,
-  .panel-board,
   .panel-status-bottom {
-    width: calc(min(800px, 90vh, calc(100vw - 450px)) + 20px);
+    width: calc(min(800px, 90vh, calc(100vw - 450px)) + 20px + 40px); /* +40px for eval bar */
     max-width: none;
+  }
+
+  .panel-board {
+    width: calc(min(800px, 90vh, calc(100vw - 450px)) + 20px + 40px); /* +40px for eval bar */
+    max-width: none;
+  }
+
+  .eval-bar {
+    width: 32px;
   }
 
   .panel-save,

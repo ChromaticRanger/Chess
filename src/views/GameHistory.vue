@@ -181,7 +181,7 @@ const formatDate = (dateString, dateOnly = false) => {
 };
 
 // Load a game
-const loadGame = (game) => {
+const loadGame = async (game) => {
   console.log('Loading game:', game);
 
   try {
@@ -215,7 +215,7 @@ const loadGame = (game) => {
 
     // Load the PGN into the game store with game ID and metadata (including saved moveHistory for annotations)
     if (game.pgn) {
-      gameStore.loadPgn(game.pgn, game.id, gameMetadata, headers, game.moveHistory);
+      await gameStore.loadPgn(game.pgn, game.id, gameMetadata, headers, game.moveHistory);
     } else {
       // If no PGN is available, reset the game and just set headers
       gameStore.resetGame();

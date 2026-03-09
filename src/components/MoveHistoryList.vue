@@ -17,6 +17,14 @@ const props = defineProps({
     type: Number,
     default: -1, // -1 indicates we're at the latest move
   },
+  openingName: {
+    type: String,
+    default: '',
+  },
+  openingEco: {
+    type: String,
+    default: '',
+  },
 });
 
 // Define emits for when a move is selected, reset is requested, move is taken back, or annotation editor opened
@@ -211,6 +219,15 @@ onUpdated(() => {
       >
         <img :src="resetSvg" alt="Reset Board" class="w-6 h-6 invert" />
       </button>
+    </div>
+
+    <!-- Opening Name Display -->
+    <div class="px-3 py-2 bg-amber-50 border-b border-amber-200 text-sm min-h-[2.25rem]">
+      <template v-if="openingName">
+        <span v-if="openingEco" class="font-mono text-amber-700 mr-2">{{ openingEco }}</span>
+        <span class="text-amber-900 font-medium">{{ openingName }}</span>
+      </template>
+      <span v-else class="text-amber-400 italic">No recognized opening</span>
     </div>
 
     <!-- Column Headers - Sticky -->

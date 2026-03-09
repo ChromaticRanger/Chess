@@ -15,6 +15,7 @@ import Modal from "./Modal.vue"; // Import the Modal component
 import throttle from "lodash/throttle";
 import usePieceManagement from "../composables/usePieceManagement";
 import useChessNotation from "../composables/useChessNotation";
+import { useStockfish } from "../composables/useStockfish";
 
 const gameStore = useGameStore();
 const {
@@ -29,6 +30,11 @@ const {
   showCheckmateModal,
   checkmateModalMessage,
   viewingMoveIndex, // Add the viewingMoveIndex to track which move is being viewed
+  currentEvaluation,
+  currentOpening,
+  analysisDepth,
+  evaluations,
+  isAnalyzing,
 } = storeToRefs(gameStore);
 const {
   makeMove,
@@ -38,17 +44,66 @@ const {
   getValidMoves,
   closeCheckmateModal, // Get the function to close the modal
   viewMoveAtIndex, // Add the viewMoveAtIndex function
+  setEvaluation,
+  setAnalyzing,
+  saveEvaluations,
+  loadUserSettings,
 } = gameStore;
+
+// Initialize Stockfish engine
+const { initEngine, analyzePosition, isReady } = useStockfish();
 
 // Add a watcher to log when currentTurn changes
 watch(currentTurn, (newTurn, oldTurn) => {
   // Turn change tracking
 });
 
-// Also watch the currentFen to track when it changes
+// Starting position FEN (without move counters for comparison)
+const STARTING_POSITION_BASE = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
+
+// Watch currentFen to trigger analysis when position changes
 watch(currentFen, (newFen) => {
-  // FEN change tracking
+  // Skip analysis for starting position - just show 50/50
+  if (newFen.startsWith(STARTING_POSITION_BASE)) {
+    return;
+  }
+
+  // Skip if evaluation already cached
+  if (evaluations.value[newFen]) {
+    return;
+  }
+
+  // Skip if engine not ready
+  if (!isReady.value) {
+    return;
+  }
+
+  // Analyze the new position (don't await - let it run in background)
+  analyzeCurrentPosition();
 });
+
+// Function to analyze the current position
+const analyzeCurrentPosition = async () => {
+  const fen = currentFen.value;
+
+  // Skip if already cached
+  if (evaluations.value[fen]) {
+    return;
+  }
+
+  setAnalyzing(true);
+  try {
+    const evaluation = await analyzePosition(fen, analysisDepth.value);
+
+    if (evaluation) {
+      setEvaluation(fen, evaluation);
+      // Auto-save evaluations (debounced by having the save check for game ID)
+      saveEvaluations();
+    }
+  } finally {
+    setAnalyzing(false);
+  }
+};
 
 const { toChessNotation, fromChessNotation } = useChessNotation();
 const { pieces, getPieceAtPosition } = usePieceManagement(currentFen);
@@ -304,7 +359,7 @@ const restoreBoardStateToMove = (index) => {
   // Board restored to move index
 };
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener("pointermove", handleMouseMove);
 
   nextTick(() => {
@@ -315,6 +370,19 @@ onMounted(() => {
       offsetY.value = boardRect.top;
     }
   });
+
+  // Initialize Stockfish engine and load user settings
+  try {
+    await loadUserSettings();
+    await initEngine();
+
+    // Analyze initial position if engine is ready (skip starting position - show 50/50)
+    if (isReady.value && !currentFen.value.startsWith(STARTING_POSITION_BASE)) {
+      analyzeCurrentPosition();
+    }
+  } catch (error) {
+    console.error("Failed to initialize Stockfish engine:", error);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -387,9 +455,8 @@ defineExpose({
 </script>
 
 <template>
-  <div>
-    <div class="chessboard-container">
-      <div class="chessboard" @pointerup="handleMouseUp" @contextmenu.prevent>
+  <div class="chessboard-container">
+    <div class="chessboard" @pointerup="handleMouseUp" @contextmenu.prevent>
         <Square
           v-for="(square, index) in squares"
           :key="`${square.row}-${square.col}`"
@@ -406,30 +473,23 @@ defineExpose({
         />
       </div>
 
-      <PiecePromotion
-        :color="promotionColor"
-        :position="promotionPosition"
-        :visible="showPromotion"
-        @piece-selected="handlePromotion"
-      />
+    <PiecePromotion
+      :color="promotionColor"
+      :position="promotionPosition"
+      :visible="showPromotion"
+      @piece-selected="handlePromotion"
+    />
 
-      <Modal
-        :visible="showCheckmateModal"
-        :message="checkmateModalMessage"
-        title="Game Over"
-        @close="closeCheckmateModal"
-      />
-    </div>
+    <Modal
+      :visible="showCheckmateModal"
+      :message="checkmateModalMessage"
+      title="Game Over"
+      @close="closeCheckmateModal"
+    />
   </div>
 </template>
 
 <style lang="css" scoped>
-.container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .chessboard-container {
   position: relative;
   display: flex;
@@ -458,4 +518,5 @@ defineExpose({
     max-height: none;
   }
 }
+
 </style>
