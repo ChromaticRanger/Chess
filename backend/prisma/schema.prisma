@@ -28,6 +28,7 @@ model User {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   games              Game[]
+  settings           UserSettings?
 
   // Indexes for Google authentication performance
   @@index([googleId])
@@ -52,6 +53,7 @@ model Game {
   moveHistory   Json
   result        String?   // "1-0", "0-1", "1/2-1/2", "*" (in progress)
   pgn           String?   // Add this line to store the PGN string
+  evaluations   Json?     // Stores position evaluations keyed by FEN
   // Relationships
   userId        Int
   user          User      @relation(fields: [userId], references: [id])
@@ -66,4 +68,12 @@ model Game {
   @@index([date])
   @@index([event])
   @@index([venue])
+}
+
+model UserSettings {
+  id              Int     @id @default(autoincrement())
+  userId          Int     @unique
+  analysisDepth   Int     @default(15)
+
+  user            User    @relation(fields: [userId], references: [id])
 }

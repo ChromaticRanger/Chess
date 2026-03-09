@@ -2,6 +2,8 @@
 import { defineStore } from "pinia";
 import { Chess } from "chess.js";
 import { ref, computed } from "vue";
+import axios from "axios";
+import openings from "@/data/openings.json";
 
 // Add a mapping from chess.js piece codes to full names
 const pieceCodeToName = {
@@ -43,6 +45,11 @@ export const useGameStore = defineStore("game", () => {
   // Track the currently loaded/saved game for incremental updates
   const currentGameId = ref(null);
   const currentGameMetadata = ref(null);
+
+  // Evaluation state
+  const evaluations = ref({}); // { fen: Evaluation }
+  const analysisDepth = ref(15); // Default analysis depth
+  const isAnalyzing = ref(false); // Track if analysis is in progress
 
   // --- Getters ---
   const whiteInCheck = computed(() => {
@@ -86,6 +93,32 @@ export const useGameStore = defineStore("game", () => {
 
   // Check if the current game is a loaded/saved game (for incremental updates)
   const isLoadedGame = computed(() => currentGameId.value !== null);
+
+  // Get current evaluation from cache
+  const currentEvaluation = computed(() => {
+    return evaluations.value[currentFen.value] || null;
+  });
+
+  // Get current opening name from opening book
+  const currentOpening = computed(() => {
+    // Try exact FEN match first
+    if (openings[currentFen.value]) {
+      return openings[currentFen.value];
+    }
+    // Try matching without move counters (last two FEN fields)
+    const fenParts = currentFen.value.split(' ');
+    if (fenParts.length >= 4) {
+      const positionKey = fenParts.slice(0, 4).join(' ');
+      // Search for a matching position
+      for (const [fen, opening] of Object.entries(openings)) {
+        const openingParts = fen.split(' ');
+        if (openingParts.slice(0, 4).join(' ') === positionKey) {
+          return opening;
+        }
+      }
+    }
+    return null;
+  });
 
   // --- Actions ---
 
@@ -225,6 +258,18 @@ export const useGameStore = defineStore("game", () => {
   }
 
   function resetGame() {
+    // Clear temporary board state FIRST so currentFen reflects fen.value
+    tempBoardState.value = null;
+    viewingMoveIndex.value = -1;
+
+    // Clear cached evaluations and analyzing state BEFORE changing FEN
+    clearEvaluations();
+    isAnalyzing.value = false;
+
+    // Clear saved game tracking (new game, not a loaded one)
+    currentGameId.value = null;
+    currentGameMetadata.value = null;
+
     chessInstance.reset();
     fen.value = chessInstance.fen();
     currentTurn.value = "White"; // Explicitly set to White on reset
@@ -241,14 +286,6 @@ export const useGameStore = defineStore("game", () => {
     // Clear checkmate modal if it was showing
     showCheckmateModal.value = false;
     checkmateModalMessage.value = "";
-
-    // Clear temporary board state for viewing past moves
-    tempBoardState.value = null;
-    viewingMoveIndex.value = -1;
-
-    // Clear saved game tracking (new game, not a loaded one)
-    currentGameId.value = null;
-    currentGameMetadata.value = null;
 
     console.log("Pinia Store: Game reset");
   }
@@ -310,7 +347,7 @@ export const useGameStore = defineStore("game", () => {
     boardFlipped.value = flipped;
   }
 
-  function loadPgn(pgnString, gameId = null, gameMetadata = null, initialHeaders = {}, savedMoveHistory = null) {
+  async function loadPgn(pgnString, gameId = null, gameMetadata = null, initialHeaders = {}, savedMoveHistory = null) {
     try {
       chessInstance.reset();
       chessInstance.loadPgn(pgnString);
@@ -328,6 +365,11 @@ export const useGameStore = defineStore("game", () => {
       // Store the game ID and metadata if provided (for incremental updates)
       currentGameId.value = gameId;
       currentGameMetadata.value = gameMetadata;
+
+      // Load cached evaluations if a gameId is provided
+      if (gameId) {
+        await loadEvaluations(gameId);
+      }
 
       fen.value = chessInstance.fen();
       // Explicitly update the turn after loading a PGN
@@ -616,6 +658,107 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
+  // --- Evaluation Actions ---
+
+  /**
+   * Set evaluation for a specific FEN position
+   */
+  function setEvaluation(fen, evaluation) {
+    evaluations.value[fen] = evaluation;
+  }
+
+  /**
+   * Load evaluations from the backend for a specific game
+   */
+  async function loadEvaluations(gameId) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `http://localhost:3000/api/games/${gameId}/evaluations`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      evaluations.value = response.data.evaluations || {};
+      console.log('Loaded evaluations for game:', gameId);
+    } catch (error) {
+      console.error('Failed to load evaluations:', error);
+    }
+  }
+
+  /**
+   * Save evaluations to the backend for the current game
+   */
+  async function saveEvaluations() {
+    if (!currentGameId.value) {
+      console.log('No game ID, skipping evaluation save');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:3000/api/games/${currentGameId.value}/evaluations`,
+        { evaluations: evaluations.value },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log('Saved evaluations for game:', currentGameId.value);
+    } catch (error) {
+      console.error('Failed to save evaluations:', error);
+    }
+  }
+
+  /**
+   * Clear evaluations (e.g., when starting a new game)
+   */
+  function clearEvaluations() {
+    evaluations.value = {};
+  }
+
+  /**
+   * Set the analyzing state
+   */
+  function setAnalyzing(value) {
+    isAnalyzing.value = value;
+  }
+
+  // --- Settings Actions ---
+
+  /**
+   * Load user settings from the backend
+   */
+  async function loadUserSettings() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(
+        'http://localhost:3000/api/settings',
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      analysisDepth.value = response.data.analysisDepth || 15;
+      console.log('Loaded user settings, analysis depth:', analysisDepth.value);
+    } catch (error) {
+      console.error('Failed to load user settings:', error);
+    }
+  }
+
+  /**
+   * Update analysis depth setting
+   */
+  async function updateAnalysisDepth(depth) {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        'http://localhost:3000/api/settings',
+        { analysisDepth: depth },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      analysisDepth.value = depth;
+      console.log('Updated analysis depth to:', depth);
+    } catch (error) {
+      console.error('Failed to update analysis depth:', error);
+    }
+  }
+
   return {
     // State (Refs)
     fen,
@@ -634,6 +777,9 @@ export const useGameStore = defineStore("game", () => {
     viewingMoveIndex,
     currentGameId,
     currentGameMetadata,
+    evaluations,
+    analysisDepth,
+    isAnalyzing,
     // Getters (Computed)
     currentTurn,
     whiteInCheck,
@@ -645,6 +791,8 @@ export const useGameStore = defineStore("game", () => {
     hasUnsavedChanges,
     currentFen,
     isLoadedGame,
+    currentEvaluation,
+    currentOpening,
     // Actions (Functions)
     makeMove,
     resetGame,
@@ -659,5 +807,12 @@ export const useGameStore = defineStore("game", () => {
     closeCheckmateModal,
     viewMoveAtIndex,
     updateMoveAnnotation,
+    setEvaluation,
+    setAnalyzing,
+    loadEvaluations,
+    saveEvaluations,
+    clearEvaluations,
+    loadUserSettings,
+    updateAnalysisDepth,
   };
 });
