@@ -31,7 +31,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+  <div class="min-h-screen flex items-center justify-center px-4">
     <div class="w-full max-w-md">
       <!-- Logo and Title -->
       <div class="text-center mb-8">

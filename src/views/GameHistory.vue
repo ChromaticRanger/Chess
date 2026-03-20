@@ -267,7 +267,7 @@ const handleDeleteGame = async () => {
 }
 
 .game-history-view {
-  background-color: #f9fafb;
+  background-color: transparent;
 }
 
 .game-card {
