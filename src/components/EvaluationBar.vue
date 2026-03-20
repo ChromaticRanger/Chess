@@ -101,6 +101,7 @@ const sectionStyle = (percentage) => ({
   border-radius: 0.5rem;
   overflow: hidden;
   position: relative;
+  border: 1px solid #9ca3af;
 }
 
 .black-section {
