@@ -207,7 +207,7 @@ onUpdated(() => {
     class="w-full h-chess-board border border-gray-300 rounded-md overflow-y-auto bg-white shadow-md"
   >
     <div
-      class="flex justify-between items-center p-3 bg-blue-600 text-white font-semibold sticky top-0 z-20"
+      class="flex justify-between items-center p-3 text-white font-semibold sticky top-0 z-20 move-history-header"
     >
       <div>Move History</div>
       <button
@@ -367,6 +367,11 @@ onUpdated(() => {
 </template>
 
 <style scoped>
+.move-history-header {
+  background: linear-gradient(180deg, #1e2a3a 0%, #19233a 100%);
+  border-bottom: 1px solid rgba(210, 180, 110, 0.3);
+}
+
 /* Mobile-first: Flexible height */
 .h-chess-board {
   height: auto;

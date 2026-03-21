@@ -410,9 +410,9 @@ const handleCloseAnnotation = () => {
 }
 
 .board-border {
-  border: 4px solid #2563eb;
+  border: 4px solid #2d1a0a;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .game-input-view {
@@ -505,7 +505,7 @@ const handleCloseAnnotation = () => {
   }
 
   .board-border {
-    border: clamp(6px, 1vw, 10px) solid #2563eb;
+    border: clamp(6px, 1vw, 10px) solid #2d1a0a;
   }
 
   .game-input-view {
