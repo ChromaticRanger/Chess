@@ -69,7 +69,8 @@ export const useGameStore = defineStore("game", () => {
   const isGameOver = computed(
     () =>
       chessInstance.isGameOver() ||
-      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw)
+      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw) ||
+      (gameResult.value !== '*' && gameResult.value !== '')
   );
   const pgn = computed(() => {
     const currentHeaders = headers.value;
@@ -473,6 +474,13 @@ export const useGameStore = defineStore("game", () => {
       } else if (agreedDrawEntry) {
         gameResult.value = "1/2-1/2";
         headers.value = { ...headers.value, Result: "1/2-1/2" };
+      } else {
+        // If no in-game event set the result, fall back to the Result header
+        // (e.g. result was manually chosen in the save dialog).
+        const headerResult = headers.value.Result;
+        if (headerResult && headerResult !== '*') {
+          gameResult.value = headerResult;
+        }
       }
       isGameSaved.value = true; // Game loaded is considered saved initially
 

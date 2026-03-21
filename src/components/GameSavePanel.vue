@@ -13,6 +13,10 @@ const props = defineProps({
     type: String,
     default: 'White',
   },
+  isGameOver: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Define emits
@@ -59,6 +63,7 @@ const handleAgreedDraw = () => {
           @click="handleResign"
           class="control-button"
           :title="`${currentTurn} resigns`"
+          :disabled="isGameOver"
         >
           <svg
             class="control-icon"
@@ -85,6 +90,7 @@ const handleAgreedDraw = () => {
           @click="handleAgreedDraw"
           class="control-button"
           title="Agree to a draw"
+          :disabled="isGameOver"
         >
           <svg
             class="control-icon"
