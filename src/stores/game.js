@@ -426,11 +426,23 @@ export const useGameStore = defineStore("game", () => {
         }
       });
 
-      // Merge annotations from savedMoveHistory if provided
+      // Merge annotations and restore non-standard entries from savedMoveHistory if provided
       if (savedMoveHistory && Array.isArray(savedMoveHistory)) {
         rebuiltHistory.forEach((move, index) => {
           if (savedMoveHistory[index]?.annotation) {
             move.annotation = savedMoveHistory[index].annotation;
+          }
+        });
+
+        // Append any non-chess entries (e.g. resignations) that follow the real moves
+        savedMoveHistory.forEach((savedMove) => {
+          if (savedMove.isResignation) {
+            rebuiltHistory.push({
+              color: savedMove.color,
+              san: savedMove.san,
+              isResignation: true,
+              timestamp: savedMove.timestamp,
+            });
           }
         });
       }
@@ -439,6 +451,15 @@ export const useGameStore = defineStore("game", () => {
 
       rebuildCapturedPieces();
       updateGameResult();
+
+      // updateGameResult() only knows about chess.js game-over states (checkmate/stalemate).
+      // If the game ended by resignation, restore the result from the loaded headers or rebuiltHistory.
+      const resignationEntry = rebuiltHistory.find((m) => m.isResignation);
+      if (resignationEntry) {
+        const result = resignationEntry.color === "White" ? "0-1" : "1-0";
+        gameResult.value = result;
+        headers.value = { ...headers.value, Result: result };
+      }
       isGameSaved.value = true; // Game loaded is considered saved initially
 
       console.log("Pinia Store: PGN loaded successfully.");
@@ -536,6 +557,20 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
+  function resign() {
+    const resigningColor = currentTurn.value;
+    moveHistory.value.push({
+      color: resigningColor,
+      san: "Resigns",
+      isResignation: true,
+      timestamp: new Date().toISOString(),
+    });
+    const result = resigningColor === "White" ? "0-1" : "1-0";
+    gameResult.value = result;
+    headers.value = { ...headers.value, Result: result };
+    isGameSaved.value = false;
+  }
+
   function markGameAsSaved() {
     isGameSaved.value = true;
   }
@@ -609,6 +644,12 @@ export const useGameStore = defineStore("game", () => {
       }
 
       const move = moveHistory.value[i];
+
+      // Skip non-chess entries like resignation
+      if (move.isResignation) {
+        continue;
+      }
+
       console.log(`Replaying move ${i}: ${move.from}-${move.to}`, move);
 
       const result = tempChess.move({
@@ -801,6 +842,7 @@ export const useGameStore = defineStore("game", () => {
     loadPgn,
     setHeaders,
     getValidMoves,
+    resign,
     markGameAsSaved,
     openLogoutConfirmModal,
     closeLogoutConfirmModal,

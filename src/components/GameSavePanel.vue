@@ -9,11 +9,14 @@ const { isAuthenticated } = useAuth();
 
 // Define props
 const props = defineProps({
-  // Add any necessary props here
+  currentTurn: {
+    type: String,
+    default: 'White',
+  },
 });
 
 // Define emits
-const emit = defineEmits(['save-game', 'flip-board']);
+const emit = defineEmits(['save-game', 'flip-board', 'resign']);
 
 // Handle save game button click
 const handleSaveGame = () => {
@@ -23,6 +26,11 @@ const handleSaveGame = () => {
 // Handle flip board button click
 const handleFlipBoard = () => {
   emit('flip-board');
+};
+
+// Handle resign button click
+const handleResign = () => {
+  emit('resign');
 };
 </script>
 
@@ -37,6 +45,32 @@ const handleFlipBoard = () => {
           title="Flip board orientation"
         >
           <img :src="swapSvg" alt="Flip Board" class="control-icon" />
+        </button>
+      </div>
+
+      <div class="flex">
+        <!-- Resign button -->
+        <button
+          @click="handleResign"
+          class="control-button"
+          :title="`${currentTurn} resigns`"
+        >
+          <svg
+            class="control-icon"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <!-- Flag pole -->
+            <line x1="5" y1="3" x2="5" y2="21" stroke="#6b7280" stroke-width="2" stroke-linecap="round"/>
+            <!-- Flag body -->
+            <polygon
+              points="5,4 19,8 5,13"
+              :fill="currentTurn === 'White' ? '#ffffff' : '#1a1a1a'"
+              :stroke="currentTurn === 'White' ? '#6b7280' : '#6b7280'"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+          </svg>
         </button>
       </div>
 

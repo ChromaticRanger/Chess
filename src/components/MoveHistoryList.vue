@@ -56,39 +56,47 @@ const formattedMoveHistoryByNumber = computed(() => {
     // Process white move if it exists
     if (groupedMoves[moveNumber].white) {
       const move = groupedMoves[moveNumber].white;
-      result[moveNumber].white = {
-        piece: move.piece,
-        color: move.color,
-        from: move.from, // Use the string directly
-        to: move.to, // Use the string directly
-        pieceImage: getPieceImagePath(move.piece, move.color),
-        createsCheck: move.createsCheck,
-        isCheckmate: move.isCheckmate,
-        isCastling: move.isCastling,
-        isEnPassant: move.isEnPassant,
-        notation: chessNotation.formatMove(move), // Pass the whole move object
-        capturedPieceType: move.captured, // Store captured piece type (string)
-        annotation: move.annotation || "", // Include annotation
-      };
+      if (move.isResignation) {
+        result[moveNumber].white = { isResignation: true, color: move.color };
+      } else {
+        result[moveNumber].white = {
+          piece: move.piece,
+          color: move.color,
+          from: move.from, // Use the string directly
+          to: move.to, // Use the string directly
+          pieceImage: getPieceImagePath(move.piece, move.color),
+          createsCheck: move.createsCheck,
+          isCheckmate: move.isCheckmate,
+          isCastling: move.isCastling,
+          isEnPassant: move.isEnPassant,
+          notation: chessNotation.formatMove(move), // Pass the whole move object
+          capturedPieceType: move.captured, // Store captured piece type (string)
+          annotation: move.annotation || "", // Include annotation
+        };
+      }
     }
 
     // Process black move if it exists
     if (groupedMoves[moveNumber].black) {
       const move = groupedMoves[moveNumber].black;
-      result[moveNumber].black = {
-        piece: move.piece,
-        color: move.color,
-        from: move.from, // Use the string directly
-        to: move.to, // Use the string directly
-        pieceImage: getPieceImagePath(move.piece, move.color),
-        createsCheck: move.createsCheck,
-        isCheckmate: move.isCheckmate,
-        isCastling: move.isCastling,
-        isEnPassant: move.isEnPassant,
-        notation: chessNotation.formatMove(move), // Pass the whole move object
-        capturedPieceType: move.captured, // Store captured piece type (string)
-        annotation: move.annotation || "", // Include annotation
-      };
+      if (move.isResignation) {
+        result[moveNumber].black = { isResignation: true, color: move.color };
+      } else {
+        result[moveNumber].black = {
+          piece: move.piece,
+          color: move.color,
+          from: move.from, // Use the string directly
+          to: move.to, // Use the string directly
+          pieceImage: getPieceImagePath(move.piece, move.color),
+          createsCheck: move.createsCheck,
+          isCheckmate: move.isCheckmate,
+          isCastling: move.isCastling,
+          isEnPassant: move.isEnPassant,
+          notation: chessNotation.formatMove(move), // Pass the whole move object
+          capturedPieceType: move.captured, // Store captured piece type (string)
+          annotation: move.annotation || "", // Include annotation
+        };
+      }
     }
   }
 
@@ -254,8 +262,21 @@ onUpdated(() => {
         :class="{ 'bg-gray-50': parseInt(moveNumber) % 2 === 1 }"
       >
         <!-- White's move (left column) -->
+        <!-- Resignation entry -->
         <div
-          v-if="moves.white"
+          v-if="moves.white && moves.white.isResignation"
+          class="p-2 flex items-center bg-red-50 text-red-700"
+        >
+          <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
+          <svg class="w-4 h-4 mr-1 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <polygon points="5,4 19,8 5,13" fill="white" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="font-semibold text-sm">White resigns</span>
+        </div>
+        <!-- Normal move entry -->
+        <div
+          v-else-if="moves.white"
           class="p-2 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100':
@@ -302,8 +323,20 @@ onUpdated(() => {
         <div v-else class="p-2"></div>
 
         <!-- Black's move (right column) -->
+        <!-- Resignation entry -->
         <div
-          v-if="moves.black"
+          v-if="moves.black && moves.black.isResignation"
+          class="p-2 flex items-center bg-red-50 text-red-700"
+        >
+          <svg class="w-4 h-4 mr-1 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <line x1="5" y1="3" x2="5" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <polygon points="5,4 19,8 5,13" fill="#1a1a1a" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="text-sm font-semibold">Black resigns</span>
+        </div>
+        <!-- Normal move entry -->
+        <div
+          v-else-if="moves.black"
           class="p-2 flex items-center hover:bg-blue-50 cursor-pointer relative"
           :class="{
             'bg-blue-100':

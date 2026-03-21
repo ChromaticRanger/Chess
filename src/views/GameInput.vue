@@ -8,7 +8,7 @@
         <div class="game-container game-layout">
           <!-- Game Save Panel -->
           <div class="panel-save">
-            <GameSavePanel @save-game="handleSaveGame" @flip-board="handleFlipBoard" />
+            <GameSavePanel :current-turn="currentTurn" @save-game="handleSaveGame" @flip-board="handleFlipBoard" @resign="handleResign" />
           </div>
 
           <!-- Game Summary Panel (shown when game is saved/loaded) -->
@@ -282,6 +282,10 @@ const handleFlipBoard = () => {
   if (boardComponent.value) {
     boardComponent.value.flipBoard();
   }
+};
+
+const handleResign = () => {
+  gameStore.resign();
 };
 
 const handleMoveSelection = (index) => {
