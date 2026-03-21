@@ -223,87 +223,88 @@ const handleGoogleModalClose = () => {
 </script>
 
 <template>
-  <div class="w-full max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Create Account</h2>
-    
+  <div class="auth-card w-full max-w-md mx-auto p-8 rounded-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center text-white">Create Account</h2>
+
     <form @submit.prevent="handleSignup">
       <!-- Email Field -->
       <div class="mb-4">
-        <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+        <label for="email" class="block text-gray-300 text-sm font-bold mb-2">Email</label>
         <input
           id="email"
           v-model="email"
           type="email"
-          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          class="auth-input w-full py-2 px-3 rounded leading-tight"
           placeholder="Enter your email"
           required
         />
       </div>
-      
+
       <!-- Username Field -->
       <div class="mb-4">
-        <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+        <label for="username" class="block text-gray-300 text-sm font-bold mb-2">Username</label>
         <input
           id="username"
           v-model="username"
           type="text"
-          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          class="auth-input w-full py-2 px-3 rounded leading-tight"
           placeholder="Choose a username"
           required
         />
       </div>
-      
+
       <!-- Password Field -->
       <div class="mb-4">
-        <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+        <label for="password" class="block text-gray-300 text-sm font-bold mb-2">Password</label>
         <input
           id="password"
           v-model="password"
           type="password"
-          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          class="auth-input w-full py-2 px-3 rounded leading-tight"
           placeholder="Choose a password"
           required
         />
       </div>
-      
+
       <!-- Confirm Password Field -->
       <div class="mb-6">
-        <label for="confirmPassword" class="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
+        <label for="confirmPassword" class="block text-gray-300 text-sm font-bold mb-2">Confirm Password</label>
         <input
           id="confirmPassword"
           v-model="confirmPassword"
           type="password"
-          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          class="auth-input w-full py-2 px-3 rounded leading-tight"
           placeholder="Confirm your password"
           required
         />
       </div>
-      
+
       <!-- Error Message -->
-      <div v-if="localError || error || googleError" class="mb-4 text-red-500 text-sm">
+      <div v-if="localError || error || googleError" class="mb-4 text-red-400 text-sm">
         {{ localError || error || googleError }}
       </div>
-      
+
       <!-- Submit Button -->
       <div class="flex items-center justify-between">
         <button
           type="submit"
-          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full min-h-[44px] transition-colors"
+          class="auth-btn-primary w-full min-h-[44px] font-bold py-2 px-4 rounded transition-colors"
           :disabled="isLoading || isGoogleLoading"
         >
           {{ isLoading ? 'Creating Account...' : 'Sign Up' }}
         </button>
       </div>
-      
+
       <!-- Authentication Method Divider -->
-      <AuthDivider 
-        text="OR" 
+      <AuthDivider
+        text="OR"
+        bg-color="bg-[#19233a]"
         aria-label="Choose between creating an account with email/password or Google sign-up"
       />
-      
+
       <!-- Google SSO Button -->
       <div class="mb-4">
-        <GoogleSSOButton 
+        <GoogleSSOButton
           :is-loading="isGoogleLoading"
           :disabled="isLoading"
           @google-auth-success="handleGoogleAuthSuccess"
@@ -311,14 +312,14 @@ const handleGoogleModalClose = () => {
           @google-auth-clicked="handleGoogleSignup"
         />
       </div>
-      
+
       <!-- Login Link -->
       <div class="text-center mt-6">
-        <p class="text-gray-600 text-sm">
+        <p class="text-gray-400 text-sm">
           Already have an account?
-          <a 
-            @click="goToLogin" 
-            class="text-blue-500 hover:text-blue-700 cursor-pointer"
+          <a
+            @click="goToLogin"
+            class="text-[#d2b46e] hover:text-[#e8cc8a] cursor-pointer transition-colors"
           >
             Log In
           </a>
@@ -338,5 +339,40 @@ const handleGoogleModalClose = () => {
 </template>
 
 <style scoped>
-/* Any additional component-specific styles can go here */
+.auth-card {
+  background: linear-gradient(180deg, #1e2a3a 0%, #19233a 100%);
+  border: 1px solid rgba(210, 180, 110, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.auth-input {
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  appearance: none;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(210, 180, 110, 0.6);
+  box-shadow: 0 0 0 2px rgba(210, 180, 110, 0.15);
+}
+
+.auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.auth-btn-primary {
+  background-color: #d2b46e;
+  color: #1e2a3a;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  background-color: #c4a35f;
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 </style>

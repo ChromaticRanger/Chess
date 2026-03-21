@@ -23,12 +23,12 @@ const props = defineProps({
   >
     <!-- Background line -->
     <div class="absolute inset-0 flex items-center">
-      <div class="w-full border-t border-gray-300 transition-colors duration-200 hover:border-gray-400"></div>
+      <div class="w-full border-t border-white/10 transition-colors duration-200"></div>
     </div>
-    
+
     <!-- Text with background -->
     <div class="relative flex justify-center px-4" :class="bgColor">
-      <span class="text-sm font-medium text-gray-500 uppercase tracking-wider select-none">
+      <span class="text-sm font-medium text-white/30 uppercase tracking-wider select-none">
         {{ text }}
       </span>
     </div>
