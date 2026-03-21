@@ -245,32 +245,32 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Log In</h2>
-    
+  <div class="auth-card w-full max-w-md mx-auto p-8 rounded-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center text-white">Log In</h2>
+
     <form @submit.prevent="handleLogin">
       <!-- Email Field -->
       <div class="mb-4">
-        <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+        <label for="email" class="block text-gray-300 text-sm font-bold mb-2">Email</label>
         <input
           id="email"
           v-model="email"
           type="email"
-          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          class="auth-input w-full py-2 px-3 rounded leading-tight"
           placeholder="Enter your email"
           required
         />
       </div>
-      
+
       <!-- Password Field -->
       <div class="mb-6">
-        <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+        <label for="password" class="block text-gray-300 text-sm font-bold mb-2">Password</label>
         <div class="relative">
           <input
             id="password"
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
-            class="shadow appearance-none border rounded w-full py-2 px-3 pr-12 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            class="auth-input w-full py-2 px-3 pr-12 rounded leading-tight"
             placeholder="Enter your password"
             required
           />
@@ -279,39 +279,40 @@ onUnmounted(() => {
             @click="togglePasswordVisibility"
             @keydown.enter="togglePasswordVisibility"
             @keydown.space.prevent="togglePasswordVisibility"
-            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-11 h-11 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-11 h-11 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors focus:outline-none"
             :aria-label="showPassword ? 'Hide password' : 'Show password'"
           >
-            <img :src="showPassword ? eyeHideSvg : eyeShowSvg" alt="" class="w-6 h-6" />
+            <img :src="showPassword ? eyeHideSvg : eyeShowSvg" alt="" class="w-6 h-6 invert opacity-60" />
           </button>
         </div>
       </div>
-      
+
       <!-- Error Message -->
-      <div v-if="localError || error || googleError" class="mb-4 text-red-500 text-sm">
+      <div v-if="localError || error || googleError" class="mb-4 text-red-400 text-sm">
         {{ localError || error || googleError }}
       </div>
-      
+
       <!-- Submit Button -->
       <div class="flex items-center justify-between">
         <button
           type="submit"
-          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full min-h-[44px] transition-colors"
+          class="auth-btn-primary w-full min-h-[44px] font-bold py-2 px-4 rounded transition-colors"
           :disabled="isLoading || isGoogleLoading"
         >
           {{ isLoading ? 'Logging in...' : 'Log In' }}
         </button>
       </div>
-      
+
       <!-- Authentication Method Divider -->
-      <AuthDivider 
-        text="OR" 
+      <AuthDivider
+        text="OR"
+        bg-color="bg-[#19233a]"
         aria-label="Choose between email/password login or Google sign-in"
       />
-      
+
       <!-- Google SSO Button -->
       <div class="mb-4">
-        <GoogleSSOButton 
+        <GoogleSSOButton
           :is-loading="isGoogleLoading"
           :disabled="isLoading"
           @google-auth-success="handleGoogleAuthSuccess"
@@ -319,14 +320,14 @@ onUnmounted(() => {
           @google-auth-clicked="handleGoogleLogin"
         />
       </div>
-      
+
       <!-- Sign Up Link -->
       <div class="text-center mt-6">
-        <p class="text-gray-600 text-sm">
+        <p class="text-gray-400 text-sm">
           Don't have an account?
-          <a 
-            @click="goToSignup" 
-            class="text-blue-500 hover:text-blue-700 cursor-pointer"
+          <a
+            @click="goToSignup"
+            class="text-[#d2b46e] hover:text-[#e8cc8a] cursor-pointer transition-colors"
           >
             Sign Up
           </a>
@@ -346,5 +347,40 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Any additional component-specific styles can go here */
+.auth-card {
+  background: linear-gradient(180deg, #1e2a3a 0%, #19233a 100%);
+  border: 1px solid rgba(210, 180, 110, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.auth-input {
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  appearance: none;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(210, 180, 110, 0.6);
+  box-shadow: 0 0 0 2px rgba(210, 180, 110, 0.15);
+}
+
+.auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.auth-btn-primary {
+  background-color: #d2b46e;
+  color: #1e2a3a;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  background-color: #c4a35f;
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 </style>

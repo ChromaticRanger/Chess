@@ -178,7 +178,7 @@ onMounted(() => {
   <!-- Chess app if authenticated -->
   <div v-else class="flex flex-col min-h-screen">
     <!-- Header with user info and logout -->
-    <header class="bg-blue-600 text-white p-4">
+    <header class="text-white p-4">
       <div class="w-full flex justify-between items-center">
         <!-- Title on the very left -->
         <h1 class="text-xl font-bold pl-2">Log My Chess Games</h1>
@@ -197,7 +197,7 @@ onMounted(() => {
           <!-- Logout Button -->
           <button
             @click="handleLogout"
-            class="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100 transition"
+            class="border border-white/30 text-white/90 px-3 py-1 rounded hover:bg-white/10 transition text-sm"
           >
             Logout
           </button>
@@ -206,31 +206,27 @@ onMounted(() => {
     </header>
 
     <!-- Navigation bar -->
-    <nav class="bg-blue-500 text-white shadow-md">
+    <nav class="text-white shadow-md">
       <div class="w-full flex justify-center items-center">
         <div class="flex">
           <router-link
             to="/game-input"
-            class="py-2 px-6 font-medium hover:bg-blue-600 transition"
-            :class="{
-              'border-b-2 border-white': $route.path === '/game-input',
-            }"
+            class="py-2 px-6 font-medium nav-link transition"
+            :class="{ 'nav-link-active': $route.path === '/game-input' }"
           >
             Game Input
           </router-link>
           <router-link
             to="/game-history"
-            class="py-2 px-6 font-medium hover:bg-blue-600 transition"
-            :class="{
-              'border-b-2 border-white': $route.path === '/game-history',
-            }"
+            class="py-2 px-6 font-medium nav-link transition"
+            :class="{ 'nav-link-active': $route.path === '/game-history' }"
           >
             Game History
           </router-link>
           <router-link
             to="/settings"
-            class="py-2 px-6 font-medium hover:bg-blue-600 transition"
-            :class="{ 'border-b-2 border-white': $route.path === '/settings' }"
+            class="py-2 px-6 font-medium nav-link transition"
+            :class="{ 'nav-link-active': $route.path === '/settings' }"
           >
             Settings
           </router-link>
@@ -265,6 +261,33 @@ onMounted(() => {
 </template>
 
 <style scoped>
+header {
+  background: linear-gradient(180deg, #1e2a3a 0%, #19233a 100%);
+  border-bottom: 1px solid rgba(210, 180, 110, 0.3);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+}
+
+nav {
+  background: #141e2e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.7);
+  border-bottom: 3px solid transparent;
+  padding-bottom: calc(0.5rem - 3px);
+}
+
+.nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-link-active {
+  color: #fff;
+  border-bottom-color: rgba(210, 180, 110, 0.7);
+}
+
 .border-blue-600 {
   border: 10px solid #2563eb; /* TailwindCSS blue-600 */
 }

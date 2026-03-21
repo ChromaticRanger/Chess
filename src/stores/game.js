@@ -66,7 +66,12 @@ export const useGameStore = defineStore("game", () => {
 
   const isCheckmate = computed(() => chessInstance.isCheckmate());
   const isStalemate = computed(() => chessInstance.isStalemate());
-  const isGameOver = computed(() => chessInstance.isGameOver());
+  const isGameOver = computed(
+    () =>
+      chessInstance.isGameOver() ||
+      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw) ||
+      (gameResult.value !== '*' && gameResult.value !== '')
+  );
   const pgn = computed(() => {
     const currentHeaders = headers.value;
     const finalResult = isGameOver.value
@@ -426,11 +431,29 @@ export const useGameStore = defineStore("game", () => {
         }
       });
 
-      // Merge annotations from savedMoveHistory if provided
+      // Merge annotations and restore non-standard entries from savedMoveHistory if provided
       if (savedMoveHistory && Array.isArray(savedMoveHistory)) {
         rebuiltHistory.forEach((move, index) => {
           if (savedMoveHistory[index]?.annotation) {
             move.annotation = savedMoveHistory[index].annotation;
+          }
+        });
+
+        // Append any non-chess entries (e.g. resignations, agreed draws) that follow the real moves
+        savedMoveHistory.forEach((savedMove) => {
+          if (savedMove.isResignation) {
+            rebuiltHistory.push({
+              color: savedMove.color,
+              san: savedMove.san,
+              isResignation: true,
+              timestamp: savedMove.timestamp,
+            });
+          } else if (savedMove.isAgreedDraw) {
+            rebuiltHistory.push({
+              san: savedMove.san,
+              isAgreedDraw: true,
+              timestamp: savedMove.timestamp,
+            });
           }
         });
       }
@@ -439,6 +462,26 @@ export const useGameStore = defineStore("game", () => {
 
       rebuildCapturedPieces();
       updateGameResult();
+
+      // updateGameResult() only knows about chess.js game-over states (checkmate/stalemate).
+      // Restore the result for games ended by resignation or agreed draw.
+      const resignationEntry = rebuiltHistory.find((m) => m.isResignation);
+      const agreedDrawEntry = rebuiltHistory.find((m) => m.isAgreedDraw);
+      if (resignationEntry) {
+        const result = resignationEntry.color === "White" ? "0-1" : "1-0";
+        gameResult.value = result;
+        headers.value = { ...headers.value, Result: result };
+      } else if (agreedDrawEntry) {
+        gameResult.value = "1/2-1/2";
+        headers.value = { ...headers.value, Result: "1/2-1/2" };
+      } else {
+        // If no in-game event set the result, fall back to the Result header
+        // (e.g. result was manually chosen in the save dialog).
+        const headerResult = headers.value.Result;
+        if (headerResult && headerResult !== '*') {
+          gameResult.value = headerResult;
+        }
+      }
       isGameSaved.value = true; // Game loaded is considered saved initially
 
       console.log("Pinia Store: PGN loaded successfully.");
@@ -536,6 +579,31 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
+  function agreedDraw() {
+    moveHistory.value.push({
+      san: "Draw Agreed",
+      isAgreedDraw: true,
+      timestamp: new Date().toISOString(),
+    });
+    gameResult.value = "1/2-1/2";
+    headers.value = { ...headers.value, Result: "1/2-1/2" };
+    isGameSaved.value = false;
+  }
+
+  function resign() {
+    const resigningColor = currentTurn.value;
+    moveHistory.value.push({
+      color: resigningColor,
+      san: "Resigns",
+      isResignation: true,
+      timestamp: new Date().toISOString(),
+    });
+    const result = resigningColor === "White" ? "0-1" : "1-0";
+    gameResult.value = result;
+    headers.value = { ...headers.value, Result: result };
+    isGameSaved.value = false;
+  }
+
   function markGameAsSaved() {
     isGameSaved.value = true;
   }
@@ -609,6 +677,12 @@ export const useGameStore = defineStore("game", () => {
       }
 
       const move = moveHistory.value[i];
+
+      // Skip non-chess entries like resignation or agreed draw
+      if (move.isResignation || move.isAgreedDraw) {
+        continue;
+      }
+
       console.log(`Replaying move ${i}: ${move.from}-${move.to}`, move);
 
       const result = tempChess.move({
@@ -801,6 +875,8 @@ export const useGameStore = defineStore("game", () => {
     loadPgn,
     setHeaders,
     getValidMoves,
+    agreedDraw,
+    resign,
     markGameAsSaved,
     openLogoutConfirmModal,
     closeLogoutConfirmModal,

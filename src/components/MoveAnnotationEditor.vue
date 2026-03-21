@@ -101,7 +101,7 @@ const handleClose = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,16 +110,18 @@ const handleClose = () => {
 }
 
 .annotation-editor {
-  background-color: white;
+  background-color: #1a2535;
+  border: 1px solid rgba(210, 180, 110, 0.2);
   border-radius: 0.5rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   width: 90%;
   max-width: 400px;
   overflow: hidden;
 }
 
 .editor-header {
-  background-color: #2563eb;
+  background: linear-gradient(180deg, #1e2a3a 0%, #19233a 100%);
+  border-bottom: 1px solid rgba(210, 180, 110, 0.25);
   color: white;
   padding: 1rem;
 }
@@ -127,38 +129,43 @@ const handleClose = () => {
 .editor-title {
   font-size: 1.125rem;
   font-weight: 600;
+  color: #d2b46e;
   margin: 0 0 0.25rem 0;
 }
 
 .move-info {
   font-size: 0.875rem;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.7);
   margin: 0;
 }
 
 .editor-body {
   padding: 1rem;
   position: relative;
+  background-color: #1a2535;
 }
 
 .note-textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   resize: none;
   font-family: inherit;
+  color: rgba(255, 255, 255, 0.9);
+  box-sizing: border-box;
 }
 
 .note-textarea:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  border-color: rgba(210, 180, 110, 0.6);
+  box-shadow: 0 0 0 2px rgba(210, 180, 110, 0.15);
 }
 
 .note-textarea::placeholder {
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .char-count {
@@ -166,7 +173,7 @@ const handleClose = () => {
   bottom: 1.5rem;
   right: 1.75rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .editor-actions {
@@ -174,8 +181,8 @@ const handleClose = () => {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background-color: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  background-color: #141e2e;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .btn-cancel,
@@ -189,22 +196,24 @@ const handleClose = () => {
 }
 
 .btn-cancel {
-  background-color: white;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .btn-cancel:hover {
-  background-color: #f3f4f6;
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .btn-save {
-  background-color: #2563eb;
-  border: 1px solid #2563eb;
-  color: white;
+  background-color: #d2b46e;
+  border: 1px solid #d2b46e;
+  color: #1e2a3a;
+  font-weight: 600;
 }
 
 .btn-save:hover {
-  background-color: #1d4ed8;
+  background-color: #c4a35f;
+  border-color: #c4a35f;
 }
 </style>

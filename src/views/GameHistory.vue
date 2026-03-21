@@ -22,16 +22,14 @@
           </div>
         </div>
         
-        <div v-else v-for="game in games" :key="game.id" class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:bg-blue-50 overflow-hidden game-card">
-          <div class="p-5">
-            <!-- Header with game title and move count -->
-            <div class="flex justify-between items-start mb-2">
-              <h3 class="text-lg font-semibold">{{ game.name }}</h3>
-              <span class="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                {{ game.moveHistory.length }} moves
-              </span>
-            </div>
-            
+        <div v-else v-for="game in games" :key="game.id" class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden game-card">
+          <div class="game-card-header px-5 py-3 flex justify-between items-center">
+            <h3 class="text-base font-semibold text-white">{{ game.name }}</h3>
+            <span class="text-xs font-medium px-2 py-0.5 rounded game-card-badge">
+              {{ game.moveHistory.length }} moves
+            </span>
+          </div>
+          <div class="p-5 pt-3">
             <!-- Event and date section -->
             <div class="mb-3 border-b pb-2">
               <div v-if="game.event || game.round" class="flex items-center mb-1">
@@ -266,8 +264,19 @@ const handleDeleteGame = async () => {
   text-overflow: ellipsis;
 }
 
+.game-card-header {
+  background: linear-gradient(180deg, #1e2a3a 0%, #19233a 100%);
+  border-bottom: 1px solid rgba(210, 180, 110, 0.3);
+}
+
+.game-card-badge {
+  background: rgba(210, 180, 110, 0.15);
+  color: rgba(210, 180, 110, 0.9);
+  border: 1px solid rgba(210, 180, 110, 0.25);
+}
+
 .game-history-view {
-  background-color: #f9fafb;
+  background-color: transparent;
 }
 
 .game-card {

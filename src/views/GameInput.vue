@@ -8,7 +8,7 @@
         <div class="game-container game-layout">
           <!-- Game Save Panel -->
           <div class="panel-save">
-            <GameSavePanel @save-game="handleSaveGame" @flip-board="handleFlipBoard" />
+            <GameSavePanel :current-turn="currentTurn" :is-game-over="isGameOver" @save-game="handleSaveGame" @flip-board="handleFlipBoard" @resign="handleResign" @agreed-draw="handleAgreedDraw" />
           </div>
 
           <!-- Game Summary Panel (shown when game is saved/loaded) -->
@@ -284,6 +284,14 @@ const handleFlipBoard = () => {
   }
 };
 
+const handleResign = () => {
+  gameStore.resign();
+};
+
+const handleAgreedDraw = () => {
+  gameStore.agreedDraw();
+};
+
 const handleMoveSelection = (index) => {
   // Use the board component's new method to restore to the selected move
   if (boardComponent.value) {
@@ -410,9 +418,9 @@ const handleCloseAnnotation = () => {
 }
 
 .board-border {
-  border: 4px solid #2563eb;
+  border: 4px solid #2d1a0a;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .game-input-view {
@@ -505,7 +513,7 @@ const handleCloseAnnotation = () => {
   }
 
   .board-border {
-    border: clamp(6px, 1vw, 10px) solid #2563eb;
+    border: clamp(6px, 1vw, 10px) solid #2d1a0a;
   }
 
   .game-input-view {

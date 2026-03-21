@@ -1,9 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div class="bg-white rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
+  <div class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
+    <div class="bg-[#1a2535] border border-[rgba(210,180,110,0.2)] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
       <!-- Header -->
-      <div class="flex justify-between items-center p-4 bg-blue-600 text-white rounded-t-md">
-        <h3 class="font-semibold text-lg">{{ isUpdate ? 'Update Game' : 'Save Game' }}</h3>
+      <div class="flex justify-between items-center p-4 bg-[#1e2a3a] text-white rounded-t-md border-b border-[rgba(210,180,110,0.25)]">
+        <h3 class="font-semibold text-lg text-[#d2b46e]">{{ isUpdate ? 'Update Game' : 'Save Game' }}</h3>
       </div>
       
       <!-- Form content -->
@@ -11,10 +11,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Game metadata section -->
           <div class="space-y-4 col-span-full">
-            <h4 class="font-semibold text-gray-700 border-b pb-2">Game Information</h4>
+            <h4 class="font-semibold text-[#d2b46e] border-b border-[rgba(210,180,110,0.25)] pb-2">Game Information</h4>
             
             <div class="form-group">
-              <label for="game-name" class="block text-sm font-medium text-gray-700 mb-1">Game Name</label>
+              <label for="game-name" class="block text-sm font-medium text-gray-300 mb-1">Game Name</label>
               <input 
                 id="game-name" 
                 v-model="gameData.name" 
@@ -28,7 +28,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Date -->
               <div class="form-group">
-                <label for="game-date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <label for="game-date" class="block text-sm font-medium text-gray-300 mb-1">Date</label>
                 <input 
                   id="game-date" 
                   v-model="gameData.date" 
@@ -39,7 +39,7 @@
               
               <!-- Venue -->
               <div class="form-group">
-                <label for="venue" class="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+                <label for="venue" class="block text-sm font-medium text-gray-300 mb-1">Venue</label>
                 <input 
                   id="venue" 
                   v-model="gameData.venue" 
@@ -53,7 +53,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Event -->
               <div class="form-group">
-                <label for="event" class="block text-sm font-medium text-gray-700 mb-1">Event</label>
+                <label for="event" class="block text-sm font-medium text-gray-300 mb-1">Event</label>
                 <input 
                   id="event" 
                   v-model="gameData.event" 
@@ -65,7 +65,7 @@
               
               <!-- Round -->
               <div class="form-group">
-                <label for="round" class="block text-sm font-medium text-gray-700 mb-1">Round</label>
+                <label for="round" class="block text-sm font-medium text-gray-300 mb-1">Round</label>
                 <input 
                   id="round" 
                   v-model="gameData.round" 
@@ -79,10 +79,10 @@
           
           <!-- Players section -->
           <div class="space-y-4">
-            <h4 class="font-semibold text-gray-700 border-b pb-2">White Player</h4>
+            <h4 class="font-semibold text-[#d2b46e] border-b border-[rgba(210,180,110,0.25)] pb-2">White Player</h4>
             
             <div class="form-group">
-              <label for="white-player" class="block text-sm font-medium text-gray-700 mb-1">White Player Name</label>
+              <label for="white-player" class="block text-sm font-medium text-gray-300 mb-1">White Player Name</label>
               <input 
                 id="white-player" 
                 v-model="gameData.whitePlayer" 
@@ -93,7 +93,7 @@
             </div>
             
             <div class="form-group">
-              <label for="white-rating" class="block text-sm font-medium text-gray-700 mb-1">White Rating</label>
+              <label for="white-rating" class="block text-sm font-medium text-gray-300 mb-1">White Rating</label>
               <input 
                 id="white-rating" 
                 v-model="gameData.whiteRating" 
@@ -105,10 +105,10 @@
           </div>
           
           <div class="space-y-4">
-            <h4 class="font-semibold text-gray-700 border-b pb-2">Black Player</h4>
+            <h4 class="font-semibold text-[#d2b46e] border-b border-[rgba(210,180,110,0.25)] pb-2">Black Player</h4>
             
             <div class="form-group">
-              <label for="black-player" class="block text-sm font-medium text-gray-700 mb-1">Black Player Name</label>
+              <label for="black-player" class="block text-sm font-medium text-gray-300 mb-1">Black Player Name</label>
               <input 
                 id="black-player" 
                 v-model="gameData.blackPlayer" 
@@ -119,7 +119,7 @@
             </div>
             
             <div class="form-group">
-              <label for="black-rating" class="block text-sm font-medium text-gray-700 mb-1">Black Rating</label>
+              <label for="black-rating" class="block text-sm font-medium text-gray-300 mb-1">Black Rating</label>
               <input 
                 id="black-rating" 
                 v-model="gameData.blackRating" 
@@ -133,7 +133,7 @@
           <!-- Game Result section -->
           <div class="col-span-full">
             <div class="form-group">
-              <label for="result" class="block text-sm font-medium text-gray-700 mb-1">Game Result</label>
+              <label for="result" class="block text-sm font-medium text-gray-300 mb-1">Game Result</label>
               <select 
                 id="result" 
                 v-model="gameData.result" 
@@ -153,7 +153,7 @@
           <!-- Description section -->
           <div class="col-span-full">
             <div class="form-group">
-              <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Game Description</label>
+              <label for="description" class="block text-sm font-medium text-gray-300 mb-1">Game Description</label>
               <textarea 
                 id="description" 
                 v-model="gameData.description" 
@@ -169,13 +169,13 @@
           <button
             type="button"
             @click="$emit('cancel')"
-            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md transition-colors"
+            class="px-4 py-2 bg-transparent border border-white/20 text-gray-300 hover:bg-white/10 rounded-md transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+            class="px-4 py-2 bg-[#d2b46e] hover:bg-[#c4a35f] text-[#1e2a3a] font-semibold rounded-md transition-colors"
           >
             {{ isUpdate ? 'Update Game' : 'Save Game' }}
           </button>
@@ -266,11 +266,33 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Any component-specific styles can go here */
-/* These classes assist with form styling */
 .form-input, .form-textarea, .form-select {
-  @apply px-3 py-2 border border-gray-300 rounded-md;
+  @apply px-3 py-2 rounded-md;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
 }
 
-/* Let the browser handle focus styles naturally */
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: rgba(210, 180, 110, 0.6);
+  box-shadow: 0 0 0 2px rgba(210, 180, 110, 0.15);
+}
+
+.form-select option {
+  background-color: #1a2535;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Chrome date input icon colour fix */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.5);
+}
 </style>

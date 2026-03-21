@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #f7f7f7;
+    background-image: repeating-conic-gradient(
+      #f3f3f3 0% 25%,
+      #f7f7f7 0% 50%
+    );
+    background-size: 96px 96px;
+  }
+}

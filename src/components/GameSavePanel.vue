@@ -9,11 +9,18 @@ const { isAuthenticated } = useAuth();
 
 // Define props
 const props = defineProps({
-  // Add any necessary props here
+  currentTurn: {
+    type: String,
+    default: 'White',
+  },
+  isGameOver: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Define emits
-const emit = defineEmits(['save-game', 'flip-board']);
+const emit = defineEmits(['save-game', 'flip-board', 'resign', 'agreed-draw']);
 
 // Handle save game button click
 const handleSaveGame = () => {
@@ -23,6 +30,16 @@ const handleSaveGame = () => {
 // Handle flip board button click
 const handleFlipBoard = () => {
   emit('flip-board');
+};
+
+// Handle resign button click
+const handleResign = () => {
+  emit('resign');
+};
+
+// Handle agreed draw button click
+const handleAgreedDraw = () => {
+  emit('agreed-draw');
 };
 </script>
 
@@ -37,6 +54,58 @@ const handleFlipBoard = () => {
           title="Flip board orientation"
         >
           <img :src="swapSvg" alt="Flip Board" class="control-icon" />
+        </button>
+      </div>
+
+      <div class="flex">
+        <!-- Resign button -->
+        <button
+          @click="handleResign"
+          class="control-button"
+          :title="`${currentTurn} resigns`"
+          :disabled="isGameOver"
+        >
+          <svg
+            class="control-icon"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <!-- Flag pole -->
+            <line x1="5" y1="3" x2="5" y2="21" stroke="#6b7280" stroke-width="2" stroke-linecap="round"/>
+            <!-- Flag body -->
+            <polygon
+              points="5,4 19,8 5,13"
+              :fill="currentTurn === 'White' ? '#ffffff' : '#1a1a1a'"
+              :stroke="currentTurn === 'White' ? '#6b7280' : '#6b7280'"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex">
+        <!-- Agreed draw button -->
+        <button
+          @click="handleAgreedDraw"
+          class="control-button"
+          title="Agree to a draw"
+          :disabled="isGameOver"
+        >
+          <svg
+            class="control-icon"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            stroke="#6b7280"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <!-- Handshake icon -->
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
         </button>
       </div>
 

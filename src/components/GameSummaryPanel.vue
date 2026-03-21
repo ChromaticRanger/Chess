@@ -71,6 +71,14 @@ const formattedPlayers = computed(() => {
 
   return `${whitePart} vs ${blackPart}`;
 });
+
+const resultLabel = computed(() => {
+  const r = props.gameMetadata?.result;
+  if (r === "1-0") return { text: "1–0", title: "White wins" };
+  if (r === "0-1") return { text: "0–1", title: "Black wins" };
+  if (r === "1/2-1/2") return { text: "½–½", title: "Draw" };
+  return null;
+});
 </script>
 
 <template>
@@ -81,17 +89,21 @@ const formattedPlayers = computed(() => {
     </div>
     <div v-if="!isCollapsed" class="details-section">
       <p v-if="formattedDetails" class="game-details">{{ formattedDetails }}</p>
-      <p class="players">{{ formattedPlayers }}</p>
+      <p class="players">
+        {{ formattedPlayers }}
+        <span v-if="resultLabel" class="result-badge" :title="resultLabel.title">{{ resultLabel.text }}</span>
+      </p>
     </div>
   </div>
 </template>
 
 <style scoped>
 .game-summary-panel {
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
+  background: linear-gradient(180deg, #1e2a3a 0%, #19233a 100%);
+  border: 1px solid rgba(210, 180, 110, 0.3);
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .game-summary-panel.collapsed {
@@ -106,39 +118,57 @@ const formattedPlayers = computed(() => {
   gap: 0.5rem;
 }
 
-.header:hover {
-  opacity: 0.8;
+.header:hover .game-name {
+  color: #e8cc8a;
 }
 
 .game-name {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1e40af;
+  color: #d2b46e;
   margin: 0;
+  transition: color 0.15s ease;
 }
 
 .toggle-icon {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: rgba(210, 180, 110, 0.5);
   user-select: none;
 }
 
 .details-section {
   text-align: center;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 0.35rem;
 }
 
 .game-details {
   font-size: 0.875rem;
-  color: #4b5563;
-  margin: 0 0 0.25rem 0;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 0.2rem 0;
 }
 
 .players {
   font-size: 0.875rem;
-  color: #374151;
+  color: rgba(255, 255, 255, 0.85);
   font-weight: 500;
   margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #d2b46e;
+  background: rgba(210, 180, 110, 0.12);
+  border: 1px solid rgba(210, 180, 110, 0.35);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.02em;
 }
 
 /* Mobile adjustments */
