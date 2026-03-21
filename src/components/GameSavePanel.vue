@@ -16,7 +16,7 @@ const props = defineProps({
 });
 
 // Define emits
-const emit = defineEmits(['save-game', 'flip-board', 'resign']);
+const emit = defineEmits(['save-game', 'flip-board', 'resign', 'agreed-draw']);
 
 // Handle save game button click
 const handleSaveGame = () => {
@@ -31,6 +31,11 @@ const handleFlipBoard = () => {
 // Handle resign button click
 const handleResign = () => {
   emit('resign');
+};
+
+// Handle agreed draw button click
+const handleAgreedDraw = () => {
+  emit('agreed-draw');
 };
 </script>
 
@@ -70,6 +75,30 @@ const handleResign = () => {
               stroke-width="1.5"
               stroke-linejoin="round"
             />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex">
+        <!-- Agreed draw button -->
+        <button
+          @click="handleAgreedDraw"
+          class="control-button"
+          title="Agree to a draw"
+        >
+          <svg
+            class="control-icon"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            stroke="#6b7280"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <!-- Handshake icon -->
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
           </svg>
         </button>
       </div>

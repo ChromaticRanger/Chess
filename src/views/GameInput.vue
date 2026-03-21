@@ -8,7 +8,7 @@
         <div class="game-container game-layout">
           <!-- Game Save Panel -->
           <div class="panel-save">
-            <GameSavePanel :current-turn="currentTurn" @save-game="handleSaveGame" @flip-board="handleFlipBoard" @resign="handleResign" />
+            <GameSavePanel :current-turn="currentTurn" @save-game="handleSaveGame" @flip-board="handleFlipBoard" @resign="handleResign" @agreed-draw="handleAgreedDraw" />
           </div>
 
           <!-- Game Summary Panel (shown when game is saved/loaded) -->
@@ -286,6 +286,10 @@ const handleFlipBoard = () => {
 
 const handleResign = () => {
   gameStore.resign();
+};
+
+const handleAgreedDraw = () => {
+  gameStore.agreedDraw();
 };
 
 const handleMoveSelection = (index) => {

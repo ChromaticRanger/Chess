@@ -66,7 +66,11 @@ export const useGameStore = defineStore("game", () => {
 
   const isCheckmate = computed(() => chessInstance.isCheckmate());
   const isStalemate = computed(() => chessInstance.isStalemate());
-  const isGameOver = computed(() => chessInstance.isGameOver());
+  const isGameOver = computed(
+    () =>
+      chessInstance.isGameOver() ||
+      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw)
+  );
   const pgn = computed(() => {
     const currentHeaders = headers.value;
     const finalResult = isGameOver.value
@@ -434,13 +438,19 @@ export const useGameStore = defineStore("game", () => {
           }
         });
 
-        // Append any non-chess entries (e.g. resignations) that follow the real moves
+        // Append any non-chess entries (e.g. resignations, agreed draws) that follow the real moves
         savedMoveHistory.forEach((savedMove) => {
           if (savedMove.isResignation) {
             rebuiltHistory.push({
               color: savedMove.color,
               san: savedMove.san,
               isResignation: true,
+              timestamp: savedMove.timestamp,
+            });
+          } else if (savedMove.isAgreedDraw) {
+            rebuiltHistory.push({
+              san: savedMove.san,
+              isAgreedDraw: true,
               timestamp: savedMove.timestamp,
             });
           }
@@ -453,12 +463,16 @@ export const useGameStore = defineStore("game", () => {
       updateGameResult();
 
       // updateGameResult() only knows about chess.js game-over states (checkmate/stalemate).
-      // If the game ended by resignation, restore the result from the loaded headers or rebuiltHistory.
+      // Restore the result for games ended by resignation or agreed draw.
       const resignationEntry = rebuiltHistory.find((m) => m.isResignation);
+      const agreedDrawEntry = rebuiltHistory.find((m) => m.isAgreedDraw);
       if (resignationEntry) {
         const result = resignationEntry.color === "White" ? "0-1" : "1-0";
         gameResult.value = result;
         headers.value = { ...headers.value, Result: result };
+      } else if (agreedDrawEntry) {
+        gameResult.value = "1/2-1/2";
+        headers.value = { ...headers.value, Result: "1/2-1/2" };
       }
       isGameSaved.value = true; // Game loaded is considered saved initially
 
@@ -557,6 +571,17 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
+  function agreedDraw() {
+    moveHistory.value.push({
+      san: "Draw Agreed",
+      isAgreedDraw: true,
+      timestamp: new Date().toISOString(),
+    });
+    gameResult.value = "1/2-1/2";
+    headers.value = { ...headers.value, Result: "1/2-1/2" };
+    isGameSaved.value = false;
+  }
+
   function resign() {
     const resigningColor = currentTurn.value;
     moveHistory.value.push({
@@ -645,8 +670,8 @@ export const useGameStore = defineStore("game", () => {
 
       const move = moveHistory.value[i];
 
-      // Skip non-chess entries like resignation
-      if (move.isResignation) {
+      // Skip non-chess entries like resignation or agreed draw
+      if (move.isResignation || move.isAgreedDraw) {
         continue;
       }
 
@@ -842,6 +867,7 @@ export const useGameStore = defineStore("game", () => {
     loadPgn,
     setHeaders,
     getValidMoves,
+    agreedDraw,
     resign,
     markGameAsSaved,
     openLogoutConfirmModal,

@@ -58,6 +58,8 @@ const formattedMoveHistoryByNumber = computed(() => {
       const move = groupedMoves[moveNumber].white;
       if (move.isResignation) {
         result[moveNumber].white = { isResignation: true, color: move.color };
+      } else if (move.isAgreedDraw) {
+        result[moveNumber].white = { isAgreedDraw: true };
       } else {
         result[moveNumber].white = {
           piece: move.piece,
@@ -81,6 +83,8 @@ const formattedMoveHistoryByNumber = computed(() => {
       const move = groupedMoves[moveNumber].black;
       if (move.isResignation) {
         result[moveNumber].black = { isResignation: true, color: move.color };
+      } else if (move.isAgreedDraw) {
+        result[moveNumber].black = { isAgreedDraw: true };
       } else {
         result[moveNumber].black = {
           piece: move.piece,
@@ -262,9 +266,21 @@ onUpdated(() => {
         :class="{ 'bg-gray-50': parseInt(moveNumber) % 2 === 1 }"
       >
         <!-- White's move (left column) -->
+        <!-- Agreed draw entry -->
+        <div
+          v-if="moves.white && moves.white.isAgreedDraw"
+          class="p-2 flex items-center bg-green-50 text-green-700"
+        >
+          <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
+          <svg class="w-4 h-4 mr-1 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <span class="font-semibold text-sm">Draw Agreed</span>
+        </div>
         <!-- Resignation entry -->
         <div
-          v-if="moves.white && moves.white.isResignation"
+          v-else-if="moves.white && moves.white.isResignation"
           class="p-2 flex items-center bg-red-50 text-red-700"
         >
           <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
@@ -322,10 +338,21 @@ onUpdated(() => {
         </div>
         <div v-else class="p-2"></div>
 
-        <!-- Black's move (right column) -->
+        <!-- Black's move (right column) — hidden when white column holds an agreed draw -->
+        <!-- Agreed draw entry (when draw agreed on Black's turn) -->
+        <div
+          v-if="moves.black && moves.black.isAgreedDraw"
+          class="p-2 flex items-center bg-green-50 text-green-700"
+        >
+          <svg class="w-4 h-4 mr-1 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <span class="text-sm font-semibold">Draw Agreed</span>
+        </div>
         <!-- Resignation entry -->
         <div
-          v-if="moves.black && moves.black.isResignation"
+          v-else-if="moves.black && moves.black.isResignation"
           class="p-2 flex items-center bg-red-50 text-red-700"
         >
           <svg class="w-4 h-4 mr-1 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
