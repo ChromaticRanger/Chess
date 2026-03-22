@@ -54,6 +54,9 @@ model Game {
   result        String?   // "1-0", "0-1", "1/2-1/2", "*" (in progress)
   pgn           String?   // Add this line to store the PGN string
   evaluations   Json?     // Stores position evaluations keyed by FEN
+  openingName   String?   // Full opening name, e.g. "Sicilian Defense: Najdorf Variation"
+  openingEco    String?   // ECO code, e.g. "B90"
+  openingBase   String?   // Base opening family, e.g. "Sicilian Defense"
   // Relationships
   userId        Int
   user          User      @relation(fields: [userId], references: [id])
@@ -68,6 +71,8 @@ model Game {
   @@index([date])
   @@index([event])
   @@index([venue])
+  @@index([openingBase])
+  @@index([openingEco])
 }
 
 model UserSettings {

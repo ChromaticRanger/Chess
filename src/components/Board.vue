@@ -29,6 +29,7 @@ const {
   isGameOver,
   showCheckmateModal,
   checkmateModalMessage,
+  showStalemateModal,
   viewingMoveIndex, // Add the viewingMoveIndex to track which move is being viewed
   currentEvaluation,
   currentOpening,
@@ -42,7 +43,8 @@ const {
   takeBackMove,
   setBoardOrientation,
   getValidMoves,
-  closeCheckmateModal, // Get the function to close the modal
+  closeCheckmateModal,
+  closeStalemateModal,
   viewMoveAtIndex, // Add the viewMoveAtIndex function
   setEvaluation,
   setAnalyzing,
@@ -485,6 +487,13 @@ defineExpose({
       :message="checkmateModalMessage"
       title="Game Over"
       @close="closeCheckmateModal"
+    />
+
+    <Modal
+      :visible="showStalemateModal"
+      message="Stalemate! The game is a draw — the player to move has no legal moves and is not in check."
+      title="Stalemate"
+      @close="closeStalemateModal"
     />
   </div>
 </template>

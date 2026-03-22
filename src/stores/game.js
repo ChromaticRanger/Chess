@@ -1,7 +1,7 @@
 // filepath: src/stores/game.js
 import { defineStore } from "pinia";
 import { Chess } from "chess.js";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import axios from "axios";
 import openings from "@/data/openings.json";
 
@@ -35,6 +35,9 @@ export const useGameStore = defineStore("game", () => {
   const showCheckmateModal = ref(false);
   const checkmateModalMessage = ref("");
 
+  // Add state for stalemate modal
+  const showStalemateModal = ref(false);
+
   // Use a regular ref for currentTurn instead of a computed property to ensure reactivity
   const currentTurn = ref(chessInstance.turn() === "w" ? "White" : "Black");
 
@@ -45,6 +48,9 @@ export const useGameStore = defineStore("game", () => {
   // Track the currently loaded/saved game for incremental updates
   const currentGameId = ref(null);
   const currentGameMetadata = ref(null);
+
+  // Track the last matched opening before going out of book
+  const lastMatchedOpening = ref(null);
 
   // Evaluation state
   const evaluations = ref({}); // { fen: Evaluation }
@@ -69,7 +75,7 @@ export const useGameStore = defineStore("game", () => {
   const isGameOver = computed(
     () =>
       chessInstance.isGameOver() ||
-      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw) ||
+      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw || m.isStalemate) ||
       (gameResult.value !== '*' && gameResult.value !== '')
   );
   const pgn = computed(() => {
@@ -106,23 +112,23 @@ export const useGameStore = defineStore("game", () => {
 
   // Get current opening name from opening book
   const currentOpening = computed(() => {
-    // Try exact FEN match first
-    if (openings[currentFen.value]) {
-      return openings[currentFen.value];
+    const positionKey = currentFen.value.split(' ').slice(0, 4).join(' ');
+    return openings[positionKey] || null;
+  });
+
+  // Update lastMatchedOpening whenever a book position is reached
+  watch(currentOpening, (newVal) => {
+    if (newVal) {
+      lastMatchedOpening.value = newVal;
     }
-    // Try matching without move counters (last two FEN fields)
-    const fenParts = currentFen.value.split(' ');
-    if (fenParts.length >= 4) {
-      const positionKey = fenParts.slice(0, 4).join(' ');
-      // Search for a matching position
-      for (const [fen, opening] of Object.entries(openings)) {
-        const openingParts = fen.split(' ');
-        if (openingParts.slice(0, 4).join(' ') === positionKey) {
-          return opening;
-        }
-      }
-    }
-    return null;
+  });
+
+  // Derive the base opening name (everything before the first ": ")
+  const openingBase = computed(() => {
+    if (!lastMatchedOpening.value) return null;
+    const name = lastMatchedOpening.value.name;
+    const colonIndex = name.indexOf(':');
+    return colonIndex > -1 ? name.substring(0, colonIndex) : name;
   });
 
   // --- Actions ---
@@ -223,6 +229,21 @@ export const useGameStore = defineStore("game", () => {
           showCheckmateModal.value = true;
         }
 
+        // Check for stalemate and display modal if needed
+        if (chessInstance.isStalemate()) {
+          const stalematedColor = chessInstance.turn() === "w" ? "White" : "Black";
+          console.log(`Stalemate! ${stalematedColor} has no legal moves.`);
+          moveHistory.value.push({
+            san: "Stalemate",
+            isStalemate: true,
+            timestamp: new Date().toISOString(),
+          });
+          gameResult.value = "1/2-1/2";
+          headers.value = { ...headers.value, Result: "1/2-1/2" };
+          isGameSaved.value = false;
+          showStalemateModal.value = true;
+        }
+
         // Double check that our currentTurn value matches chess.js's turn
         console.log(
           "Final check - chess.js turn:",
@@ -274,6 +295,7 @@ export const useGameStore = defineStore("game", () => {
     // Clear saved game tracking (new game, not a loaded one)
     currentGameId.value = null;
     currentGameMetadata.value = null;
+    lastMatchedOpening.value = null;
 
     chessInstance.reset();
     fen.value = chessInstance.fen();
@@ -288,9 +310,10 @@ export const useGameStore = defineStore("game", () => {
     whiteKingInCheck.value = false;
     blackKingInCheck.value = false;
 
-    // Clear checkmate modal if it was showing
+    // Clear checkmate/stalemate modals if they were showing
     showCheckmateModal.value = false;
     checkmateModalMessage.value = "";
+    showStalemateModal.value = false;
 
     console.log("Pinia Store: Game reset");
   }
@@ -370,6 +393,11 @@ export const useGameStore = defineStore("game", () => {
       // Store the game ID and metadata if provided (for incremental updates)
       currentGameId.value = gameId;
       currentGameMetadata.value = gameMetadata;
+
+      // Restore last matched opening from saved metadata if available
+      if (gameMetadata?.openingName) {
+        lastMatchedOpening.value = { name: gameMetadata.openingName, eco: gameMetadata.openingEco };
+      }
 
       // Load cached evaluations if a gameId is provided
       if (gameId) {
@@ -454,6 +482,12 @@ export const useGameStore = defineStore("game", () => {
               isAgreedDraw: true,
               timestamp: savedMove.timestamp,
             });
+          } else if (savedMove.isStalemate) {
+            rebuiltHistory.push({
+              san: savedMove.san,
+              isStalemate: true,
+              timestamp: savedMove.timestamp,
+            });
           }
         });
       }
@@ -467,11 +501,12 @@ export const useGameStore = defineStore("game", () => {
       // Restore the result for games ended by resignation or agreed draw.
       const resignationEntry = rebuiltHistory.find((m) => m.isResignation);
       const agreedDrawEntry = rebuiltHistory.find((m) => m.isAgreedDraw);
+      const stalemateEntry = rebuiltHistory.find((m) => m.isStalemate);
       if (resignationEntry) {
         const result = resignationEntry.color === "White" ? "0-1" : "1-0";
         gameResult.value = result;
         headers.value = { ...headers.value, Result: result };
-      } else if (agreedDrawEntry) {
+      } else if (agreedDrawEntry || stalemateEntry) {
         gameResult.value = "1/2-1/2";
         headers.value = { ...headers.value, Result: "1/2-1/2" };
       } else {
@@ -620,6 +655,10 @@ export const useGameStore = defineStore("game", () => {
     showCheckmateModal.value = false;
   }
 
+  function closeStalemateModal() {
+    showStalemateModal.value = false;
+  }
+
   /**
    * View a specific move in the history without changing the actual game state
    * @param {Number} index The index of the move to view (-1 for current, 0 for initial position)
@@ -640,6 +679,19 @@ export const useGameStore = defineStore("game", () => {
     if (index === -1) {
       tempBoardState.value = null;
       viewingMoveIndex.value = -1;
+      // Restore check state from the actual game instance
+      if (chessInstance.isCheck()) {
+        if (chessInstance.turn() === "w") {
+          whiteKingInCheck.value = true;
+          blackKingInCheck.value = false;
+        } else {
+          blackKingInCheck.value = true;
+          whiteKingInCheck.value = false;
+        }
+      } else {
+        whiteKingInCheck.value = false;
+        blackKingInCheck.value = false;
+      }
       console.log("Viewing current position (latest)");
       return;
     }
@@ -651,6 +703,8 @@ export const useGameStore = defineStore("game", () => {
     if (index === 0) {
       tempBoardState.value = tempChess.fen();
       viewingMoveIndex.value = 0;
+      whiteKingInCheck.value = false;
+      blackKingInCheck.value = false;
       console.log(
         `Viewing initial position (before any moves), FEN: ${tempBoardState.value}`
       );
@@ -678,8 +732,8 @@ export const useGameStore = defineStore("game", () => {
 
       const move = moveHistory.value[i];
 
-      // Skip non-chess entries like resignation or agreed draw
-      if (move.isResignation || move.isAgreedDraw) {
+      // Skip non-chess entries like resignation, agreed draw, or stalemate
+      if (move.isResignation || move.isAgreedDraw || move.isStalemate) {
         continue;
       }
 
@@ -707,6 +761,19 @@ export const useGameStore = defineStore("game", () => {
     if (success) {
       tempBoardState.value = tempChess.fen();
       viewingMoveIndex.value = index;
+      // Update check highlights for the historical position
+      if (tempChess.isCheck()) {
+        if (tempChess.turn() === "w") {
+          whiteKingInCheck.value = true;
+          blackKingInCheck.value = false;
+        } else {
+          blackKingInCheck.value = true;
+          whiteKingInCheck.value = false;
+        }
+      } else {
+        whiteKingInCheck.value = false;
+        blackKingInCheck.value = false;
+      }
       console.log(
         `Viewing move at index ${index}, FEN: ${tempBoardState.value}`
       );
@@ -845,6 +912,7 @@ export const useGameStore = defineStore("game", () => {
     isGameSaved,
     showCheckmateModal,
     checkmateModalMessage,
+    showStalemateModal,
     whiteKingInCheck,
     blackKingInCheck,
     tempBoardState,
@@ -867,6 +935,8 @@ export const useGameStore = defineStore("game", () => {
     isLoadedGame,
     currentEvaluation,
     currentOpening,
+    lastMatchedOpening,
+    openingBase,
     // Actions (Functions)
     makeMove,
     resetGame,
@@ -881,6 +951,7 @@ export const useGameStore = defineStore("game", () => {
     openLogoutConfirmModal,
     closeLogoutConfirmModal,
     closeCheckmateModal,
+    closeStalemateModal,
     viewMoveAtIndex,
     updateMoveAnnotation,
     setEvaluation,

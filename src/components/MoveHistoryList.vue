@@ -60,6 +60,8 @@ const formattedMoveHistoryByNumber = computed(() => {
         result[moveNumber].white = { isResignation: true, color: move.color };
       } else if (move.isAgreedDraw) {
         result[moveNumber].white = { isAgreedDraw: true };
+      } else if (move.isStalemate) {
+        result[moveNumber].white = { isStalemate: true };
       } else {
         result[moveNumber].white = {
           piece: move.piece,
@@ -85,6 +87,8 @@ const formattedMoveHistoryByNumber = computed(() => {
         result[moveNumber].black = { isResignation: true, color: move.color };
       } else if (move.isAgreedDraw) {
         result[moveNumber].black = { isAgreedDraw: true };
+      } else if (move.isStalemate) {
+        result[moveNumber].black = { isStalemate: true };
       } else {
         result[moveNumber].black = {
           piece: move.piece,
@@ -278,6 +282,15 @@ onUpdated(() => {
           </svg>
           <span class="font-semibold text-sm">Draw Agreed</span>
         </div>
+        <!-- Stalemate entry -->
+        <div
+          v-else-if="moves.white && moves.white.isStalemate"
+          class="p-2 flex items-center bg-green-50 text-green-700"
+        >
+          <span class="mr-2 w-6 text-gray-500">{{ moveNumber }}.</span>
+          <span class="mr-1 font-bold text-base leading-none">½</span>
+          <span class="font-semibold text-sm">Stalemate</span>
+        </div>
         <!-- Resignation entry -->
         <div
           v-else-if="moves.white && moves.white.isResignation"
@@ -349,6 +362,14 @@ onUpdated(() => {
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
           </svg>
           <span class="text-sm font-semibold">Draw Agreed</span>
+        </div>
+        <!-- Stalemate entry (when stalemate occurs on Black's turn) -->
+        <div
+          v-else-if="moves.black && moves.black.isStalemate"
+          class="p-2 flex items-center bg-green-50 text-green-700"
+        >
+          <span class="mr-1 font-bold text-base leading-none">½</span>
+          <span class="text-sm font-semibold">Stalemate</span>
         </div>
         <!-- Resignation entry -->
         <div
