@@ -109,23 +109,8 @@ export const useGameStore = defineStore("game", () => {
 
   // Get current opening name from opening book
   const currentOpening = computed(() => {
-    // Try exact FEN match first
-    if (openings[currentFen.value]) {
-      return openings[currentFen.value];
-    }
-    // Try matching without move counters (last two FEN fields)
-    const fenParts = currentFen.value.split(' ');
-    if (fenParts.length >= 4) {
-      const positionKey = fenParts.slice(0, 4).join(' ');
-      // Search for a matching position
-      for (const [fen, opening] of Object.entries(openings)) {
-        const openingParts = fen.split(' ');
-        if (openingParts.slice(0, 4).join(' ') === positionKey) {
-          return opening;
-        }
-      }
-    }
-    return null;
+    const positionKey = currentFen.value.split(' ').slice(0, 4).join(' ');
+    return openings[positionKey] || null;
   });
 
   // --- Actions ---
