@@ -640,6 +640,19 @@ export const useGameStore = defineStore("game", () => {
     if (index === -1) {
       tempBoardState.value = null;
       viewingMoveIndex.value = -1;
+      // Restore check state from the actual game instance
+      if (chessInstance.isCheck()) {
+        if (chessInstance.turn() === "w") {
+          whiteKingInCheck.value = true;
+          blackKingInCheck.value = false;
+        } else {
+          blackKingInCheck.value = true;
+          whiteKingInCheck.value = false;
+        }
+      } else {
+        whiteKingInCheck.value = false;
+        blackKingInCheck.value = false;
+      }
       console.log("Viewing current position (latest)");
       return;
     }
@@ -651,6 +664,8 @@ export const useGameStore = defineStore("game", () => {
     if (index === 0) {
       tempBoardState.value = tempChess.fen();
       viewingMoveIndex.value = 0;
+      whiteKingInCheck.value = false;
+      blackKingInCheck.value = false;
       console.log(
         `Viewing initial position (before any moves), FEN: ${tempBoardState.value}`
       );
@@ -707,6 +722,19 @@ export const useGameStore = defineStore("game", () => {
     if (success) {
       tempBoardState.value = tempChess.fen();
       viewingMoveIndex.value = index;
+      // Update check highlights for the historical position
+      if (tempChess.isCheck()) {
+        if (tempChess.turn() === "w") {
+          whiteKingInCheck.value = true;
+          blackKingInCheck.value = false;
+        } else {
+          blackKingInCheck.value = true;
+          whiteKingInCheck.value = false;
+        }
+      } else {
+        whiteKingInCheck.value = false;
+        blackKingInCheck.value = false;
+      }
       console.log(
         `Viewing move at index ${index}, FEN: ${tempBoardState.value}`
       );
