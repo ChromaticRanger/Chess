@@ -145,7 +145,7 @@
                 <option value="0-1">White Resigned</option> <!-- Black wins if White resigns -->
                 <option value="1-0">Black Resigned</option> <!-- White wins if Black resigns -->
                 <option value="1/2-1/2">Draw Agreed</option>
-                <option value="1/2-1/2">Draw - By Stalemate</option>
+                <option value="1/2-1/2-stalemate">Draw - By Stalemate</option>
               </select>
             </div>
           </div>
@@ -210,6 +210,15 @@ const props = defineProps({
 // Check if this is an update or new save
 const isUpdate = computed(() => props.existingGameData !== null);
 
+// Determine if the game ended by stalemate by inspecting move history
+const hasStalemateEntry = props.moveHistory?.some((m) => m.isStalemate) ?? false;
+
+// Map a stored result code to the correct select value, accounting for stalemate
+function resolveResultValue(result) {
+  if (result === '1/2-1/2' && hasStalemateEntry) return '1/2-1/2-stalemate';
+  return result ?? '*';
+}
+
 // Game data model - initialize with existing data if available
 const gameData = ref({
   name: props.existingGameData?.name || '',
@@ -226,17 +235,23 @@ const gameData = ref({
   blackPlayer: props.existingGameData?.blackPlayer || '',
   blackRating: props.existingGameData?.blackRating || '',
   description: props.existingGameData?.description || '',
-  result: props.existingGameData?.result || '*',
+  result: resolveResultValue(props.existingGameData?.result || '*'),
 });
 
 // Save the game
 const saveGame = () => {
+  // Normalise the internal stalemate sentinel back to the standard PGN result code
+  const resultToSave = gameData.value.result === '1/2-1/2-stalemate'
+    ? '1/2-1/2'
+    : gameData.value.result;
+
   // Create a complete game object with move history
   const completeGameData = {
     ...gameData.value,
+    result: resultToSave,
     moveHistory: props.moveHistory,
   };
-  
+
   // Emit save event with game data
   emit('save', completeGameData);
 };
@@ -247,16 +262,15 @@ onMounted(() => {
   if (!props.existingGameData) {
     // Set the result from props if it's a standard code
     if (['1-0', '0-1', '1/2-1/2', '*'].includes(props.result)) {
-        gameData.value.result = props.result;
+        gameData.value.result = resolveResultValue(props.result);
     } else {
         // Map descriptive prop values (legacy) to standard codes if necessary
-        // This handles cases where the parent might still send old values initially
         if (props.result === 'White Win' || props.result === 'Black Resigned') {
             gameData.value.result = '1-0';
         } else if (props.result === 'Black Win' || props.result === 'White Resigned') {
             gameData.value.result = '0-1';
         } else if (props.result.startsWith('Draw')) {
-            gameData.value.result = '1/2-1/2';
+            gameData.value.result = resolveResultValue('1/2-1/2');
         } else {
             gameData.value.result = '*'; // Default fallback
         }

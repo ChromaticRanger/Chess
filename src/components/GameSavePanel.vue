@@ -92,20 +92,7 @@ const handleAgreedDraw = () => {
           title="Agree to a draw"
           :disabled="isGameOver"
         >
-          <svg
-            class="control-icon"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            stroke="#6b7280"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <!-- Handshake icon -->
-            <path d="M9 11l3 3L22 4"/>
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-          </svg>
+          <span class="control-icon flex items-center justify-center text-gray-500 font-bold text-lg leading-none">½</span>
         </button>
       </div>
 

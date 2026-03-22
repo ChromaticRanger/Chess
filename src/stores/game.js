@@ -35,6 +35,9 @@ export const useGameStore = defineStore("game", () => {
   const showCheckmateModal = ref(false);
   const checkmateModalMessage = ref("");
 
+  // Add state for stalemate modal
+  const showStalemateModal = ref(false);
+
   // Use a regular ref for currentTurn instead of a computed property to ensure reactivity
   const currentTurn = ref(chessInstance.turn() === "w" ? "White" : "Black");
 
@@ -69,7 +72,7 @@ export const useGameStore = defineStore("game", () => {
   const isGameOver = computed(
     () =>
       chessInstance.isGameOver() ||
-      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw) ||
+      moveHistory.value.some((m) => m.isResignation || m.isAgreedDraw || m.isStalemate) ||
       (gameResult.value !== '*' && gameResult.value !== '')
   );
   const pgn = computed(() => {
@@ -223,6 +226,21 @@ export const useGameStore = defineStore("game", () => {
           showCheckmateModal.value = true;
         }
 
+        // Check for stalemate and display modal if needed
+        if (chessInstance.isStalemate()) {
+          const stalematedColor = chessInstance.turn() === "w" ? "White" : "Black";
+          console.log(`Stalemate! ${stalematedColor} has no legal moves.`);
+          moveHistory.value.push({
+            san: "Stalemate",
+            isStalemate: true,
+            timestamp: new Date().toISOString(),
+          });
+          gameResult.value = "1/2-1/2";
+          headers.value = { ...headers.value, Result: "1/2-1/2" };
+          isGameSaved.value = false;
+          showStalemateModal.value = true;
+        }
+
         // Double check that our currentTurn value matches chess.js's turn
         console.log(
           "Final check - chess.js turn:",
@@ -288,9 +306,10 @@ export const useGameStore = defineStore("game", () => {
     whiteKingInCheck.value = false;
     blackKingInCheck.value = false;
 
-    // Clear checkmate modal if it was showing
+    // Clear checkmate/stalemate modals if they were showing
     showCheckmateModal.value = false;
     checkmateModalMessage.value = "";
+    showStalemateModal.value = false;
 
     console.log("Pinia Store: Game reset");
   }
@@ -454,6 +473,12 @@ export const useGameStore = defineStore("game", () => {
               isAgreedDraw: true,
               timestamp: savedMove.timestamp,
             });
+          } else if (savedMove.isStalemate) {
+            rebuiltHistory.push({
+              san: savedMove.san,
+              isStalemate: true,
+              timestamp: savedMove.timestamp,
+            });
           }
         });
       }
@@ -467,11 +492,12 @@ export const useGameStore = defineStore("game", () => {
       // Restore the result for games ended by resignation or agreed draw.
       const resignationEntry = rebuiltHistory.find((m) => m.isResignation);
       const agreedDrawEntry = rebuiltHistory.find((m) => m.isAgreedDraw);
+      const stalemateEntry = rebuiltHistory.find((m) => m.isStalemate);
       if (resignationEntry) {
         const result = resignationEntry.color === "White" ? "0-1" : "1-0";
         gameResult.value = result;
         headers.value = { ...headers.value, Result: result };
-      } else if (agreedDrawEntry) {
+      } else if (agreedDrawEntry || stalemateEntry) {
         gameResult.value = "1/2-1/2";
         headers.value = { ...headers.value, Result: "1/2-1/2" };
       } else {
@@ -620,6 +646,10 @@ export const useGameStore = defineStore("game", () => {
     showCheckmateModal.value = false;
   }
 
+  function closeStalemateModal() {
+    showStalemateModal.value = false;
+  }
+
   /**
    * View a specific move in the history without changing the actual game state
    * @param {Number} index The index of the move to view (-1 for current, 0 for initial position)
@@ -693,8 +723,8 @@ export const useGameStore = defineStore("game", () => {
 
       const move = moveHistory.value[i];
 
-      // Skip non-chess entries like resignation or agreed draw
-      if (move.isResignation || move.isAgreedDraw) {
+      // Skip non-chess entries like resignation, agreed draw, or stalemate
+      if (move.isResignation || move.isAgreedDraw || move.isStalemate) {
         continue;
       }
 
@@ -873,6 +903,7 @@ export const useGameStore = defineStore("game", () => {
     isGameSaved,
     showCheckmateModal,
     checkmateModalMessage,
+    showStalemateModal,
     whiteKingInCheck,
     blackKingInCheck,
     tempBoardState,
@@ -909,6 +940,7 @@ export const useGameStore = defineStore("game", () => {
     openLogoutConfirmModal,
     closeLogoutConfirmModal,
     closeCheckmateModal,
+    closeStalemateModal,
     viewMoveAtIndex,
     updateMoveAnnotation,
     setEvaluation,
