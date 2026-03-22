@@ -53,6 +53,14 @@
               </div>
             </div>
             
+            <!-- Opening (if available) -->
+            <div v-if="game.openingName" class="mb-3 border-b pb-2">
+              <div class="flex items-center gap-2">
+                <span v-if="game.openingEco" class="text-xs font-mono font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{{ game.openingEco }}</span>
+                <span class="text-sm text-amber-900">{{ game.openingName }}</span>
+              </div>
+            </div>
+
             <!-- Players section -->
             <div class="mb-3">
               <div class="grid grid-cols-2 gap-2 mb-1">
@@ -170,11 +178,9 @@ const formatDate = (dateString, dateOnly = false) => {
   }
   
   if (dateOnly) {
-    // Show only the date part: YYYY-MM-DD
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   } else {
-    // Show date and time
-    return date.toLocaleString();
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 };
 
@@ -209,6 +215,9 @@ const loadGame = async (game) => {
       blackPlayer: game.blackPlayer,
       blackRating: game.blackRating,
       result: game.result,
+      openingName: game.openingName,
+      openingEco: game.openingEco,
+      openingBase: game.openingBase,
     };
 
     // Load the PGN into the game store with game ID and metadata (including saved moveHistory for annotations)

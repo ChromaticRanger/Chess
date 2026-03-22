@@ -145,6 +145,8 @@ const {
   isStalemate,
   currentGameMetadata,
   currentOpening,
+  lastMatchedOpening,
+  openingBase,
   currentEvaluation,
   isAnalyzing,
 } = storeToRefs(gameStore);
@@ -223,7 +225,10 @@ const saveGame = async (gameData) => {
       blackRating: gameData.blackRating,
       result: gameData.result,
       moveHistory: moveHistory.value,
-      pgn: finalPgn
+      pgn: finalPgn,
+      openingName: lastMatchedOpening.value?.name || null,
+      openingEco: lastMatchedOpening.value?.eco || null,
+      openingBase: openingBase.value || null,
     };
 
     let result;

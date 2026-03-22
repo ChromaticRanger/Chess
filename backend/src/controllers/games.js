@@ -17,7 +17,10 @@ export const createGame = async (c) => {
       blackRating,
       result,
       moveHistory,
-      pgn, // <-- Add pgn here
+      pgn,
+      openingName,
+      openingEco,
+      openingBase,
     } = await c.req.json();
 
     // Check if required fields are present
@@ -50,7 +53,10 @@ export const createGame = async (c) => {
         blackRating: blackRating ? parseInt(blackRating) : null,
         result: result || null,
         moveHistory,
-        pgn: pgn || null, // <-- Add pgn here
+        pgn: pgn || null,
+        openingName: openingName || null,
+        openingEco: openingEco || null,
+        openingBase: openingBase || null,
         userId: user.id,
       },
     });
@@ -232,7 +238,10 @@ export const updateGame = async (c) => {
       blackRating,
       result,
       moveHistory,
-      pgn, // <-- Add pgn here
+      pgn,
+      openingName,
+      openingEco,
+      openingBase,
     } = await c.req.json();
 
     if (isNaN(id)) {
@@ -286,7 +295,10 @@ export const updateGame = async (c) => {
       result: result !== undefined ? result : existingGame.result,
       moveHistory:
         moveHistory !== undefined ? moveHistory : existingGame.moveHistory,
-      pgn: pgn !== undefined ? pgn : existingGame.pgn, // <-- Add pgn here
+      pgn: pgn !== undefined ? pgn : existingGame.pgn,
+      openingName: openingName !== undefined ? openingName : existingGame.openingName,
+      openingEco: openingEco !== undefined ? openingEco : existingGame.openingEco,
+      openingBase: openingBase !== undefined ? openingBase : existingGame.openingBase,
     };
 
     // Handle numeric fields separately to ensure they're properly coerced

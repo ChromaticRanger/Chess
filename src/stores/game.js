@@ -1,7 +1,7 @@
 // filepath: src/stores/game.js
 import { defineStore } from "pinia";
 import { Chess } from "chess.js";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import axios from "axios";
 import openings from "@/data/openings.json";
 
@@ -48,6 +48,9 @@ export const useGameStore = defineStore("game", () => {
   // Track the currently loaded/saved game for incremental updates
   const currentGameId = ref(null);
   const currentGameMetadata = ref(null);
+
+  // Track the last matched opening before going out of book
+  const lastMatchedOpening = ref(null);
 
   // Evaluation state
   const evaluations = ref({}); // { fen: Evaluation }
@@ -111,6 +114,21 @@ export const useGameStore = defineStore("game", () => {
   const currentOpening = computed(() => {
     const positionKey = currentFen.value.split(' ').slice(0, 4).join(' ');
     return openings[positionKey] || null;
+  });
+
+  // Update lastMatchedOpening whenever a book position is reached
+  watch(currentOpening, (newVal) => {
+    if (newVal) {
+      lastMatchedOpening.value = newVal;
+    }
+  });
+
+  // Derive the base opening name (everything before the first ": ")
+  const openingBase = computed(() => {
+    if (!lastMatchedOpening.value) return null;
+    const name = lastMatchedOpening.value.name;
+    const colonIndex = name.indexOf(':');
+    return colonIndex > -1 ? name.substring(0, colonIndex) : name;
   });
 
   // --- Actions ---
@@ -277,6 +295,7 @@ export const useGameStore = defineStore("game", () => {
     // Clear saved game tracking (new game, not a loaded one)
     currentGameId.value = null;
     currentGameMetadata.value = null;
+    lastMatchedOpening.value = null;
 
     chessInstance.reset();
     fen.value = chessInstance.fen();
@@ -374,6 +393,11 @@ export const useGameStore = defineStore("game", () => {
       // Store the game ID and metadata if provided (for incremental updates)
       currentGameId.value = gameId;
       currentGameMetadata.value = gameMetadata;
+
+      // Restore last matched opening from saved metadata if available
+      if (gameMetadata?.openingName) {
+        lastMatchedOpening.value = { name: gameMetadata.openingName, eco: gameMetadata.openingEco };
+      }
 
       // Load cached evaluations if a gameId is provided
       if (gameId) {
@@ -911,6 +935,8 @@ export const useGameStore = defineStore("game", () => {
     isLoadedGame,
     currentEvaluation,
     currentOpening,
+    lastMatchedOpening,
+    openingBase,
     // Actions (Functions)
     makeMove,
     resetGame,
