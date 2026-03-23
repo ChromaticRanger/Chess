@@ -6,6 +6,8 @@ const games = ref([]);
 const currentGame = ref(null);
 const isLoading = ref(false);
 const error = ref('');
+const pagination = ref({ page: 1, pageSize: 12, totalCount: 0, totalPages: 0 });
+const gameHistoryViewMode = ref('card');
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -15,15 +17,17 @@ const getAuthHeaders = () => {
 
 export function usePositions() {
   // Fetch all games for the current user
-  const fetchGames = async () => {
+  const fetchGames = async ({ page = 1, pageSize = 12, sortBy = 'updatedAt', sortDir = 'desc' } = {}) => {
     isLoading.value = true;
     error.value = '';
-    
+
     try {
-      const response = await axios.get(`${API_URL}/games`, {
+      const params = new URLSearchParams({ page, pageSize, sortBy, sortDir });
+      const response = await axios.get(`${API_URL}/games?${params}`, {
         headers: getAuthHeaders()
       });
       games.value = response.data.games;
+      pagination.value = response.data.pagination;
       return { success: true, games: games.value };
     } catch (err) {
       console.error('Fetch games error:', err);
@@ -147,6 +151,8 @@ export function usePositions() {
   return {
     // New names
     games,
+    pagination,
+    gameHistoryViewMode,
     currentGame,
     isLoading,
     error,
