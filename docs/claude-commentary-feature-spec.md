@@ -213,7 +213,14 @@ Return format:
 
 ### Cost estimate
 - ~$0.01–0.02 per game analysis with Haiku 4.5 + prompt caching
-- Batch API (50% discount) not used here as analysis is user-triggered and synchronous from user's perspective
+
+### Batch API (future consideration)
+- Anthropic's Batch API offers a 50% discount on all token costs by processing requests asynchronously (results within minutes to 24 hours)
+- **Not used for MVP** — instant analysis is a stronger user experience; the user triggers analysis and expects results within seconds, which is incompatible with batch processing latency
+- **Future use cases to consider:**
+  - Bulk re-analysis of all existing games if the commentary prompt is updated or improved
+  - An optional "Analyse Later" mode where users accept a delay in exchange for reduced cost
+  - Background nightly analysis jobs if a scheduled analysis feature is ever added
 
 ---
 
