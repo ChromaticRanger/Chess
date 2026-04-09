@@ -113,8 +113,10 @@ export const login = async (c) => {
 
 // Google OAuth login for existing users
 export const googleLogin = async (c) => {
+  let googleUser;
+  let searchResult;
   try {
-    const googleUser = extractGoogleUser(c);
+    googleUser = extractGoogleUser(c);
     
     if (!googleUser) {
       const errorInfo = GoogleOAuthErrorHandler.handleValidationError(
@@ -135,8 +137,8 @@ export const googleLogin = async (c) => {
     }
     
     // Use account linking service to find and authenticate user
-    const searchResult = await accountLinkingService.findUserForGoogleAuth(googleUser);
-    
+    searchResult = await accountLinkingService.findUserForGoogleAuth(googleUser);
+
     if (!searchResult.user) {
       return c.json({ 
         error: 'No account found with this email. Please sign up first.',
@@ -209,8 +211,10 @@ export const googleLogin = async (c) => {
 
 // Google OAuth signup for new users
 export const googleSignup = async (c) => {
+  let googleUser;
+  let searchResult;
   try {
-    const googleUser = extractGoogleUser(c);
+    googleUser = extractGoogleUser(c);
     
     if (!googleUser) {
       const errorInfo = GoogleOAuthErrorHandler.handleValidationError(
@@ -231,8 +235,8 @@ export const googleSignup = async (c) => {
     }
     
     // Use account linking service to check for existing accounts
-    const searchResult = await accountLinkingService.findUserForGoogleAuth(googleUser);
-    
+    searchResult = await accountLinkingService.findUserForGoogleAuth(googleUser);
+
     if (searchResult.user) {
       return c.json({ 
         error: 'Account already exists. Please login instead.',
