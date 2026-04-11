@@ -246,12 +246,12 @@ onUnmounted(() => {
 
 <template>
   <div class="auth-card w-full max-w-md mx-auto p-8 rounded-lg">
-    <h2 class="text-2xl font-bold mb-6 text-center text-white">Log In</h2>
+    <h2 class="text-2xl font-semibold tracking-tight text-balance mb-6 text-center text-white">Log In</h2>
 
     <form @submit.prevent="handleLogin">
       <!-- Email Field -->
       <div class="mb-4">
-        <label for="email" class="block text-gray-300 text-sm font-bold mb-2">Email</label>
+        <label for="email" class="block text-gray-300 text-sm font-medium mb-2">Email</label>
         <input
           id="email"
           v-model="email"
@@ -264,7 +264,7 @@ onUnmounted(() => {
 
       <!-- Password Field -->
       <div class="mb-6">
-        <label for="password" class="block text-gray-300 text-sm font-bold mb-2">Password</label>
+        <label for="password" class="block text-gray-300 text-sm font-medium mb-2">Password</label>
         <div class="relative">
           <input
             id="password"

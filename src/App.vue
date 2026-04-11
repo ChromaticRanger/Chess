@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, watch, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import Modal from "./components/Modal.vue";
 import AuthPage from "./components/AuthPage.vue";
 import SaveGameDialog from "./components/SaveGameDialog.vue"; // Import SaveGameDialog
@@ -10,7 +10,12 @@ import { usePositions } from "./composables/usePositions"; // Import usePosition
 
 // Router and Auth state
 const router = useRouter();
+const route = useRoute();
 const { isAuthenticated, user, logout } = useAuth();
+
+// Mobile nav
+const mobileMenuOpen = ref(false);
+watch(() => route.path, () => { mobileMenuOpen.value = false; });
 const isAuthenticatedUser = ref(isAuthenticated.value);
 const gameStore = useGameStore(); // Initialize game store
 const { createGame, updateGame } = usePositions(); // Initialize positions API
@@ -176,37 +181,91 @@ onMounted(() => {
   <AuthPage v-if="!isAuthenticatedUser" @auth-success="handleAuthSuccess" />
 
   <!-- Chess app if authenticated -->
-  <div v-else class="flex flex-col min-h-screen">
+  <div v-else class="flex flex-col min-h-dvh">
     <!-- Header with user info and logout -->
-    <header class="text-white p-4">
+    <header class="text-white px-4 py-3">
       <div class="w-full flex justify-between items-center">
         <!-- Title on the very left -->
-        <h1 class="text-xl font-bold pl-2">Log My Chess Games</h1>
+        <h1 class="text-lg font-semibold tracking-tight pl-1">Log My Chess Games</h1>
 
-        <!-- User info and logout on right -->
-        <div class="flex items-center pr-2">
-          <!-- Profile Picture -->
-          <img 
+        <!-- Desktop: user info and logout -->
+        <div class="hidden desktop-user-controls items-center gap-3 pr-1">
+          <img
             :src="user?.profilePictureUrl || '/default-avatar.png'"
             :alt="user?.username || 'User'"
-            class="w-8 h-8 rounded-full object-cover mr-2 border-2 border-white shadow-sm"
+            class="size-8 rounded-full object-cover border-2 border-white/40 shadow-sm"
             @error="handleImageError"
           />
-          <!-- Username -->
-          <span class="mr-3">{{ user?.username }}</span>
-          <!-- Logout Button -->
+          <span class="text-sm text-white/80">{{ user?.username }}</span>
           <button
             @click="handleLogout"
-            class="border border-white/30 text-white/90 px-3 py-1 rounded hover:bg-white/10 transition text-sm"
+            type="button"
+            class="border border-white/25 text-white/80 px-3 py-1.5 rounded text-sm hover:bg-white/10 hover:text-white transition"
           >
             Logout
+          </button>
+        </div>
+
+        <!-- Mobile: user avatar + hamburger -->
+        <div class="flex mobile-header-controls items-center gap-2 pr-1">
+          <img
+            :src="user?.profilePictureUrl || '/default-avatar.png'"
+            :alt="user?.username || 'User'"
+            class="size-7 rounded-full object-cover border border-white/40"
+            @error="handleImageError"
+          />
+          <button
+            @click="mobileMenuOpen = !mobileMenuOpen"
+            type="button"
+            class="p-1.5 rounded hover:bg-white/10 transition"
+            :aria-label="mobileMenuOpen ? 'Close menu' : 'Open menu'"
+            aria-haspopup="true"
+            :aria-expanded="mobileMenuOpen"
+          >
+            <!-- Hamburger -->
+            <svg v-if="!mobileMenuOpen" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            </svg>
+            <!-- X -->
+            <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            </svg>
           </button>
         </div>
       </div>
     </header>
 
-    <!-- Navigation bar -->
-    <nav class="text-white shadow-md">
+    <!-- Mobile nav panel -->
+    <div v-show="mobileMenuOpen" class="mobile-nav-panel text-white">
+      <router-link
+        to="/game-input"
+        class="mobile-nav-link"
+        :class="{ 'mobile-nav-link-active': $route.path === '/game-input' }"
+      >Game Input</router-link>
+      <router-link
+        to="/game-history"
+        class="mobile-nav-link"
+        :class="{ 'mobile-nav-link-active': $route.path === '/game-history' }"
+      >Game History</router-link>
+      <router-link
+        to="/settings"
+        class="mobile-nav-link"
+        :class="{ 'mobile-nav-link-active': $route.path === '/settings' }"
+      >Settings</router-link>
+      <div class="border-t border-white/10 px-4 py-3 flex items-center justify-between">
+        <span class="text-sm text-white/60">{{ user?.username }}</span>
+        <button
+          @click="handleLogout"
+          type="button"
+          class="border border-white/25 text-white/70 px-3 py-1.5 rounded text-sm hover:bg-white/10 transition"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+
+    <!-- Desktop navigation bar -->
+    <nav class="text-white shadow-md desktop-nav">
       <div class="w-full flex justify-center items-center">
         <div class="flex">
           <router-link
@@ -267,13 +326,14 @@ header {
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
 }
 
-nav {
+/* Desktop nav */
+.desktop-nav {
   background: #141e2e;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .nav-link {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.65);
   border-bottom: 3px solid transparent;
   padding-bottom: calc(0.5rem - 3px);
 }
@@ -285,51 +345,61 @@ nav {
 
 .nav-link-active {
   color: #fff;
-  border-bottom-color: rgba(210, 180, 110, 0.7);
+  border-bottom-color: rgba(210, 180, 110, 0.75);
 }
 
-.border-blue-600 {
-  border: 10px solid #2563eb; /* TailwindCSS blue-600 */
-}
-.border-10 {
-  border-width: 10px;
-}
-.w-120 {
-  width: 30rem; /* 480px */
+/* Mobile nav panel */
+.mobile-nav-panel {
+  background: #141e2e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Mobile-responsive header and navigation */
+.mobile-nav-link {
+  display: block;
+  padding: 0.75rem 1.25rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.9375rem;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mobile-nav-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.mobile-nav-link-active {
+  color: #fff;
+  border-left-color: rgba(210, 180, 110, 0.75);
+  background: rgba(210, 180, 110, 0.06);
+}
+
+/* Breakpoint switching: mobile (<= 999px) shows hamburger, desktop shows tabs */
 @media (max-width: 999px) {
-  header {
-    padding: 0.75rem;
+  .desktop-nav {
+    display: none;
   }
 
-  header h1 {
-    font-size: 0.875rem;
-    padding-left: 0.25rem;
+  .desktop-user-controls {
+    display: none !important;
   }
 
-  header img {
-    width: 28px;
-    height: 28px;
+  .mobile-header-controls {
+    display: flex;
+  }
+}
+
+@media (min-width: 1000px) {
+  .mobile-header-controls {
+    display: none !important;
   }
 
-  header span {
-    font-size: 0.875rem;
-    margin-right: 0.5rem;
+  .desktop-user-controls {
+    display: flex;
   }
 
-  header button {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
-  }
-
-  nav {
-    font-size: 0.875rem;
-  }
-
-  nav a {
-    padding: 0.5rem 0.75rem;
+  .mobile-nav-panel {
+    display: none !important;
   }
 }
 </style>

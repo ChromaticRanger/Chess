@@ -112,8 +112,8 @@ onMounted(async () => {
     <div class="w-full max-w-md relative z-10">
       <!-- Logo and Title -->
       <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Log My Chess Games</h1>
-        <p class="text-gray-600">Create and Save your Chess Games</p>
+        <h1 class="text-4xl font-semibold tracking-tight text-balance text-gray-800 mb-2">Log My Chess Games</h1>
+        <p class="text-gray-600 text-pretty">Input, Save and Analyse your Chess Games</p>
       </div>
       
       <!-- Login or Signup Form -->

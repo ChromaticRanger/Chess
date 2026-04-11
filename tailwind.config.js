@@ -1,8 +1,13 @@
 /** @type {import('tailwindcss').Config} */
+const defaultTheme = require('tailwindcss/defaultTheme');
+
 module.exports = {
   content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['InterVariable', 'Inter', ...defaultTheme.fontFamily.sans],
+      },
       width: {
         '88': '22rem', // Legacy: 352px for side panels (now handled by component CSS)
       },
