@@ -4,7 +4,7 @@
 
       <!-- Header toolbar -->
       <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
-        <h1 class="text-2xl font-bold">Game History</h1>
+        <h1 class="text-2xl font-semibold tracking-tight">Game History</h1>
 
         <div class="flex items-center gap-3">
           <!-- Sort controls (card view only) -->
@@ -560,10 +560,8 @@ const handleDeleteGame = async () => {
 
 .list-table th {
   padding: 10px 14px;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: rgba(210, 180, 110, 0.85);
   white-space: nowrap;
 }
